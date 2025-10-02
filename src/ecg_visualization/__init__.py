@@ -1,2 +1,5 @@
+from ecg_visualization.datasets.dataset import CUDB
+
+
 def main() -> None:
-    print("Hello from ecg-visualization!")
+    print(CUDB().data_entities)
