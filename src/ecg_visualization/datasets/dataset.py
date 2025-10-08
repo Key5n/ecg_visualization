@@ -116,6 +116,23 @@ class SHDBAF(ECG_Dataset):
     dataset_id: str = "shdb-af"
     sr: int = 200
 
+    def __post_init__(self):
+        record_path = os.path.join(self.dir_path, "RECORDS.txt")
+        with open(record_path, "r") as f:
+            self.data_ids = f.read().splitlines()
+
+        for data_id in self.data_ids:
+            data_path = os.path.join(self.dir_path, data_id)
+            signals, _ = wfdb.rdsamp(
+                data_path,
+                channels=[0],
+            )
+            squeezed = np.squeeze(signals)
+
+            record = wfdb.rdheader(data_path)
+            sr = record.fs
+            self.data_entities.append(ECG_Entity(data_id, self.name, sr, squeezed))
+
 
 @dataclass
 class SDDB(ECG_Dataset):
