@@ -1,4 +1,5 @@
 import os
+from tqdm import tqdm
 from ecg_visualization.datasets.dataset import (
     AFDB,
     AFPDB,
@@ -41,11 +42,11 @@ def main() -> None:
 
     root_result_dir = os.path.join("result")
 
-    for data_source in data_sources:
+    for data_source in tqdm(data_sources):
         dataset_result_dir = os.path.join(root_result_dir, data_source.dataset_id)
         os.makedirs(dataset_result_dir, exist_ok=True)
 
-        for entity in data_source.data_entities:
+        for entity in tqdm(data_source.data_entities):
             result_file_path = os.path.join(dataset_result_dir, f"{entity.data_id}.pdf")
             with PdfPages(result_file_path) as pdf:
 
