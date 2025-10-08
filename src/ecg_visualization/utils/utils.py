@@ -12,3 +12,7 @@ def padding_reshape(array: NDArray, shape: Tuple, fill_value=np.nan):
         array = np.concatenate([array, np.full(pad_length, fill_value)])
 
     return np.reshape(array, shape)
+
+
+def omit_nan(array: NDArray):
+    return array[~np.isnan(array)]

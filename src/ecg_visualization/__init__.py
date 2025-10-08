@@ -14,7 +14,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
-from ecg_visualization.utils.utils import padding_reshape
+from ecg_visualization.utils.utils import omit_nan, padding_reshape
 import seaborn as sns
 
 custom_params = {
@@ -62,8 +62,11 @@ def main() -> None:
                     (n_pages, n_rows, n_steps)
                 )
 
-                ylim_upper = np.max(entity.signals) * 1.1
-                ylim_lower = np.min(entity.signals) * 1.1
+                ylim_upper = np.max(omit_nan(entity.signals)) * 1.1
+                ylim_lower = np.min(omit_nan(entity.signals)) * 1.1
+                tqdm.write(
+                    f"{ylim_lower}, {ylim_upper}, {entity.data_id}, {entity.data_kind}"
+                )
 
                 for page_idx, (signals, ts_row) in enumerate(
                     zip(signals_paged, ts_paged)
