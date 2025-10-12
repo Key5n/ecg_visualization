@@ -98,7 +98,7 @@ def main() -> None:
                                 sample,
                                 ylim_lower,
                                 symbol,
-                                fontsize=4,
+                                fontsize=4 if symbol == "N" else 8,
                                 horizontalalignment="center",
                                 c="black" if symbol == "N" else "red",
                             )
