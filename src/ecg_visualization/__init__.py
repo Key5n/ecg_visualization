@@ -76,11 +76,31 @@ def main() -> None:
                         # a4
                         figsize=(8.27, 11.69),
                     )
+
                     for signal, ts, ax in zip(signals, ts_row, axs):
                         ax.plot(ts, signal, "-")
                         ax.set_ylim(ylim_lower, ylim_upper)
                         ax.set_ylabel("mV")
                         ax.set_xlim(ts[0], ts[-1])
+
+                        symbols = [
+                            (sample / entity.sr, symbol)
+                            for sample, symbol in zip(
+                                entity.annotation.sample, entity.annotation.symbol
+                            )
+                            if sample / entity.sr >= ts[0]
+                            and sample / entity.sr <= ts[-1]
+                        ]
+
+                        for sample, symbol in symbols:
+                            ax.axvline(sample, alpha=0.5)
+                            ax.text(
+                                sample,
+                                ylim_lower,
+                                symbol,
+                                fontsize=4,
+                                horizontalalignment="center",
+                            )
 
                     fig.suptitle(
                         f"{entity.data_kind}: {entity.data_id} Page {page_idx + 1} / {n_pages}",
