@@ -100,6 +100,7 @@ def main() -> None:
                                 symbol,
                                 fontsize=4,
                                 horizontalalignment="center",
+                                c="black" if symbol == "N" else "red",
                             )
 
                     fig.suptitle(
