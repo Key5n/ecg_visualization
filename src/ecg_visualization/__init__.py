@@ -95,15 +95,25 @@ def main() -> None:
                         ]
 
                         for sample, symbol in symbols:
-                            ax.axvline(sample, alpha=0.5)
-                            ax.text(
-                                sample,
-                                ylim_lower,
-                                symbol,
-                                fontsize=4 if symbol == "N" else 8,
-                                horizontalalignment="center",
-                                c="black" if symbol == "N" else "red",
-                            )
+                            if symbol == "N":
+                                ax.text(
+                                    sample,
+                                    ylim_lower,
+                                    symbol,
+                                    fontsize=4,
+                                    horizontalalignment="center",
+                                    c="black",
+                                )
+                            else:
+                                ax.axvline(sample, color="red", alpha=0.5)
+                                ax.text(
+                                    sample,
+                                    ylim_lower,
+                                    symbol,
+                                    fontsize=8,
+                                    horizontalalignment="center",
+                                    c="red",
+                                )
 
                     fig.suptitle(
                         f"{entity.data_kind}: {entity.data_id} {"".join(symbol_list) if page_idx == 0 else ""}"
