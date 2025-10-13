@@ -66,6 +66,7 @@ def main() -> None:
                 ylim_lower = np.min(omit_nan(entity.signals)) * 1.1
 
                 symbol_list = list(set(entity.annotation.symbol))
+                symbol_list.sort()
                 tqdm.write(
                     f"{entity.data_id}, {entity.data_kind}, {ylim_lower:.2f}, {ylim_upper:.2f} {"".join(symbol_list)}"
                 )
