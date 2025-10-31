@@ -11,8 +11,20 @@ dataset_root_dir = os.path.join("physionet.org", "files")
 
 @dataclass
 class ECG_Entity:
+    """
+    Class representing a single ECG record/entity
+
+    Attributes:
+        data_id (str): Identifier for the ECG record
+        dataset_name (str): Name of the dataset the record belongs to
+        sr (int): Sampling rate of the ECG signal
+        signals (npt.NDArray[np.float64]): ECG signal data
+        annotation (Annotation): Annotation object containing metadata about the ECG record
+        beats (npt.NDArray[np.int_]): Array of beat sample indices, each element divided by its sampling rate representing the times of beats in seconds
+    """
+
     data_id: str
-    data_kind: str
+    dataset_name: str
     sr: int
     signals: npt.NDArray[np.float64]
     annotation: Annotation
@@ -24,11 +36,24 @@ class ECG_Entity:
 
 @dataclass
 class ECG_Dataset:
+    """
+    Base class for ECG Datasets
+
+    Attributes:
+        dir_path (str): Path to the dataset directory
+        name (str): Name of the dataset
+        dataset_id (str): Identifier for the dataset
+        annotation_extention_priority (list[str]): List of annotation file extensions in order of priority
+        beat_extention_priority (list[str]): List of beat annotation file extensions in order of priority
+        data_ids (list[str]): List of data record identifiers
+        data_entities (list[ECG_Entity]): List of ECG entities in the dataset
+    """
+
     dir_path: str
     name: str
     dataset_id: str
     annotation_extention_priority: list[str] = field(
-        default_factory=lambda: ["atr", "ari"]
+        default_factory=lambda: ["atr", "qrs", "ari"]
     )
     beat_extention_priority: list[str] = field(default_factory=lambda: ["atr", "qrs"])
     data_ids: list[str] = field(init=False)
@@ -106,7 +131,6 @@ class AFPDB(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "afpdb", "1.0.0")
     name: str = "PAF Prediction Challenge Database"
     dataset_id: str = "afpdb"
-    annotation_extention: str = "qrs"
     sr: int = 128
 
 
@@ -175,5 +199,4 @@ class SDDB(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "sddb", "1.0.0")
     name: str = "Sudden Cardiac Death Holter Database"
     dataset_id: str = "sddb"
-    beat_extention_priority: list[str] = field(default_factory=lambda: ["atr", "ari"])
     sr: int = 250
