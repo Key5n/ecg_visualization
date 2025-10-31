@@ -16,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 ecg-visualization = "ecg_visualization:ecg_visualization"
+RRI-histogram = "ecg_visualization:RRI_histogram"
 
 [build-system]
 requires = ["hatchling"]
