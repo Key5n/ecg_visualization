@@ -83,7 +83,7 @@ def ecg_visualization() -> None:
                     for signal, ts, ax in zip(signals, ts_row, axs):
                         ax.plot(ts, signal, "-")
                         ax.set_ylim(ylim_lower, ylim_upper)
-                        ax.set_ylabel("mV")
+                        ax.set_ylabel("mν")
                         ax.set_xlim(ts[0], ts[-1])
 
                         symbols = [
@@ -96,16 +96,7 @@ def ecg_visualization() -> None:
                         ]
 
                         for sample, symbol in symbols:
-                            if symbol == "N":
-                                ax.text(
-                                    sample,
-                                    ylim_lower,
-                                    symbol,
-                                    fontsize=4,
-                                    horizontalalignment="center",
-                                    c="black",
-                                )
-                            else:
+                            if symbol != "N":
                                 ax.axvline(sample, color="red", alpha=0.5)
                                 ax.text(
                                     sample,
@@ -116,9 +107,25 @@ def ecg_visualization() -> None:
                                     c="red",
                                 )
 
-                    fig.suptitle(
-                        f"{entity.data_kind}: {entity.data_id} {"".join(symbol_list) if page_idx == 0 else ""}"
-                    )
+                        beat_indices = [
+                            beat / entity.sr
+                            for beat in entity.beats
+                            if beat / entity.sr >= ts[0] and beat / entity.sr <= ts[-1]
+                        ]
+
+                        for beat_index in beat_indices:
+                            ax.text(
+                                beat_index,
+                                ylim_lower,
+                                "N",
+                                fontsize=4,
+                                horizontalalignment="center",
+                                c="black",
+                            )
+                    if page_idx == 0:
+                        fig.suptitle(
+                            f"{entity.data_kind}: {entity.data_id} {"".join(symbol_list)}"
+                        )
                     fig.supxlabel("Time (sec)")
                     fig.subplots_adjust(left=0.08, right=0.98, bottom=0.05, top=0.95)
                     pdf.savefig(pad_inches=0)

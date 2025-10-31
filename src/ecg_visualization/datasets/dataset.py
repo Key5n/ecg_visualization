@@ -16,6 +16,7 @@ class ECG_Entity:
     sr: int
     signals: npt.NDArray[np.float64]
     annotation: Annotation
+    beats: npt.NDArray[np.int_]
 
     def __str__(self):
         return self.data_id
@@ -26,7 +27,10 @@ class ECG_Dataset:
     dir_path: str
     name: str
     dataset_id: str
-    annotation_extention: str = "atr"
+    annotation_extention_priority: list[str] = field(
+        default_factory=lambda: ["atr", "ari"]
+    )
+    beat_extention_priority: list[str] = field(default_factory=lambda: ["atr", "qrs"])
     data_ids: list[str] = field(init=False)
     data_entities: list[ECG_Entity] = field(default_factory=list)
 
@@ -36,20 +40,52 @@ class ECG_Dataset:
             self.data_ids = f.read().splitlines()
 
         for data_id in self.data_ids:
-            data_path = os.path.join(self.dir_path, data_id)
-            signals, _ = wfdb.rdsamp(
-                data_path,
-                channels=[0],
-            )
-            squeezed = np.squeeze(signals)
+            self.data_entities.append(self._load_entity(data_id))
 
-            annotation = wfdb.rdann(data_path, self.annotation_extention)
+    def _read_annotation(self, data_path: str) -> Annotation:
+        for ext in self.annotation_extention_priority:
+            annotation_file = f"{data_path}.{ext}"
+            if os.path.isfile(annotation_file):
+                annotation = wfdb.rdann(data_path, ext)
+                return annotation
 
-            record = wfdb.rdheader(data_path)
-            sr = record.fs
-            self.data_entities.append(
-                ECG_Entity(data_id, self.name, sr, squeezed, annotation)
-            )
+    def _read_normal_beats(self, data_path: str) -> npt.NDArray[np.int_]:
+        for ext in self.beat_extention_priority:
+            annotation_file = f"{data_path}.{ext}"
+            if os.path.isfile(annotation_file):
+                annotation = self._read_annotation(data_path)
+                if ext == "atr":
+                    beats = np.array(
+                        [
+                            sample
+                            for sample, symbol in zip(
+                                annotation.sample, annotation.symbol
+                            )
+                            if symbol == "N"
+                        ],
+                        dtype=np.int_,
+                    )
+
+                    return beats
+
+                return np.asarray(annotation.sample, dtype=np.int_)
+
+        raise FileNotFoundError(f"No annotation file found for {data_path}")
+
+    def _load_entity(self, data_id: str) -> ECG_Entity:
+        data_path = os.path.join(self.dir_path, data_id)
+        signals, _ = wfdb.rdsamp(
+            data_path,
+            channels=[0],
+        )
+        squeezed = np.squeeze(signals)
+
+        annotation = self._read_annotation(data_path)
+        beats = self._read_normal_beats(data_path)
+
+        record = wfdb.rdheader(data_path)
+        sr = record.fs
+        return ECG_Entity(data_id, self.name, sr, squeezed, annotation, beats)
 
     def __str__(self):
         return self.name
@@ -101,20 +137,7 @@ class AFDB(ECG_Dataset):
         )
 
         for data_id in self.data_ids:
-            data_path = os.path.join(self.dir_path, data_id)
-            signals, _ = wfdb.rdsamp(
-                data_path,
-                channels=[0],
-            )
-            squeezed = np.squeeze(signals)
-
-            annotation = wfdb.rdann(data_path, self.annotation_extention)
-
-            record = wfdb.rdheader(data_path)
-            sr = record.fs
-            self.data_entities.append(
-                ECG_Entity(data_id, self.name, sr, squeezed, annotation)
-            )
+            self.data_entities.append(self._load_entity(data_id))
 
 
 # https://physionet.org/content/ltafdb/1.0.0/
@@ -140,27 +163,10 @@ class SHDBAF(ECG_Dataset):
             self.data_ids = f.read().splitlines()
 
         for data_id in self.data_ids:
-            data_path = os.path.join(self.dir_path, data_id)
-            signals, _ = wfdb.rdsamp(
-                data_path,
-                channels=[0],
-            )
-            squeezed = np.squeeze(signals)
-
-            annotation_file_exists = os.path.isfile(
-                os.path.join(self.dir_path, f"{data_id}.atr")
-            )
-
-            if not annotation_file_exists:
+            try:
+                self.data_entities.append(self._load_entity(data_id))
+            except FileNotFoundError:
                 continue
-
-            annotation = wfdb.rdann(data_path, self.annotation_extention)
-
-            record = wfdb.rdheader(data_path)
-            sr = record.fs
-            self.data_entities.append(
-                ECG_Entity(data_id, self.name, sr, squeezed, annotation)
-            )
 
 
 # https://physionet.org/content/sddb/1.0.0/
@@ -169,32 +175,5 @@ class SDDB(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "sddb", "1.0.0")
     name: str = "Sudden Cardiac Death Holter Database"
     dataset_id: str = "sddb"
+    beat_extention_priority: list[str] = field(default_factory=lambda: ["atr", "ari"])
     sr: int = 250
-
-    def __post_init__(self):
-        record_path = os.path.join(self.dir_path, "RECORDS")
-        with open(record_path, "r") as f:
-            self.data_ids = f.read().splitlines()
-
-        for data_id in self.data_ids:
-            data_path = os.path.join(self.dir_path, data_id)
-            signals, _ = wfdb.rdsamp(
-                data_path,
-                channels=[0],
-            )
-            squeezed = np.squeeze(signals)
-
-            audit_file_exists = os.path.isfile(
-                os.path.join(self.dir_path, f"{data_id}.atr")
-            )
-
-            if not audit_file_exists:
-                self.annotation_extention = "ari"
-
-            annotation = wfdb.rdann(data_path, self.annotation_extention)
-
-            record = wfdb.rdheader(data_path)
-            sr = record.fs
-            self.data_entities.append(
-                ECG_Entity(data_id, self.name, sr, squeezed, annotation)
-            )
