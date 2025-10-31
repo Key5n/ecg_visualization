@@ -55,6 +55,7 @@ class ECG_Dataset:
         return self.name
 
 
+# https://physionet.org/content/cudb/1.0.0/
 @dataclass
 class CUDB(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "cudb", "1.0.0")
@@ -63,6 +64,7 @@ class CUDB(ECG_Dataset):
     sr: int = 250
 
 
+# https://physionet.org/content/afpdb/1.0.0/
 @dataclass
 class AFPDB(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "afpdb", "1.0.0")
@@ -72,6 +74,7 @@ class AFPDB(ECG_Dataset):
     sr: int = 128
 
 
+# https://physionet.org/content/mitdb/1.0.0/
 @dataclass
 class MITDB(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "mitdb", "1.0.0")
@@ -80,6 +83,7 @@ class MITDB(ECG_Dataset):
     sr: int = 360
 
 
+# https://physionet.org/content/afdb/1.0.0/
 @dataclass
 class AFDB(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "afdb", "1.0.0")
@@ -113,6 +117,7 @@ class AFDB(ECG_Dataset):
             )
 
 
+# https://physionet.org/content/ltafdb/1.0.0/
 @dataclass
 class LTAFDB(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "ltafdb", "1.0.0")
@@ -121,6 +126,7 @@ class LTAFDB(ECG_Dataset):
     sr: int = 128
 
 
+# https://physionet.org/content/shdb-af/1.0.1/
 @dataclass
 class SHDBAF(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "shdb-af", "1.0.1")
@@ -157,6 +163,7 @@ class SHDBAF(ECG_Dataset):
             )
 
 
+# https://physionet.org/content/sddb/1.0.0/
 @dataclass
 class SDDB(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "sddb", "1.0.0")
