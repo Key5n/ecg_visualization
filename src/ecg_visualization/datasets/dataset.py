@@ -55,7 +55,9 @@ class ECG_Dataset:
     annotation_extention_priority: list[str] = field(
         default_factory=lambda: ["atr", "qrs", "ari"]
     )
-    beat_extention_priority: list[str] = field(default_factory=lambda: ["atr", "qrs"])
+    beat_extention_priority: list[str] = field(
+        default_factory=lambda: ["atr", "qrs", "ari"]
+    )
     data_ids: list[str] = field(init=False)
     data_entities: list[ECG_Entity] = field(default_factory=list)
 
