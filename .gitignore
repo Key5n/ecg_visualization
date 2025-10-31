@@ -6,4 +6,6 @@
 !src/
 !src/**
 !dataset.sh
+!AGENTS.md
 __pycache__/
+
