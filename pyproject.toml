@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-ecg-visualization = "ecg_visualization:main"
+ecg-visualization = "ecg_visualization:ecg_visualization"
 
 [build-system]
 requires = ["hatchling"]
