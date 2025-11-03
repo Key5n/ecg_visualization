@@ -107,20 +107,20 @@ def ecg_visualization() -> None:
                                     c="red",
                                 )
 
-                        beat_indices = [
-                            beat / entity.sr
-                            for beat in entity.beats
-                            if beat / entity.sr >= ts[0] and beat / entity.sr <= ts[-1]
+                        beats = [
+                            (beat_index / entity.sr)
+                            for beat_index in entity.beats
+                            if beat_index / entity.sr >= ts[0]
+                            and beat_index / entity.sr <= ts[-1]
                         ]
 
-                        for beat_index in beat_indices:
+                        for beat_time in beats:
                             ax.text(
-                                beat_index,
+                                beat_time,
                                 ylim_lower,
                                 "N",
                                 fontsize=4,
                                 horizontalalignment="center",
-                                c="black",
                             )
                     if page_idx == 0:
                         fig.suptitle(
