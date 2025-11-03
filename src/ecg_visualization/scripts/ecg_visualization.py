@@ -68,7 +68,7 @@ def ecg_visualization() -> None:
                 symbol_list = list(set(entity.annotation.symbol))
                 symbol_list.sort()
                 tqdm.write(
-                    f"{entity.data_id}, {entity.data_kind}, {ylim_lower:.2f}, {ylim_upper:.2f} {"".join(symbol_list)}"
+                    f"{entity.data_id}, {entity.dataset_name}, {ylim_lower:.2f}, {ylim_upper:.2f} {"".join(symbol_list)}"
                 )
 
                 for page_idx, (signals, ts_row) in enumerate(
@@ -124,7 +124,7 @@ def ecg_visualization() -> None:
                             )
                     if page_idx == 0:
                         fig.suptitle(
-                            f"{entity.data_kind}: {entity.data_id} {"".join(symbol_list)}"
+                            f"{entity.dataset_name}: {entity.data_id} {"".join(symbol_list)}"
                         )
                     fig.supxlabel("Time (sec)")
                     fig.subplots_adjust(left=0.08, right=0.98, bottom=0.05, top=0.95)
