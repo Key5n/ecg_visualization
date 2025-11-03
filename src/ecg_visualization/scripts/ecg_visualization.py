@@ -14,8 +14,18 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
-from ecg_visualization.utils.utils import omit_nan, padding_reshape
+from ecg_visualization.utils.utils import (
+    merge_overlapping_windows,
+    omit_nan,
+    padding_reshape,
+)
 import seaborn as sns
+
+MIN_RR_INTERVAL_SEC = 0.6
+MAX_RR_INTERVAL_SEC = 1.0
+ABNORMAL_INTERVAL_COLOR = "#f4a261"
+MIN_PR_INTERVAL_SEC = MIN_RR_INTERVAL_SEC
+RR_WINDOW_BEATS = 10
 
 custom_params = {
     "lines.linewidth": 0.5,
@@ -49,6 +59,24 @@ def ecg_visualization() -> None:
         for entity in tqdm(data_source.data_entities):
             result_file_path = os.path.join(dataset_result_dir, f"{entity.data_id}.pdf")
             with PdfPages(result_file_path) as pdf:
+                beat_times = (
+                    entity.beats / entity.sr if entity.beats.size > 0 else np.array([])
+                )
+                window_size = RR_WINDOW_BEATS
+                abnormal_windows: set[tuple[float, float]] = set()
+                if beat_times.size >= window_size:
+                    end_times = beat_times[window_size - 1 :]
+                    start_times = beat_times[: beat_times.size - window_size + 1]
+                    durations = end_times - start_times
+                    min_duration = MIN_PR_INTERVAL_SEC * window_size
+                    max_duration = MAX_RR_INTERVAL_SEC * window_size
+                    for start_time, end_time, duration in zip(
+                        start_times, end_times, durations
+                    ):
+                        if duration < min_duration or duration > max_duration:
+                            abnormal_windows.add((start_time, end_time))
+
+                abnormal_windows = merge_overlapping_windows(abnormal_windows)
 
                 n_steps = entity.sr * 10
                 n_rows = 6
@@ -122,6 +150,30 @@ def ecg_visualization() -> None:
                                 fontsize=4,
                                 horizontalalignment="center",
                             )
+
+                        for window_start, window_end in sorted(abnormal_windows):
+                            if window_end <= ts[0] or window_start >= ts[-1]:
+                                continue
+                            highlight_start = max(window_start, ts[0])
+                            highlight_end = min(window_end, ts[-1])
+
+                            if highlight_end > highlight_start:
+                                ax.axvspan(
+                                    highlight_start,
+                                    highlight_end,
+                                    color=ABNORMAL_INTERVAL_COLOR,
+                                    alpha=0.2,
+                                )
+                                ax.text(
+                                    (highlight_start + highlight_end) / 2,
+                                    ylim_upper,
+                                    f"Average Time: ({(highlight_end - highlight_start) / window_size} )",
+                                    fontsize=6,
+                                    horizontalalignment="center",
+                                    verticalalignment="bottom",
+                                    c=ABNORMAL_INTERVAL_COLOR,
+                                )
+
                     if page_idx == 0:
                         fig.suptitle(
                             f"{entity.dataset_name}: {entity.data_id} {"".join(symbol_list)}"
