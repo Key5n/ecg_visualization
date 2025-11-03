@@ -45,9 +45,6 @@ def RRI_histogram() -> None:
     for data_source in data_sources:
         dataset_dir = os.path.join(task_result_root, data_source.dataset_id)
         os.makedirs(dataset_dir, exist_ok=True)
-        dataset_durations: dict[int, list[np.ndarray]] = {
-            window_size: [] for window_size in window_sizes
-        }
 
         for entity in data_source.data_entities:
             entity_durations: list[tuple[int, np.ndarray]] = []
@@ -65,7 +62,6 @@ def RRI_histogram() -> None:
                 if durations.size == 0:
                     continue
 
-                dataset_durations[window_size].append(durations)
                 entity_durations.append((window_size, durations))
 
             if not entity_durations:
