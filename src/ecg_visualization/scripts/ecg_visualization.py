@@ -164,10 +164,17 @@ def ecg_visualization() -> None:
                                     color=ABNORMAL_INTERVAL_COLOR,
                                     alpha=0.2,
                                 )
+
+                            # Label only once per window
+                            window_half_point = (window_start + window_end) / 2
+                            if (
+                                window_half_point >= ts[0]
+                                and window_half_point <= ts[-1]
+                            ):
                                 ax.text(
                                     (highlight_start + highlight_end) / 2,
                                     ylim_upper,
-                                    f"Average Time: ({(highlight_end - highlight_start) / window_size} )",
+                                    f"From {window_start:.2f}s to {window_end:.2f}s",
                                     fontsize=6,
                                     horizontalalignment="center",
                                     verticalalignment="bottom",
