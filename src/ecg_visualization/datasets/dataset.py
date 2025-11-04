@@ -182,6 +182,7 @@ class SHDBAF(ECG_Dataset):
     name: str = "SHDB-AF: a Japanese Holter ECG database of atrial fibrillation"
     dataset_id: str = "shdb-af"
     sr: int = 200
+    beat_extention_priority: list[str] = field(default_factory=lambda: ["qrs"])
 
     def __post_init__(self):
         record_path = os.path.join(self.dir_path, "RECORDS.txt")
