@@ -8,6 +8,10 @@ from wfdb.io import Annotation
 
 dataset_root_dir = os.path.join("physionet.org", "files")
 
+MIN_NORMAL_RR_INTERVAL_SEC = 0.6
+MAX_NORMAL_RR_INTERVAL_SEC = 1.0
+NORMAL_SEGMENT_DURATION_SEC = 10 * 60  # 10 minutes
+
 
 @dataclass
 class ECG_Entity:
@@ -29,9 +33,66 @@ class ECG_Entity:
     signals: npt.NDArray[np.float64]
     annotation: Annotation
     beats: npt.NDArray[np.int_]
+    normal_segment_start: int | None = field(init=False)
+    normal_segment_end: int | None = field(init=False)
 
     def __str__(self):
         return self.data_id
+
+    def __post_init__(self):
+        try:
+            self.extract_normal_segment()
+        except ValueError:
+            self.normal_segment_start = None
+            self.normal_segment_end = None
+
+    def extract_normal_segment(self) -> npt.NDArray[np.float64]:
+        """
+        Extract a 10-minute normal beat segment for this entity.
+
+        Returns:
+            npt.NDArray[np.float64]: Segment of the ECG signal lasting 10 minutes
+            where every RR interval stays within the normal range.
+
+        Raises:
+            ValueError: If the entity does not contain enough information to
+            determine such a segment.
+        """
+
+        if self.beats.size < 2:
+            raise ValueError(f"{self.data_id} does not contain enough beats to analyze")
+
+        self.normal_segment_start = None
+        self.normal_segment_end = None
+        target_samples = int(self.sr * NORMAL_SEGMENT_DURATION_SEC)
+        beat_times = self.beats / self.sr
+        rr_intervals = np.diff(beat_times)
+
+        start_idx = 0
+        for interval_idx, rr_interval in enumerate(rr_intervals):
+            if (
+                rr_interval < MIN_NORMAL_RR_INTERVAL_SEC
+                or rr_interval > MAX_NORMAL_RR_INTERVAL_SEC
+            ):
+                start_idx = interval_idx + 1
+                continue
+
+            current_duration = beat_times[interval_idx + 1] - beat_times[start_idx]
+            if current_duration >= NORMAL_SEGMENT_DURATION_SEC:
+                start_sample = int(self.beats[start_idx])
+                end_sample = start_sample + target_samples
+                if end_sample > self.signals.shape[0]:
+                    raise ValueError(
+                        f"{self.data_id} does not have sufficient samples for a 10-minute segment"
+                    )
+
+                self.normal_segment_start = start_sample
+                self.normal_segment_end = end_sample
+                return self.signals[start_sample:end_sample]
+
+        raise ValueError(
+            f"No 10-minute normal beat segment found for {self.data_id} ({self.dataset_name})"
+        )
 
 
 @dataclass
@@ -113,6 +174,22 @@ class ECG_Dataset:
         record = wfdb.rdheader(data_path)
         sr = record.fs
         return ECG_Entity(data_id, self.name, sr, squeezed, annotation, beats)
+
+    def extract_normal_segments(self) -> dict[str, npt.NDArray[np.float64]]:
+        """
+        Extract 10-minute normal beat segments for all records in the dataset.
+
+        Returns:
+            dict[str, npt.NDArray[np.float64]]: Mapping of data_id to extracted signal segments.
+        """
+
+        segments: dict[str, npt.NDArray[np.float64]] = {}
+        for entity in self.data_entities:
+            try:
+                segments[entity.data_id] = entity.extract_normal_segment()
+            except ValueError:
+                continue
+        return segments
 
     def __str__(self):
         return self.name
