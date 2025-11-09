@@ -1,5 +1,8 @@
 import os
+import matplotlib.pyplot as plt
+import numpy as np
 from tqdm import tqdm
+
 from ecg_visualization.datasets.dataset import (
     AFDB,
     AFPDB,
@@ -10,37 +13,29 @@ from ecg_visualization.datasets.dataset import (
     SHDBAF,
     ECG_Dataset,
 )
-import math
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.backends.backend_pdf import PdfPages
-from ecg_visualization.utils.utils import (
-    get_abnormal_windows,
-    merge_overlapping_windows,
-    omit_nan,
-    padding_reshape,
+from ecg_visualization.utils.utils import omit_nan
+from ecg_visualization.visualization.export import pdf_exporter
+from ecg_visualization.visualization.layouts import (
+    PaginationConfig,
+    create_page_layout,
+    paginate_signals,
 )
-import seaborn as sns
+from ecg_visualization.visualization.plotters import (
+    plot_abnormal_windows,
+    plot_signal,
+    plot_symbols,
+)
+from ecg_visualization.visualization.styles import apply_default_style
 
 MIN_RR_INTERVAL_SEC = 0.6
 MAX_RR_INTERVAL_SEC = 1.0
-ABNORMAL_INTERVAL_COLOR = "#f4a261"
 MIN_PR_INTERVAL_SEC = MIN_RR_INTERVAL_SEC
-RR_WINDOW_BEATS = 10
-
-custom_params = {
-    "lines.linewidth": 0.5,
-    "grid.linewidth": 0.5,
-    "grid.linestyle": "--",
-    "axes.linewidth": 0.5,
-    "xtick.labelsize": 6,
-    "axes.xmargin": 0,
-    "axes.ymargin": 0,
-}
-sns.set_theme(context="paper", style="whitegrid", rc=custom_params)
+RR_WINDOW_BEATS = 100
+PAGINATION_CONFIG = PaginationConfig()
 
 
 def ecg_visualization() -> None:
+    apply_default_style()
     data_sources: list[ECG_Dataset] = [
         CUDB(),
         # AFPDB(),
@@ -59,24 +54,20 @@ def ecg_visualization() -> None:
 
         for entity in tqdm(data_source.data_entities):
             result_file_path = os.path.join(dataset_result_dir, f"{entity.data_id}.pdf")
-            with PdfPages(result_file_path) as pdf:
+            with pdf_exporter(result_file_path) as exporter:
                 abnormal_windows = entity.get_abnormal_windows(
                     RR_WINDOW_BEATS,
                     MIN_RR_INTERVAL_SEC * RR_WINDOW_BEATS,
                     MAX_RR_INTERVAL_SEC * RR_WINDOW_BEATS,
                 )
 
-                n_steps = entity.sr * 10
-                n_rows = 6
-                n_pages = math.ceil(len(entity.signals) / n_rows / n_steps)
-                signals_paged = padding_reshape(
-                    entity.signals, (n_pages, n_rows, n_steps)
-                )
-
-                length = n_pages * n_rows * n_steps
-                ts_paged = np.linspace(0, length / entity.sr, length).reshape(
-                    (n_pages, n_rows, n_steps)
-                )
+                (
+                    signals_paged,
+                    ts_paged,
+                    _,
+                    n_rows,
+                    _,
+                ) = paginate_signals(entity.signals, entity.sr, PAGINATION_CONFIG)
 
                 ylim_upper = np.max(omit_nan(entity.signals)) * 1.1
                 ylim_lower = np.min(omit_nan(entity.signals)) * 1.1
@@ -87,87 +78,48 @@ def ecg_visualization() -> None:
                     f"{entity.data_id}, {entity.dataset_name}, {ylim_lower:.2f}, {ylim_upper:.2f} {"".join(symbol_list)}"
                 )
 
+                annotation_events = [
+                    (sample / entity.sr, symbol)
+                    for sample, symbol in zip(
+                        entity.annotation.sample, entity.annotation.symbol
+                    )
+                ]
+                beat_times = [beat_index / entity.sr for beat_index in entity.beats]
+
                 for page_idx, (signals, ts_row) in enumerate(
                     zip(signals_paged, ts_paged)
                 ):
-                    fig, axs = plt.subplots(
-                        nrows=n_rows,
-                        # a4
-                        figsize=(8.27, 11.69),
-                    )
+                    fig, axs = create_page_layout(n_rows)
 
                     for signal, ts, ax in zip(signals, ts_row, axs):
-                        ax.plot(ts, signal, "-")
-                        ax.set_ylim(ylim_lower, ylim_upper)
-                        ax.set_ylabel("mν")
-                        ax.set_xlim(ts[0], ts[-1])
-
-                        symbols = [
-                            (sample / entity.sr, symbol)
-                            for sample, symbol in zip(
-                                entity.annotation.sample, entity.annotation.symbol
-                            )
-                            if sample / entity.sr >= ts[0]
-                            and sample / entity.sr <= ts[-1]
+                        window_start, window_end = ts[0], ts[-1]
+                        beats_in_window = [
+                            beat_time
+                            for beat_time in beat_times
+                            if window_start <= beat_time <= window_end
                         ]
-
-                        for sample, symbol in symbols:
-                            if symbol != "N":
-                                ax.axvline(sample, color="red", alpha=0.5)
-                                ax.text(
-                                    sample,
-                                    ylim_lower,
-                                    symbol,
-                                    fontsize=8,
-                                    horizontalalignment="center",
-                                    c="red",
-                                )
-
-                        beats = [
-                            (beat_index / entity.sr)
-                            for beat_index in entity.beats
-                            if beat_index / entity.sr >= ts[0]
-                            and beat_index / entity.sr <= ts[-1]
-                        ]
-
-                        for beat_time in beats:
-                            ax.text(
-                                beat_time,
-                                ylim_lower,
-                                "N",
-                                fontsize=4,
-                                horizontalalignment="center",
-                            )
-
-                        for window_start, window_end in sorted(abnormal_windows):
-                            if window_end <= ts[0] or window_start >= ts[-1]:
-                                continue
-                            highlight_start = max(window_start, ts[0])
-                            highlight_end = min(window_end, ts[-1])
-
-                            if highlight_end > highlight_start:
-                                ax.axvspan(
-                                    highlight_start,
-                                    highlight_end,
-                                    color=ABNORMAL_INTERVAL_COLOR,
-                                    alpha=0.2,
-                                )
-
-                            # Label only once per window
-                            window_half_point = (window_start + window_end) / 2
-                            if (
-                                window_half_point >= ts[0]
-                                and window_half_point <= ts[-1]
-                            ):
-                                ax.text(
-                                    (highlight_start + highlight_end) / 2,
-                                    ylim_upper,
-                                    f"From {window_start:.2f}s to {window_end:.2f}s",
-                                    fontsize=6,
-                                    horizontalalignment="center",
-                                    verticalalignment="bottom",
-                                    c=ABNORMAL_INTERVAL_COLOR,
-                                )
+                        plot_signal(
+                            ax,
+                            ts,
+                            signal,
+                            ylim_lower=ylim_lower,
+                            ylim_upper=ylim_upper,
+                            beat_times=beats_in_window,
+                        )
+                        plot_symbols(
+                            ax,
+                            annotation_events,
+                            window_start=window_start,
+                            window_end=window_end,
+                            ylim_lower=ylim_lower,
+                        )
+                        plot_abnormal_windows(
+                            ax,
+                            abnormal_windows,
+                            window_start=window_start,
+                            window_end=window_end,
+                            ylim_upper=ylim_upper,
+                        )
 
                     if page_idx == 0:
                         fig.suptitle(
@@ -175,5 +127,5 @@ def ecg_visualization() -> None:
                         )
                     fig.supxlabel("Time (sec)")
                     fig.subplots_adjust(left=0.08, right=0.98, bottom=0.05, top=0.95)
-                    pdf.savefig(pad_inches=0)
+                    exporter.add_page(fig, pad_inches=0)
                     plt.close()
