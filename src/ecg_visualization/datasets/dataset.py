@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from ecg_visualization.utils.utils import merge_overlapping_windows
 import numpy as np
 import numpy.typing as npt
 import os
@@ -93,6 +94,40 @@ class ECG_Entity:
         raise ValueError(
             f"No 10-minute normal beat segment found for {self.data_id} ({self.dataset_name})"
         )
+
+    def get_abnormal_windows(
+        self,
+        window_size: int,
+        min_duration: float,
+        max_duration: float,
+    ) -> set[tuple[float, float]]:
+        """
+        Identify abnormal windows based on RR intervals.
+
+        Args:
+            window_size (int): Number of beats in each window.
+            min_duration (float): Minimum duration for a normal window in seconds.
+            max_duration (float): Maximum duration for a normal window in seconds.
+
+        Returns:
+            set[tuple[float, float]]: Set of tuples representing start and end times
+            of abnormal windows.
+        """
+
+        abnormal_windows: set[tuple[float, float]] = set()
+        beat_times = self.beats / self.sr
+        if beat_times.size >= window_size:
+            end_times = beat_times[window_size - 1 :]
+            start_times = beat_times[: beat_times.size - window_size + 1]
+            durations = end_times - start_times
+            for start_time, end_time, duration in zip(
+                start_times, end_times, durations
+            ):
+                if duration < min_duration or duration > max_duration:
+                    abnormal_windows.add((start_time, end_time))
+
+        abnormal_windows = merge_overlapping_windows(abnormal_windows)
+        return abnormal_windows
 
 
 @dataclass

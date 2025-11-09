@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 from ecg_visualization.utils.utils import (
+    get_abnormal_windows,
     merge_overlapping_windows,
     omit_nan,
     padding_reshape,
@@ -59,24 +60,11 @@ def ecg_visualization() -> None:
         for entity in tqdm(data_source.data_entities):
             result_file_path = os.path.join(dataset_result_dir, f"{entity.data_id}.pdf")
             with PdfPages(result_file_path) as pdf:
-                beat_times = (
-                    entity.beats / entity.sr if entity.beats.size > 0 else np.array([])
+                abnormal_windows = entity.get_abnormal_windows(
+                    RR_WINDOW_BEATS,
+                    MIN_RR_INTERVAL_SEC * RR_WINDOW_BEATS,
+                    MAX_RR_INTERVAL_SEC * RR_WINDOW_BEATS,
                 )
-                window_size = RR_WINDOW_BEATS
-                abnormal_windows: set[tuple[float, float]] = set()
-                if beat_times.size >= window_size:
-                    end_times = beat_times[window_size - 1 :]
-                    start_times = beat_times[: beat_times.size - window_size + 1]
-                    durations = end_times - start_times
-                    min_duration = MIN_PR_INTERVAL_SEC * window_size
-                    max_duration = MAX_RR_INTERVAL_SEC * window_size
-                    for start_time, end_time, duration in zip(
-                        start_times, end_times, durations
-                    ):
-                        if duration < min_duration or duration > max_duration:
-                            abnormal_windows.add((start_time, end_time))
-
-                abnormal_windows = merge_overlapping_windows(abnormal_windows)
 
                 n_steps = entity.sr * 10
                 n_rows = 6
