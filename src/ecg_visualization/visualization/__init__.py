@@ -2,6 +2,7 @@
 
 from .styles import apply_default_style, ABNORMAL_INTERVAL_COLOR
 from .layouts import paginate_signals
+from .limits import compute_signal_ylim
 from .plotters import (
     plot_abnormal_windows,
     plot_signal,
@@ -16,6 +17,7 @@ __all__ = [
     "plot_signal",
     "plot_symbols",
     "plot_abnormal_windows",
+    "compute_signal_ylim",
     "create_page_layout",
     "paginate_signals",
     "pdf_exporter",

@@ -1,6 +1,5 @@
 import os
 import matplotlib.pyplot as plt
-import numpy as np
 from tqdm import tqdm
 
 from ecg_visualization.datasets.dataset import (
@@ -13,7 +12,6 @@ from ecg_visualization.datasets.dataset import (
     SHDBAF,
     ECG_Dataset,
 )
-from ecg_visualization.utils.utils import omit_nan
 from ecg_visualization.visualization.export import pdf_exporter
 from ecg_visualization.visualization.layouts import (
     PaginationConfig,
@@ -26,6 +24,7 @@ from ecg_visualization.visualization.plotters import (
     plot_symbols,
 )
 from ecg_visualization.visualization.styles import apply_default_style
+from ecg_visualization.visualization.limits import compute_signal_ylim
 
 MIN_RR_INTERVAL_SEC = 0.6
 MAX_RR_INTERVAL_SEC = 1.0
@@ -69,8 +68,7 @@ def ecg_visualization() -> None:
                     _,
                 ) = paginate_signals(entity.signals, entity.sr, PAGINATION_CONFIG)
 
-                ylim_upper = np.max(omit_nan(entity.signals)) * 1.1
-                ylim_lower = np.min(omit_nan(entity.signals)) * 1.1
+                ylim_lower, ylim_upper = compute_signal_ylim(entity.signals)
 
                 symbol_list = list(set(entity.annotation.symbol))
                 symbol_list.sort()
