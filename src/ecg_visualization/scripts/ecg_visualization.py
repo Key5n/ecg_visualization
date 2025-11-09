@@ -23,7 +23,10 @@ from ecg_visualization.visualization.plotters import (
     plot_signal,
     plot_symbols,
 )
-from ecg_visualization.visualization.styles import apply_default_style
+from ecg_visualization.visualization.styles import (
+    apply_default_style,
+    EXTREME_INTERVAL_COLOR,
+)
 from ecg_visualization.visualization.limits import compute_signal_ylim
 
 MIN_RR_INTERVAL_SEC = 0.6
@@ -58,6 +61,15 @@ def ecg_visualization() -> None:
                     min_duration=MIN_RR_INTERVAL_SEC * RR_WINDOW_BEATS,
                     max_duration=MAX_RR_INTERVAL_SEC * RR_WINDOW_BEATS,
                 )
+                extreme_windows = entity.get_extreme_rr_windows(
+                    RR_WINDOW_BEATS,
+                    lower_percentile=5.0,
+                    upper_percentile=95.0,
+                )
+                extreme_window_indices = [
+                    (int(start * entity.sr), int(end * entity.sr))
+                    for start, end in extreme_windows
+                ]
 
                 (
                     signals_paged,
@@ -71,7 +83,8 @@ def ecg_visualization() -> None:
 
                 symbol_list = sorted(set(entity.annotation.symbol))
                 tqdm.write(
-                    f"{entity.data_id}, {entity.dataset_name} {"".join(symbol_list)}"
+                    f"{entity.data_id}, {entity.dataset_name} {"".join(symbol_list)} "
+                    f"extreme_windows={len(extreme_window_indices)}"
                 )
 
                 annotation_events = [
@@ -115,6 +128,14 @@ def ecg_visualization() -> None:
                             window_start=window_start,
                             window_end=window_end,
                             ylim_upper=ylim_upper,
+                        )
+                        plot_abnormal_windows(
+                            ax,
+                            extreme_windows,
+                            window_start=window_start,
+                            window_end=window_end,
+                            ylim_upper=ylim_upper,
+                            color=EXTREME_INTERVAL_COLOR,
                         )
 
                     if page_idx == 0:
