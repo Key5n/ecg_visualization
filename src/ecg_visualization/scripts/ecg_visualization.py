@@ -56,11 +56,6 @@ def ecg_visualization() -> None:
         for entity in tqdm(data_source.data_entities):
             result_file_path = os.path.join(dataset_result_dir, f"{entity.data_id}.pdf")
             with pdf_exporter(result_file_path) as exporter:
-                abnormal_windows = entity.get_abnormal_windows(
-                    RR_WINDOW_BEATS,
-                    min_duration=MIN_RR_INTERVAL_SEC * RR_WINDOW_BEATS,
-                    max_duration=MAX_RR_INTERVAL_SEC * RR_WINDOW_BEATS,
-                )
                 extreme_windows = entity.get_extreme_rr_windows(
                     RR_WINDOW_BEATS,
                     lower_percentile=5.0,
@@ -121,13 +116,6 @@ def ecg_visualization() -> None:
                             window_start=window_start,
                             window_end=window_end,
                             ylim_lower=ylim_lower,
-                        )
-                        highlight_windows(
-                            ax,
-                            abnormal_windows,
-                            window_start=window_start,
-                            window_end=window_end,
-                            ylim_upper=ylim_upper,
                         )
                         highlight_windows(
                             ax,
