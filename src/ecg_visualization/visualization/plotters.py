@@ -55,7 +55,7 @@ def plot_symbols(
         )
 
 
-def plot_abnormal_windows(
+def highlight_windows(
     ax: Axes,
     abnormal_windows: Iterable[tuple[float, float]],
     *,

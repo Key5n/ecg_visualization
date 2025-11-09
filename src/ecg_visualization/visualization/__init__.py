@@ -6,7 +6,7 @@ from .styles import (
     EXTREME_INTERVAL_COLOR,
 )
 from .plotters import (
-    plot_abnormal_windows,
+    highlight_windows,
     plot_signal,
     plot_symbols,
 )
@@ -20,7 +20,7 @@ __all__ = [
     "EXTREME_INTERVAL_COLOR",
     "plot_signal",
     "plot_symbols",
-    "plot_abnormal_windows",
+    "highlight_windows",
     "create_page_layout",
     "compute_signal_ylim",
     "pdf_exporter",

@@ -19,7 +19,7 @@ from ecg_visualization.visualization.layouts import (
     paginate_signals,
 )
 from ecg_visualization.visualization.plotters import (
-    plot_abnormal_windows,
+    highlight_windows,
     plot_signal,
     plot_symbols,
 )
@@ -122,14 +122,14 @@ def ecg_visualization() -> None:
                             window_end=window_end,
                             ylim_lower=ylim_lower,
                         )
-                        plot_abnormal_windows(
+                        highlight_windows(
                             ax,
                             abnormal_windows,
                             window_start=window_start,
                             window_end=window_end,
                             ylim_upper=ylim_upper,
                         )
-                        plot_abnormal_windows(
+                        highlight_windows(
                             ax,
                             extreme_windows,
                             window_start=window_start,
