@@ -118,6 +118,48 @@ class ECG_Entity:
         abnormal_windows = merge_overlapping_windows(abnormal_windows)
         return abnormal_windows
 
+    def get_extreme_rr_windows(
+        self,
+        window_size: int,
+        *,
+        lower_percentile: float = 5.0,
+        upper_percentile: float = 95.0,
+    ) -> set[tuple[float, float]]:
+        """
+        Collect start/end times for 10-R-peak windows in the lowest or
+        highest percentile range of durations across all such windows.
+        """
+
+        if window_size < 2:
+            raise ValueError("window_size must be at least 2 beats")
+
+        if self.beats.size < window_size + 1:
+            return set()
+
+        windows: list[tuple[int, int]] = []
+        for start_idx in range(self.beats.size - window_size):
+            start_sample = int(self.beats[start_idx])
+            end_sample = int(self.beats[start_idx + window_size])
+            windows.append((start_sample, end_sample))
+
+        durations_arr = np.array([(end - start) for start, end in windows], dtype=float)
+        if not 0 <= lower_percentile < upper_percentile <= 100:
+            raise ValueError("Percentiles must satisfy 0 <= lower < upper <= 100")
+
+        lower_bound = np.percentile(durations_arr, lower_percentile)
+        upper_bound = np.percentile(durations_arr, upper_percentile)
+
+        extreme_windows = set(
+            (
+                start_sample / self.sr,
+                end_sample / self.sr,
+            )
+            for start_sample, end_sample in windows
+            if (end_sample - start_sample) < lower_bound
+            or (end_sample - start_sample) > upper_bound
+        )
+        return merge_overlapping_windows(extreme_windows)
+
 
 @dataclass
 class ECG_Dataset:
