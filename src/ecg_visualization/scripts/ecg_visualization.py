@@ -28,7 +28,6 @@ from ecg_visualization.visualization.limits import compute_signal_ylim
 
 MIN_RR_INTERVAL_SEC = 0.6
 MAX_RR_INTERVAL_SEC = 1.0
-MIN_PR_INTERVAL_SEC = MIN_RR_INTERVAL_SEC
 RR_WINDOW_BEATS = 100
 PAGINATION_CONFIG = PaginationConfig()
 
@@ -56,8 +55,8 @@ def ecg_visualization() -> None:
             with pdf_exporter(result_file_path) as exporter:
                 abnormal_windows = entity.get_abnormal_windows(
                     RR_WINDOW_BEATS,
-                    MIN_RR_INTERVAL_SEC * RR_WINDOW_BEATS,
-                    MAX_RR_INTERVAL_SEC * RR_WINDOW_BEATS,
+                    min_duration=MIN_RR_INTERVAL_SEC * RR_WINDOW_BEATS,
+                    max_duration=MAX_RR_INTERVAL_SEC * RR_WINDOW_BEATS,
                 )
 
                 (
@@ -70,10 +69,9 @@ def ecg_visualization() -> None:
 
                 ylim_lower, ylim_upper = compute_signal_ylim(entity.signals)
 
-                symbol_list = list(set(entity.annotation.symbol))
-                symbol_list.sort()
+                symbol_list = sorted(set(entity.annotation.symbol))
                 tqdm.write(
-                    f"{entity.data_id}, {entity.dataset_name}, {ylim_lower:.2f}, {ylim_upper:.2f} {"".join(symbol_list)}"
+                    f"{entity.data_id}, {entity.dataset_name} {"".join(symbol_list)}"
                 )
 
                 annotation_events = [
