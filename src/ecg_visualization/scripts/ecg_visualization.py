@@ -1,5 +1,6 @@
 import os
 import matplotlib.pyplot as plt
+import numpy as np
 from tqdm import tqdm
 
 from ecg_visualization.datasets.dataset import (
@@ -20,6 +21,7 @@ from ecg_visualization.visualization.layouts import (
 )
 from ecg_visualization.visualization.plotters import (
     highlight_windows,
+    plot_histogram,
     plot_signal,
     plot_symbols,
 )
@@ -32,6 +34,7 @@ from ecg_visualization.visualization.limits import compute_signal_ylim
 MIN_RR_INTERVAL_SEC = 0.6
 MAX_RR_INTERVAL_SEC = 1.0
 RR_WINDOW_BEATS = 100
+HISTOGRAM_WINDOW_SIZES = (10, 50, 100)
 PAGINATION_CONFIG = PaginationConfig()
 
 
@@ -56,6 +59,33 @@ def ecg_visualization() -> None:
         for entity in tqdm(data_source.data_entities):
             result_file_path = os.path.join(dataset_result_dir, f"{entity.data_id}.pdf")
             with pdf_exporter(result_file_path) as exporter:
+                for window_size in HISTOGRAM_WINDOW_SIZES:
+                    windows = entity.get_window_durations(window_size)
+                    if not windows:
+                        continue
+
+                    durations = np.array(
+                        [(end - start) / entity.sr for start, end in windows],
+                        dtype=float,
+                    )
+                    if durations.size == 0:
+                        continue
+
+                    histogram_fig, histogram_ax = plt.subplots(figsize=(8, 4))
+                    plot_histogram(
+                        histogram_ax,
+                        durations,
+                        bins="auto",
+                        title=f"{entity.dataset_name}: {entity.data_id} "
+                        f"(RR window={window_size})",
+                        xlabel="Window duration (sec)",
+                        ylabel="Count",
+                        percentile_lines=(5.0, 95.0),
+                    )
+                    histogram_fig.tight_layout()
+                    exporter.add_page(histogram_fig, pad_inches=0)
+                    plt.close(histogram_fig)
+
                 extreme_windows = entity.get_extreme_rr_windows(
                     RR_WINDOW_BEATS,
                     lower_percentile=5.0,
