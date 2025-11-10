@@ -154,7 +154,7 @@ def ecg_visualization() -> None:
 
                     if page_idx == 0:
                         fig.suptitle(
-                            f"{entity.dataset_name}: {entity.data_id} {"".join(symbol_list)}"
+                            f"{entity.dataset_name}: {entity.data_id} {"".join(symbol_list)} {RR_WINDOW_BEATS}"
                         )
                     fig.supxlabel("Time (sec)")
                     fig.subplots_adjust(left=0.08, right=0.98, bottom=0.05, top=0.95)
