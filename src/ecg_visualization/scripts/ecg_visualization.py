@@ -61,10 +61,6 @@ def ecg_visualization() -> None:
                     lower_percentile=5.0,
                     upper_percentile=95.0,
                 )
-                extreme_window_indices = [
-                    (int(start * entity.sr), int(end * entity.sr))
-                    for start, end in extreme_windows
-                ]
 
                 (
                     signals_paged,
@@ -79,7 +75,7 @@ def ecg_visualization() -> None:
                 symbol_list = sorted(set(entity.annotation.symbol))
                 tqdm.write(
                     f"{entity.data_id}, {entity.dataset_name} {"".join(symbol_list)} "
-                    f"extreme_windows={len(extreme_window_indices)}"
+                    f"The number of extreme window: {len(extreme_windows)}"
                 )
 
                 annotation_events = [
