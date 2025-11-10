@@ -38,6 +38,35 @@ class ECG_Entity:
     def __str__(self):
         return self.data_id
 
+    def get_window_durations(
+        self,
+        window_size: int,
+    ) -> list[tuple[int, int]]:
+        """
+        Build contiguous windows of RR intervals.
+
+        Args:
+            window_size (int): Number of RR intervals per window.
+
+        Returns:
+            list[tuple[int, int]]: Sample index windows for the requested size.
+            Returns an empty list when insufficient beats are available.
+        """
+
+        if window_size < 2:
+            raise ValueError("window_size must be at least 2 beats")
+
+        if self.beats.size < window_size + 1:
+            return []
+
+        windows: list[tuple[int, int]] = []
+        for start_idx in range(self.beats.size - window_size):
+            start_sample = int(self.beats[start_idx])
+            end_sample = int(self.beats[start_idx + window_size])
+            windows.append((start_sample, end_sample))
+
+        return windows
+
     def extract_normal_segment(self) -> tuple[int, int]:
         """
         Extract a 10-minute normal beat segment for this entity.
@@ -103,17 +132,17 @@ class ECG_Entity:
             of abnormal windows.
         """
 
+        windows = self.get_window_durations(window_size)
+        if not windows:
+            return set()
+
         abnormal_windows: set[tuple[float, float]] = set()
-        beat_times = self.beats / self.sr
-        if beat_times.size >= window_size:
-            end_times = beat_times[window_size - 1 :]
-            start_times = beat_times[: beat_times.size - window_size + 1]
-            durations = end_times - start_times
-            for start_time, end_time, duration in zip(
-                start_times, end_times, durations
-            ):
-                if duration < min_duration or duration > max_duration:
-                    abnormal_windows.add((start_time, end_time))
+        for start_sample, end_sample in windows:
+            start_time = start_sample / self.sr
+            end_time = end_sample / self.sr
+            duration = end_time - start_time
+            if duration < min_duration or duration > max_duration:
+                abnormal_windows.add((start_time, end_time))
 
         abnormal_windows = merge_overlapping_windows(abnormal_windows)
         return abnormal_windows
@@ -130,22 +159,14 @@ class ECG_Entity:
         highest percentile range of durations across all such windows.
         """
 
-        if window_size < 2:
-            raise ValueError("window_size must be at least 2 beats")
-
-        if self.beats.size < window_size + 1:
+        windows = self.get_window_durations(window_size)
+        if not windows:
             return set()
 
-        windows: list[tuple[int, int]] = []
-        for start_idx in range(self.beats.size - window_size):
-            start_sample = int(self.beats[start_idx])
-            end_sample = int(self.beats[start_idx + window_size])
-            windows.append((start_sample, end_sample))
-
-        durations_arr = np.array([(end - start) for start, end in windows], dtype=float)
         if not 0 <= lower_percentile < upper_percentile <= 100:
             raise ValueError("Percentiles must satisfy 0 <= lower < upper <= 100")
 
+        durations_arr = np.array([(end - start) for start, end in windows], dtype=float)
         lower_bound = np.percentile(durations_arr, lower_percentile)
         upper_bound = np.percentile(durations_arr, upper_percentile)
 
