@@ -90,3 +90,53 @@ def highlight_windows(
                 verticalalignment="bottom",
                 c=color,
             )
+
+
+def plot_histogram(
+    ax: Axes,
+    values: np.ndarray,
+    *,
+    bins: int | Sequence[float] | str = "auto",
+    title: str | None = None,
+    xlabel: str | None = None,
+    ylabel: str | None = None,
+    color: str = "tab:blue",
+    alpha: float = 0.7,
+    percentile_lines: Sequence[float] | None = None,
+    percentile_color: str = "tab:red",
+    percentile_linestyle: str = "--",
+) -> None:
+    """Render a styled histogram of the provided values."""
+    if values.size == 0:
+        return
+
+    ax.hist(values, bins=bins, color=color, alpha=alpha)
+    if title:
+        ax.set_title(title)
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    if ylabel:
+        ax.set_ylabel(ylabel)
+    ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.5)
+
+    if percentile_lines:
+        percentile_values = np.percentile(values, percentile_lines)
+        ylim_upper = ax.get_ylim()[1]
+        y_pos = ylim_upper * 0.95
+        for percentile, cutoff in zip(percentile_lines, percentile_values, strict=False):
+            ax.axvline(
+                cutoff,
+                color=percentile_color,
+                linestyle=percentile_linestyle,
+                alpha=0.8,
+            )
+            ax.text(
+                cutoff,
+                y_pos,
+                f"{percentile:.0f}%: {cutoff:.2f}s",
+                rotation=90,
+                fontsize=7,
+                color=percentile_color,
+                horizontalalignment="right",
+                verticalalignment="top",
+            )
