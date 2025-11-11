@@ -6,6 +6,25 @@ from matplotlib.axes import Axes
 from .styles import ABNORMAL_INTERVAL_COLOR
 
 
+def plot_normal_beats(
+    ax: Axes,
+    beat_times: Sequence[float],
+    *,
+    ylim_lower: float,
+    label: str = "N",
+    fontsize: float = 4,
+) -> None:
+    """Annotate normal beats with textual markers along the lower axis bound."""
+    for beat_time in beat_times:
+        ax.text(
+            beat_time,
+            ylim_lower,
+            label,
+            fontsize=fontsize,
+            horizontalalignment="center",
+        )
+
+
 def plot_signal(
     ax: Axes,
     ts: np.ndarray,
@@ -13,23 +32,13 @@ def plot_signal(
     *,
     ylim_lower: float,
     ylim_upper: float,
-    beat_times: Sequence[float],
     label: str = "mν",
 ) -> None:
-    """Plot the ECG signal with baseline styles and beat annotations."""
+    """Plot the ECG signal with baseline styles."""
     ax.plot(ts, signal, "-")
     ax.set_ylim(ylim_lower, ylim_upper)
     ax.set_ylabel(label)
     ax.set_xlim(ts[0], ts[-1])
-
-    for beat_time in beat_times:
-        ax.text(
-            beat_time,
-            ylim_lower,
-            "N",
-            fontsize=4,
-            horizontalalignment="center",
-        )
 
 
 def plot_symbols(

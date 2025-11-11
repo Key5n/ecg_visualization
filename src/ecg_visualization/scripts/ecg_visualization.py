@@ -22,6 +22,7 @@ from ecg_visualization.visualization.layouts import (
 from ecg_visualization.visualization.plotters import (
     highlight_windows,
     plot_histogram,
+    plot_normal_beats,
     plot_signal,
     plot_symbols,
 )
@@ -134,7 +135,11 @@ def ecg_visualization() -> None:
                             signal,
                             ylim_lower=ylim_lower,
                             ylim_upper=ylim_upper,
-                            beat_times=beats_in_window,
+                        )
+                        plot_normal_beats(
+                            ax,
+                            beats_in_window,
+                            ylim_lower=ylim_lower,
                         )
                         plot_symbols(
                             ax,

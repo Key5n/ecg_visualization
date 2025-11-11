@@ -7,6 +7,8 @@ from .styles import (
 )
 from .plotters import (
     highlight_windows,
+    plot_anomaly_score,
+    plot_normal_beats,
     plot_signal,
     plot_symbols,
 )
@@ -18,6 +20,8 @@ __all__ = [
     "apply_default_style",
     "ABNORMAL_INTERVAL_COLOR",
     "EXTREME_INTERVAL_COLOR",
+    "plot_anomaly_score",
+    "plot_normal_beats",
     "plot_signal",
     "plot_symbols",
     "highlight_windows",
