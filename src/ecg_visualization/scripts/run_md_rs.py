@@ -66,7 +66,8 @@ def run_md_rs() -> None:
         SDDB(),
     ]
 
-    root_result_dir = os.path.join("result")
+    task_name: Final[str] = "run_md_rs"
+    root_result_dir = os.path.join("result", task_name)
 
     for data_source in tqdm(data_sources):
         dataset_result_dir = os.path.join(root_result_dir, data_source.dataset_id)
