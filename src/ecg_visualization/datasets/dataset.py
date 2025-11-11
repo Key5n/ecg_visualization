@@ -69,11 +69,12 @@ class ECG_Entity:
 
     def extract_normal_segment(self) -> npt.NDArray[np.float64]:
         """
-        Extract and return a 10-minute normal beat segment for this entity.
+        Extract and return the RR intervals that compose a 10-minute normal beat
+        segment for this entity.
 
         Returns:
-            numpy array containing the contiguous sample window where every RR
-            interval stays within the normal range.
+            numpy array containing the consecutive RR intervals (in seconds)
+            where every interval stays within the normal range.
 
         Raises:
             ValueError: If the entity does not contain enough information to
@@ -83,9 +84,8 @@ class ECG_Entity:
         if self.beats.size < 2:
             raise ValueError(f"{self.data_id} does not contain enough beats to analyze")
 
-        target_samples = int(self.sr * NORMAL_SEGMENT_DURATION_SEC)
         beat_times = self.beats / self.sr
-        rr_intervals = np.diff(beat_times)
+        rr_intervals = self.compute_rr_intervals()
 
         start_idx = 0
         for interval_idx, rr_interval in enumerate(rr_intervals):
@@ -98,22 +98,24 @@ class ECG_Entity:
 
             current_duration = beat_times[interval_idx + 1] - beat_times[start_idx]
             if current_duration >= NORMAL_SEGMENT_DURATION_SEC:
-                start_sample = int(self.beats[start_idx])
-                end_sample = start_sample + target_samples
-                if end_sample > self.signals.shape[0]:
-                    raise ValueError(
-                        f"{self.data_id} does not have sufficient samples for a 10-minute segment"
-                    )
-
-                window = self.signals[start_sample:end_sample]
-                if window.size == 0:
+                rr_segment = rr_intervals[start_idx : interval_idx + 1]
+                if rr_segment.size == 0:
                     break
 
-                return np.asarray(window, dtype=np.float64)
+                return np.asarray(rr_segment, dtype=np.float64)
 
         raise ValueError(
             f"No 10-minute normal beat segment found for {self.data_id} ({self.dataset_name})"
         )
+
+    def compute_rr_intervals(self) -> npt.NDArray[np.float64]:
+        """
+        Return consecutive RR intervals (seconds) derived from beat indices.
+        """
+        if self.beats.size < 2:
+            raise ValueError(f"{self.data_id} does not contain enough beats to analyze")
+        beat_times = self.beats / self.sr
+        return np.diff(beat_times)
 
     def get_abnormal_windows(
         self,
@@ -268,11 +270,11 @@ class ECG_Dataset:
         self,
     ) -> dict[str, npt.NDArray[np.float64]]:
         """
-        Extract 10-minute normal beat segments for all records in the dataset.
+        Extract 10-minute normal RR-interval segments for all records.
 
         Returns:
-            dict[str, np.ndarray]: mapping from record id to the signal window
-            representing the normal segment.
+            dict[str, np.ndarray]: mapping from record id to the RR-interval
+            sequence representing the normal segment.
         """
 
         segments: dict[str, npt.NDArray[np.float64]] = {}

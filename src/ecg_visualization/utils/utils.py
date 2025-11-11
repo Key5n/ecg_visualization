@@ -53,3 +53,21 @@ def _ensure_2d(signal: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
     if signal.ndim == 1:
         return signal.reshape(-1, 1)
     return signal
+
+
+def sliding_window_sequences(
+    array: npt.NDArray[np.float64] | list[float],
+    window_size: int,
+) -> npt.NDArray[np.float64]:
+    """
+    Build overlapping sequences of length `window_size` from a 1D array.
+    """
+    values = np.asarray(array, dtype=np.float64)
+    if values.ndim != 1:
+        raise ValueError("sliding_window_sequences expects a 1D array-like input")
+    if window_size < 1:
+        raise ValueError("window_size must be positive")
+    if values.size < window_size:
+        raise ValueError("window_size cannot exceed the number of elements")
+
+    return np.lib.stride_tricks.sliding_window_view(values, window_size)
