@@ -67,15 +67,13 @@ class ECG_Entity:
 
         return windows
 
-    def extract_normal_segment(self) -> tuple[int, int]:
+    def extract_normal_segment(self) -> npt.NDArray[np.float64]:
         """
-        Extract a 10-minute normal beat segment for this entity.
+        Extract and return a 10-minute normal beat segment for this entity.
 
         Returns:
-            tuple containing (
-                start sample index (int),
-                end sample index (int)
-            ) where every RR interval stays within the normal range.
+            numpy array containing the contiguous sample window where every RR
+            interval stays within the normal range.
 
         Raises:
             ValueError: If the entity does not contain enough information to
@@ -107,7 +105,11 @@ class ECG_Entity:
                         f"{self.data_id} does not have sufficient samples for a 10-minute segment"
                     )
 
-                return start_sample, end_sample
+                window = self.signals[start_sample:end_sample]
+                if window.size == 0:
+                    break
+
+                return np.asarray(window, dtype=np.float64)
 
         raise ValueError(
             f"No 10-minute normal beat segment found for {self.data_id} ({self.dataset_name})"
@@ -264,15 +266,16 @@ class ECG_Dataset:
 
     def extract_normal_segments(
         self,
-    ) -> dict[str, tuple[int, int]]:
+    ) -> dict[str, npt.NDArray[np.float64]]:
         """
         Extract 10-minute normal beat segments for all records in the dataset.
 
         Returns:
-            dict[str, tuple[start_index, end_index]].
+            dict[str, np.ndarray]: mapping from record id to the signal window
+            representing the normal segment.
         """
 
-        segments: dict[str, tuple[int, int]] = {}
+        segments: dict[str, npt.NDArray[np.float64]] = {}
         for entity in self.data_entities:
             segment = entity.extract_normal_segment()
             segments[entity.data_id] = segment

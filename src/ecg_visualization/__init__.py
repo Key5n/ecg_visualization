@@ -1,4 +1,5 @@
 from ecg_visualization.scripts.ecg_visualization import ecg_visualization
 from ecg_visualization.scripts.RRI_histogram import RRI_histogram
+from ecg_visualization.scripts.run_md_rs import run_md_rs
 
-__all__ = ["ecg_visualization", "RRI_histogram"]
+__all__ = ["ecg_visualization", "RRI_histogram", "run_md_rs"]
