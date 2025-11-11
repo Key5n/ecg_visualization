@@ -227,6 +227,6 @@ def run_md_rs() -> None:
                             f"{entity.dataset_name}: {entity.data_id} {"".join(symbol_list)} {RR_WINDOW_BEATS}"
                         )
                     fig.supxlabel("Time (sec)")
-                    fig.subplots_adjust(left=0.08, right=0.98, bottom=0.05, top=0.95)
+                    fig.subplots_adjust(left=0.08, right=0.94, bottom=0.05, top=0.95)
                     exporter.add_page(fig, pad_inches=0)
                     plt.close()
