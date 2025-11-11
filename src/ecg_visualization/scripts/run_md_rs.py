@@ -47,7 +47,11 @@ def run_md_rs() -> None:
 
     for data_source in tqdm(data_sources):
         for entity in tqdm(data_source.data_entities):
-            normal_window = entity.extract_normal_segment()
+            try:
+                normal_window = entity.extract_normal_segment()
+            except ValueError:
+                tqdm.write(f"Skipping {entity.data_id}: no normal segment found.")
+                continue
             rr_intervals = entity.compute_rr_intervals()
 
             if normal_window.size < WINDOW_SIZE or rr_intervals.size < WINDOW_SIZE:
