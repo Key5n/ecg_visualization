@@ -41,7 +41,6 @@ def plot_anomaly_score(
     if not score_times or not scores:
         return None
 
-    ax = ax.twinx()
     ax.plot(
         score_times,
         scores,
@@ -51,6 +50,7 @@ def plot_anomaly_score(
         label=label,
     )
     ax.set_ylabel(label, color=color)
+    ax.set_ylim(ylim_lower, ylim_upper)
     ax.tick_params(axis="y", colors=color)
     ax.spines["right"].set_color(color)
     return ax

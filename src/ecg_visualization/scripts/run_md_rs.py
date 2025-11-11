@@ -34,7 +34,7 @@ from ecg_visualization.visualization.styles import (
     apply_default_style,
     EXTREME_INTERVAL_COLOR,
 )
-from ecg_visualization.visualization.limits import compute_signal_ylim
+from ecg_visualization.visualization.limits import compute_ylim
 
 MIN_RR_INTERVAL_SEC = 0.6
 MAX_RR_INTERVAL_SEC = 1.0
@@ -118,7 +118,9 @@ def run_md_rs() -> None:
                     _,
                 ) = paginate_signals(entity.signals, entity.sr, PAGINATION_CONFIG)
 
-                ylim_lower, ylim_upper = compute_signal_ylim(entity.signals)
+                ylim_lower, ylim_upper = compute_ylim(
+                    entity.signals, lower_bound=-5.0, upper_bound=5.0
+                )
 
                 symbol_list = sorted(set(entity.annotation.symbol))
                 tqdm.write(
@@ -132,7 +134,7 @@ def run_md_rs() -> None:
                         entity.annotation.sample, entity.annotation.symbol
                     )
                 ]
-                beat_times = [beat_index / entity.sr for beat_index in entity.beats]
+                beat_times = entity.beats / entity.sr
 
                 try:
                     normal_window = entity.extract_normal_segment()
@@ -158,9 +160,7 @@ def run_md_rs() -> None:
                 scores = model.predict(test_sequence)
                 score_times = beat_times[WINDOW_SIZE:]
 
-                score_ylim_lower, score_ylim_upper = compute_signal_ylim(
-                    np.array(scores)
-                )
+                score_ylim_lower, score_ylim_upper = compute_ylim(scores)
 
                 for page_idx, (signals, ts_row) in enumerate(
                     zip(signals_paged, ts_paged)
@@ -198,7 +198,7 @@ def run_md_rs() -> None:
                             scores_in_window,
                             ylim_lower=score_ylim_lower,
                             ylim_upper=score_ylim_upper,
-                            label="MD-RS Anomaly Score",
+                            label="Anomaly Score",
                         )
 
                         plot_normal_beats(

@@ -13,7 +13,7 @@ from .plotters import (
     plot_symbols,
 )
 from .layouts import create_page_layout
-from .limits import compute_signal_ylim
+from .limits import compute_ylim
 from .export import pdf_exporter, PdfExporter
 
 __all__ = [
@@ -26,7 +26,7 @@ __all__ = [
     "plot_symbols",
     "highlight_windows",
     "create_page_layout",
-    "compute_signal_ylim",
+    "compute_ylim",
     "pdf_exporter",
     "PdfExporter",
 ]

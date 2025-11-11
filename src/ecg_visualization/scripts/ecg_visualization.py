@@ -30,7 +30,7 @@ from ecg_visualization.visualization.styles import (
     apply_default_style,
     EXTREME_INTERVAL_COLOR,
 )
-from ecg_visualization.visualization.limits import compute_signal_ylim
+from ecg_visualization.visualization.limits import compute_ylim, compute_ylim
 
 MIN_RR_INTERVAL_SEC = 0.6
 MAX_RR_INTERVAL_SEC = 1.0
@@ -101,7 +101,9 @@ def ecg_visualization() -> None:
                     _,
                 ) = paginate_signals(entity.signals, entity.sr, PAGINATION_CONFIG)
 
-                ylim_lower, ylim_upper = compute_signal_ylim(entity.signals)
+                ylim_lower, ylim_upper = compute_ylim(
+                    entity.signals, lower_bound=-5.0, upper_bound=5.0
+                )
 
                 symbol_list = sorted(set(entity.annotation.symbol))
                 tqdm.write(
