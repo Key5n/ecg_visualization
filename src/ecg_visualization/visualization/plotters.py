@@ -25,6 +25,37 @@ def plot_normal_beats(
         )
 
 
+def plot_anomaly_score(
+    ax: Axes,
+    score_times: Sequence[float],
+    scores: Sequence[float],
+    *,
+    ylim_lower: float,
+    ylim_upper: float,
+    color: str = "tab:red",
+    label: str = "Anomaly score",
+    linewidth: float = 1.0,
+    alpha: float = 0.8,
+) -> Axes | None:
+    """Overlay anomaly scores on a twin axis that shares the signal timeline."""
+    if not score_times or not scores:
+        return None
+
+    ax = ax.twinx()
+    ax.plot(
+        score_times,
+        scores,
+        color=color,
+        linewidth=linewidth,
+        alpha=alpha,
+        label=label,
+    )
+    ax.set_ylabel(label, color=color)
+    ax.tick_params(axis="y", colors=color)
+    ax.spines["right"].set_color(color)
+    return ax
+
+
 def plot_signal(
     ax: Axes,
     ts: np.ndarray,

@@ -1,5 +1,9 @@
+import os
 from typing import Any, Final
-
+from ecg_visualization.models.md_rs.md_rs import MDRS
+from ecg_visualization.utils.utils import prepare_sequences, sliding_window_sequences
+import matplotlib.pyplot as plt
+import numpy as np
 from tqdm import tqdm
 
 from ecg_visualization.datasets.dataset import (
@@ -12,10 +16,32 @@ from ecg_visualization.datasets.dataset import (
     SHDBAF,
     ECG_Dataset,
 )
-from ecg_visualization.models.md_rs.md_rs import MDRS
-from ecg_visualization.utils.utils import prepare_sequences, sliding_window_sequences
+from ecg_visualization.visualization.export import pdf_exporter
+from ecg_visualization.visualization.layouts import (
+    PaginationConfig,
+    create_page_layout,
+    paginate_signals,
+)
+from ecg_visualization.visualization.plotters import (
+    highlight_windows,
+    plot_anomaly_score,
+    plot_histogram,
+    plot_normal_beats,
+    plot_signal,
+    plot_symbols,
+)
+from ecg_visualization.visualization.styles import (
+    apply_default_style,
+    EXTREME_INTERVAL_COLOR,
+)
+from ecg_visualization.visualization.limits import compute_signal_ylim
 
-WINDOW_SIZE: Final[int] = 10
+MIN_RR_INTERVAL_SEC = 0.6
+MAX_RR_INTERVAL_SEC = 1.0
+RR_WINDOW_BEATS = 10
+HISTOGRAM_WINDOW_SIZES = (10, 50, 100)
+PAGINATION_CONFIG = PaginationConfig()
+
 MD_RS_CONFIG: Final[dict[str, Any]] = {
     "N_x": 256,
     "input_scale": 0.5,
@@ -29,12 +55,7 @@ MD_RS_CONFIG: Final[dict[str, Any]] = {
 
 
 def run_md_rs() -> None:
-    """
-    Train MD-RS on each entity's 10-minute normal window, then score the full
-    RR-interval series after scaling both sets with a StandardScaler fitted on
-    the normal portion.
-    """
-
+    apply_default_style()
     data_sources: list[ECG_Dataset] = [
         CUDB(),
         AFPDB(),
@@ -45,33 +66,165 @@ def run_md_rs() -> None:
         SDDB(),
     ]
 
+    root_result_dir = os.path.join("result")
+
     for data_source in tqdm(data_sources):
+        dataset_result_dir = os.path.join(root_result_dir, data_source.dataset_id)
+        os.makedirs(dataset_result_dir, exist_ok=True)
+
         for entity in tqdm(data_source.data_entities):
-            try:
-                normal_window = entity.extract_normal_segment()
-            except ValueError:
-                tqdm.write(f"Skipping {entity.data_id}: no normal segment found.")
-                continue
-            rr_intervals = entity.compute_rr_intervals()
+            result_file_path = os.path.join(dataset_result_dir, f"{entity.data_id}.pdf")
+            with pdf_exporter(result_file_path) as exporter:
+                for window_size in HISTOGRAM_WINDOW_SIZES:
+                    windows = entity.get_window_durations(window_size)
+                    if not windows:
+                        continue
 
-            if normal_window.size < WINDOW_SIZE or rr_intervals.size < WINDOW_SIZE:
-                tqdm.write(
-                    f"Skipping {entity.data_id}: insufficient RR intervals for windowing."
+                    durations = np.array(
+                        [(end - start) / entity.sr for start, end in windows],
+                        dtype=float,
+                    )
+                    if durations.size == 0:
+                        continue
+
+                    histogram_fig, histogram_ax = plt.subplots(figsize=(8, 4))
+                    plot_histogram(
+                        histogram_ax,
+                        durations,
+                        bins="auto",
+                        title=f"{entity.dataset_name}: {entity.data_id} "
+                        f"(RR window={window_size})",
+                        xlabel="Window duration (sec)",
+                        ylabel="Count",
+                        percentile_lines=(5.0, 95.0),
+                    )
+                    histogram_fig.tight_layout()
+                    exporter.add_page(histogram_fig, pad_inches=0)
+                    plt.close(histogram_fig)
+
+                extreme_windows = entity.get_extreme_rr_windows(
+                    RR_WINDOW_BEATS,
+                    lower_percentile=5.0,
+                    upper_percentile=95.0,
                 )
-                continue
 
-            train_windows = sliding_window_sequences(normal_window, WINDOW_SIZE)
-            test_windows = sliding_window_sequences(rr_intervals, WINDOW_SIZE)
+                (
+                    signals_paged,
+                    ts_paged,
+                    _,
+                    n_rows,
+                    _,
+                ) = paginate_signals(entity.signals, entity.sr, PAGINATION_CONFIG)
 
-            train_sequence, test_sequence = prepare_sequences(
-                train_windows, test_windows
-            )
+                ylim_lower, ylim_upper = compute_signal_ylim(entity.signals)
 
-            config = {**MD_RS_CONFIG, "N_u": train_sequence.shape[1]}
+                symbol_list = sorted(set(entity.annotation.symbol))
+                tqdm.write(
+                    f"{entity.data_id}, {entity.dataset_name} {"".join(symbol_list)} "
+                    f"The number of extreme window: {len(extreme_windows)}"
+                )
 
-            model = MDRS(**config)
-            model.train(train_sequence)
+                annotation_events = [
+                    (sample / entity.sr, symbol)
+                    for sample, symbol in zip(
+                        entity.annotation.sample, entity.annotation.symbol
+                    )
+                ]
+                beat_times = [beat_index / entity.sr for beat_index in entity.beats]
 
-            model.reset_states()
+                try:
+                    normal_window = entity.extract_normal_segment()
+                except ValueError:
+                    tqdm.write(f"Skipping {entity.data_id}: no normal segment found.")
+                    continue
+                rr_intervals = entity.compute_rr_intervals()
 
-            scores = model.predict(test_sequence)
+                train_windows = sliding_window_sequences(normal_window, RR_WINDOW_BEATS)
+                test_windows = sliding_window_sequences(rr_intervals, RR_WINDOW_BEATS)
+
+                train_sequence, test_sequence = prepare_sequences(
+                    train_windows, test_windows
+                )
+
+                config = {**MD_RS_CONFIG, "N_u": train_sequence.shape[1]}
+
+                model = MDRS(**config)
+                model.train(train_sequence)
+
+                model.reset_states()
+
+                scores = model.predict(test_sequence)
+                score_times = beat_times[RR_WINDOW_BEATS:]
+
+                score_ylim_lower, score_ylim_upper = compute_signal_ylim(
+                    np.array(scores)
+                )
+
+                for page_idx, (signals, ts_row) in enumerate(
+                    zip(signals_paged, ts_paged)
+                ):
+                    fig, axs = create_page_layout(n_rows)
+
+                    for signal, ts, ax in zip(signals, ts_row, axs):
+                        window_start, window_end = ts[0], ts[-1]
+                        beats_in_window = [
+                            beat_time
+                            for beat_time in beat_times
+                            if window_start <= beat_time <= window_end
+                        ]
+                        scores_in_window = [
+                            score
+                            for score, time in zip(scores, score_times)
+                            if window_start <= time <= window_end
+                        ]
+                        score_times_in_window = [
+                            time
+                            for time in score_times
+                            if window_start <= time <= window_end
+                        ]
+                        plot_signal(
+                            ax,
+                            ts,
+                            signal,
+                            ylim_lower=ylim_lower,
+                            ylim_upper=ylim_upper,
+                        )
+                        score_ax = ax.twinx()
+                        plot_anomaly_score(
+                            score_ax,
+                            score_times_in_window,
+                            scores_in_window,
+                            ylim_lower=score_ylim_lower,
+                            ylim_upper=score_ylim_upper,
+                            label="MD-RS Anomaly Score",
+                        )
+
+                        plot_normal_beats(
+                            ax,
+                            beats_in_window,
+                            ylim_lower=ylim_lower,
+                        )
+                        plot_symbols(
+                            ax,
+                            annotation_events,
+                            window_start=window_start,
+                            window_end=window_end,
+                            ylim_lower=ylim_lower,
+                        )
+                        highlight_windows(
+                            ax,
+                            extreme_windows,
+                            window_start=window_start,
+                            window_end=window_end,
+                            ylim_upper=ylim_upper,
+                            color=EXTREME_INTERVAL_COLOR,
+                        )
+
+                    if page_idx == 0:
+                        fig.suptitle(
+                            f"{entity.dataset_name}: {entity.data_id} {"".join(symbol_list)} {RR_WINDOW_BEATS}"
+                        )
+                    fig.supxlabel("Time (sec)")
+                    fig.subplots_adjust(left=0.08, right=0.98, bottom=0.05, top=0.95)
+                    exporter.add_page(fig, pad_inches=0)
+                    plt.close()
