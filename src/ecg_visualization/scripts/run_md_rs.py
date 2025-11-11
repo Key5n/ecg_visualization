@@ -38,7 +38,8 @@ from ecg_visualization.visualization.limits import compute_signal_ylim
 
 MIN_RR_INTERVAL_SEC = 0.6
 MAX_RR_INTERVAL_SEC = 1.0
-RR_WINDOW_BEATS = 10
+RR_WINDOW_BEATS = 100
+WINDOW_SIZE = 10
 HISTOGRAM_WINDOW_SIZES = (10, 50, 100)
 PAGINATION_CONFIG = PaginationConfig()
 
@@ -140,8 +141,8 @@ def run_md_rs() -> None:
                     continue
                 rr_intervals = entity.compute_rr_intervals()
 
-                train_windows = sliding_window_sequences(normal_window, RR_WINDOW_BEATS)
-                test_windows = sliding_window_sequences(rr_intervals, RR_WINDOW_BEATS)
+                train_windows = sliding_window_sequences(normal_window, WINDOW_SIZE)
+                test_windows = sliding_window_sequences(rr_intervals, WINDOW_SIZE)
 
                 train_sequence, test_sequence = prepare_sequences(
                     train_windows, test_windows
@@ -155,7 +156,7 @@ def run_md_rs() -> None:
                 model.reset_states()
 
                 scores = model.predict(test_sequence)
-                score_times = beat_times[RR_WINDOW_BEATS:]
+                score_times = beat_times[WINDOW_SIZE:]
 
                 score_ylim_lower, score_ylim_upper = compute_signal_ylim(
                     np.array(scores)
