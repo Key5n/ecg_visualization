@@ -10,6 +10,9 @@ requires-python = ">=3.12"
 dependencies = [
     "networkx>=3.5",
     "numpy>=2.3.3",
+    "optuna>=4.6.0",
+    "pandas>=2.3.3",
+    "pymysql>=1.1.2",
     "scikit-learn>=1.5.2",
     "seaborn>=0.13.2",
     "tqdm>=4.67.1",
@@ -20,6 +23,7 @@ dependencies = [
 ecg-visualization = "ecg_visualization:ecg_visualization"
 RRI-histogram = "ecg_visualization:RRI_histogram"
 md-rs = "ecg_visualization:run_md_rs"
+optuna = "ecg_visualization:optuna_example"
 
 [build-system]
 requires = ["hatchling"]
