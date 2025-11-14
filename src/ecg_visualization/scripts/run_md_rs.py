@@ -1,7 +1,6 @@
 import os
 from typing import Any, Final
-from ecg_visualization.models.md_rs.md_rs import MDRS
-from ecg_visualization.utils.utils import prepare_sequences, sliding_window_sequences
+
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
@@ -16,6 +15,9 @@ from ecg_visualization.datasets.dataset import (
     SHDBAF,
     ECG_Dataset,
 )
+from ecg_visualization.models.md_rs.md_rs import MDRS
+from ecg_visualization.utils.timed_sequence import TimedSequence
+from ecg_visualization.utils.utils import prepare_sequences, sliding_window_sequences
 from ecg_visualization.visualization.export import pdf_exporter
 from ecg_visualization.visualization.layouts import (
     PaginationConfig,
@@ -86,8 +88,6 @@ def run_md_rs() -> None:
                         [(end - start) / entity.sr for start, end in windows],
                         dtype=float,
                     )
-                    if durations.size == 0:
-                        continue
 
                     histogram_fig, histogram_ax = plt.subplots(figsize=(8, 4))
                     plot_histogram(
@@ -128,13 +128,16 @@ def run_md_rs() -> None:
                     f"The number of extreme window: {len(extreme_windows)}"
                 )
 
-                annotation_events = [
-                    (sample / entity.sr, symbol)
-                    for sample, symbol in zip(
-                        entity.annotation.sample, entity.annotation.symbol
-                    )
-                ]
+                annotation_events = TimedSequence.from_time_axis(
+                    values=entity.annotation.symbol,
+                    time_axis=np.asarray(entity.annotation.sample, dtype=float)
+                    / entity.sr,
+                )
                 beat_times = entity.beats / entity.sr
+                beat_sequence = TimedSequence.from_time_axis(
+                    values=np.zeros_like(beat_times),  # placeholder values; only times are used
+                    time_axis=beat_times,
+                )
 
                 try:
                     normal_window = entity.extract_normal_segment()
@@ -159,6 +162,10 @@ def run_md_rs() -> None:
 
                 scores = model.predict(test_sequence)
                 score_times = beat_times[WINDOW_SIZE:]
+                score_sequence = TimedSequence.from_time_axis(
+                    values=scores,
+                    time_axis=score_times,
+                )
 
                 score_ylim_lower, score_ylim_upper = compute_ylim(scores)
 
@@ -169,21 +176,12 @@ def run_md_rs() -> None:
 
                     for signal, ts, ax in zip(signals, ts_row, axs):
                         window_start, window_end = ts[0], ts[-1]
-                        beats_in_window = [
-                            beat_time
-                            for beat_time in beat_times
-                            if window_start <= beat_time <= window_end
-                        ]
-                        scores_in_window = [
-                            score
-                            for score, time in zip(scores, score_times)
-                            if window_start <= time <= window_end
-                        ]
-                        score_times_in_window = [
-                            time
-                            for time in score_times
-                            if window_start <= time <= window_end
-                        ]
+                        beats_in_window = beat_sequence.slice_between(
+                            window_start, window_end
+                        )
+                        scores_in_window = score_sequence.slice_between(
+                            window_start, window_end
+                        )
                         plot_signal(
                             ax,
                             ts,
@@ -194,8 +192,8 @@ def run_md_rs() -> None:
                         score_ax = ax.twinx()
                         plot_anomaly_score(
                             score_ax,
-                            score_times_in_window,
-                            scores_in_window,
+                            scores_in_window.times.tolist(),
+                            scores_in_window.values.tolist(),
                             ylim_lower=score_ylim_lower,
                             ylim_upper=score_ylim_upper,
                             label="Anomaly Score",
@@ -203,14 +201,15 @@ def run_md_rs() -> None:
 
                         plot_normal_beats(
                             ax,
-                            beats_in_window,
+                            beats_in_window.times.tolist(),
                             ylim_lower=ylim_lower,
+                        )
+                        symbols_in_window = annotation_events.slice_between(
+                            window_start, window_end
                         )
                         plot_symbols(
                             ax,
-                            annotation_events,
-                            window_start=window_start,
-                            window_end=window_end,
+                            symbols_in_window.samples,
                             ylim_lower=ylim_lower,
                         )
                         highlight_windows(

@@ -1,11 +1,13 @@
 from dataclasses import dataclass, field
-from ecg_visualization.utils.utils import merge_overlapping_windows
-import numpy as np
-import numpy.typing as npt
 import os
 
+import numpy as np
+import numpy.typing as npt
 import wfdb
 from wfdb.io import Annotation
+
+from ecg_visualization.utils.timed_sequence import TimedSequence
+from ecg_visualization.utils.utils import merge_overlapping_windows
 
 dataset_root_dir = os.path.join("physionet.org", "files")
 
@@ -67,14 +69,13 @@ class ECG_Entity:
 
         return windows
 
-    def extract_normal_segment(self) -> npt.NDArray[np.float64]:
+    def extract_normal_segment(self) -> TimedSequence:
         """
         Extract and return the RR intervals that compose a 10-minute normal beat
         segment for this entity.
 
         Returns:
-            numpy array containing the consecutive RR intervals (in seconds)
-            where every interval stays within the normal range.
+            TimedSequence: Consecutive RR intervals (in seconds) plus their start times.
 
         Raises:
             ValueError: If the entity does not contain enough information to
@@ -102,7 +103,13 @@ class ECG_Entity:
                 if rr_segment.size == 0:
                     break
 
-                return np.asarray(rr_segment, dtype=np.float64)
+                interval_start_times = beat_times[
+                    start_idx : start_idx + rr_segment.size
+                ]
+                return TimedSequence.from_time_axis(
+                    values=np.asarray(rr_segment, dtype=np.float64),
+                    time_axis=np.asarray(interval_start_times, dtype=np.float64),
+                )
 
         raise ValueError(
             f"No 10-minute normal beat segment found for {self.data_id} ({self.dataset_name})"

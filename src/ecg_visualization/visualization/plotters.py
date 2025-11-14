@@ -76,13 +76,11 @@ def plot_symbols(
     ax: Axes,
     symbol_events: Iterable[tuple[float, str]],
     *,
-    window_start: float,
-    window_end: float,
     ylim_lower: float,
 ) -> None:
     """Mark abnormal rhythm symbols within the current axis window."""
     for sample_time, symbol in symbol_events:
-        if symbol == "N" or sample_time < window_start or sample_time > window_end:
+        if symbol == "N":
             continue
         ax.axvline(sample_time, color="red", alpha=0.5)
         ax.text(
@@ -163,7 +161,9 @@ def plot_histogram(
         percentile_values = np.percentile(values, percentile_lines)
         ylim_upper = ax.get_ylim()[1]
         y_pos = ylim_upper * 0.95
-        for percentile, cutoff in zip(percentile_lines, percentile_values, strict=False):
+        for percentile, cutoff in zip(
+            percentile_lines, percentile_values, strict=False
+        ):
             ax.axvline(
                 cutoff,
                 color=percentile_color,
