@@ -17,7 +17,11 @@ from ecg_visualization.datasets.dataset import (
 )
 from ecg_visualization.models.md_rs.md_rs import MDRS
 from ecg_visualization.utils.timed_sequence import TimedSequence
-from ecg_visualization.utils.utils import prepare_sequences, sliding_window_sequences
+from ecg_visualization.utils.utils import (
+    padding_reshape,
+    prepare_sequences,
+    sliding_window_sequences,
+)
 from ecg_visualization.visualization.export import pdf_exporter
 from ecg_visualization.visualization.layouts import (
     PaginationConfig,
@@ -110,13 +114,12 @@ def run_md_rs() -> None:
                     upper_percentile=95.0,
                 )
 
-                (
-                    signals_paged,
-                    ts_paged,
-                    _,
-                    n_rows,
-                    _,
-                ) = paginate_signals(entity.signals, entity.sr, PAGINATION_CONFIG)
+                ts_paged = paginate_signals(
+                    entity.signals, entity.sr, PAGINATION_CONFIG
+                )
+                shape = ts_paged.shape
+                signals_paged = padding_reshape(entity.signals, shape)
+                n_rows = shape[1] if len(shape) >= 2 else 0
 
                 ylim_lower, ylim_upper = compute_ylim(
                     entity.signals, lower_bound=-5.0, upper_bound=5.0
@@ -135,7 +138,9 @@ def run_md_rs() -> None:
                 )
                 beat_times = entity.beats / entity.sr
                 beat_sequence = TimedSequence.from_time_axis(
-                    values=np.zeros_like(beat_times),  # placeholder values; only times are used
+                    values=np.zeros_like(
+                        beat_times
+                    ),  # placeholder values; only times are used
                     time_axis=beat_times,
                 )
 
@@ -170,11 +175,11 @@ def run_md_rs() -> None:
                 score_ylim_lower, score_ylim_upper = compute_ylim(scores)
 
                 for page_idx, (signals, ts_row) in enumerate(
-                    zip(signals_paged, ts_paged)
+                    zip(signals_paged, ts_paged, strict=False)
                 ):
                     fig, axs = create_page_layout(n_rows)
 
-                    for signal, ts, ax in zip(signals, ts_row, axs):
+                    for signal, ts, ax in zip(signals, ts_row, axs, strict=False):
                         window_start, window_end = ts[0], ts[-1]
                         beats_in_window = beat_sequence.slice_between(
                             window_start, window_end

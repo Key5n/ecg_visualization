@@ -13,6 +13,7 @@ from ecg_visualization.datasets.dataset import (
     SHDBAF,
     ECG_Dataset,
 )
+from ecg_visualization.utils.utils import padding_reshape
 from ecg_visualization.visualization.export import pdf_exporter
 from ecg_visualization.visualization.layouts import (
     PaginationConfig,
@@ -93,13 +94,12 @@ def ecg_visualization() -> None:
                     upper_percentile=95.0,
                 )
 
-                (
-                    signals_paged,
-                    ts_paged,
-                    _,
-                    n_rows,
-                    _,
-                ) = paginate_signals(entity.signals, entity.sr, PAGINATION_CONFIG)
+                ts_paged = paginate_signals(
+                    entity.signals, entity.sr, PAGINATION_CONFIG
+                )
+                signals_shape = ts_paged.shape
+                signals_paged = padding_reshape(entity.signals, signals_shape)
+                n_rows = signals_shape[1] if len(signals_shape) >= 2 else 0
 
                 ylim_lower, ylim_upper = compute_ylim(
                     entity.signals, lower_bound=-5.0, upper_bound=5.0
@@ -120,11 +120,11 @@ def ecg_visualization() -> None:
                 beat_times = [beat_index / entity.sr for beat_index in entity.beats]
 
                 for page_idx, (signals, ts_row) in enumerate(
-                    zip(signals_paged, ts_paged)
+                    zip(signals_paged, ts_paged, strict=False)
                 ):
                     fig, axs = create_page_layout(n_rows)
 
-                    for signal, ts, ax in zip(signals, ts_row, axs):
+                    for signal, ts, ax in zip(signals, ts_row, axs, strict=False):
                         window_start, window_end = ts[0], ts[-1]
                         beats_in_window = [
                             beat_time

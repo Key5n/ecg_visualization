@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.typing import NDArray
-from ecg_visualization.utils.utils import padding_reshape
 import math
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
@@ -40,18 +39,18 @@ class PaginationConfig:
 
 
 def paginate_signals(
-    signals: NDArray[np.float64],
+    n_signals: int,
     sampling_rate: int,
     layout_config: PaginationConfig,
-) -> tuple[NDArray[np.float64], NDArray[np.float64], int, int, int]:
-    """Pad and reshape signals/time arrays into (pages, rows, steps)."""
+) -> NDArray[np.float64]:
+    """Compute time axes shaped into (pages, rows, steps) for ECG pagination."""
 
-    n_steps, n_rows, n_pages = layout_config.compute(sampling_rate, len(signals))
-    signals_paged = padding_reshape(signals, (n_pages, n_rows, n_steps))
+    n_steps, n_rows, n_pages = layout_config.compute(sampling_rate, n_signals)
+    shape = (n_pages, n_rows, n_steps)
+    total_steps = math.prod(shape)
 
-    length = n_pages * n_rows * n_steps
-    ts_paged = np.linspace(0, length / sampling_rate, length).reshape(
-        (n_pages, n_rows, n_steps)
-    )
+    if total_steps == 0:
+        return np.zeros(shape, dtype=float)
 
-    return signals_paged, ts_paged, n_steps, n_rows, n_pages
+    ts = np.arange(total_steps, dtype=float) / sampling_rate
+    return ts.reshape(shape)

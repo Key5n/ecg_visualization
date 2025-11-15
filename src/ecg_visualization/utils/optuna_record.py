@@ -53,6 +53,7 @@ class Record:
     score_sequence_artifact_id: str
     annotation_sequence_artifact_id: str
     beat_sequence_artifact_id: str
+    signal_sequence_artifact_id: str
 
     @classmethod
     def from_trial(cls, trial: FrozenTrial, *, study_name: str) -> "Record":
@@ -65,6 +66,7 @@ class Record:
         score_artifact_id = trial.user_attrs.get("score_sequence_artifact_id")
         annotation_artifact_id = trial.user_attrs.get("annotation_sequence_artifact_id")
         beat_artifact_id = trial.user_attrs.get("beat_sequence_artifact_id")
+        signal_artifact_id = trial.user_attrs.get("signal_sequence_artifact_id")
         trial_id = getattr(trial, "_trial_id", trial.number)
 
         return cls(
@@ -83,6 +85,7 @@ class Record:
             score_sequence_artifact_id=score_artifact_id,
             annotation_sequence_artifact_id=annotation_artifact_id,
             beat_sequence_artifact_id=beat_artifact_id,
+            signal_sequence_artifact_id=signal_artifact_id,
         )
 
 
@@ -96,6 +99,7 @@ class VisualizationRecord:
     score_sequence: TimedSequence
     annotation_sequence: TimedSequence
     beat_sequence: TimedSequence
+    signal_sequence: TimedSequence
 
     @classmethod
     def from_trial(
@@ -138,10 +142,16 @@ class VisualizationRecord:
             artifact_id=record.beat_sequence_artifact_id,
             artifact_label="beat_sequence",
         )
+        signal_sequence = _load_sequence_from_artifact(
+            artifact_store=artifact_store,
+            artifact_id=record.user_attrs.get("signal_sequence_artifact_id"),
+            artifact_label="signal_sequence",
+        )
 
         return cls(
             record=record,
             score_sequence=score_sequence,
             annotation_sequence=annotation_sequence,
             beat_sequence=beat_sequence,
+            signal_sequence=signal_sequence,
         )
