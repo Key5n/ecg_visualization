@@ -103,7 +103,7 @@ class Objective:
 
         rr_intervals = self.entity.compute_rr_intervals()
 
-        train_windows = sliding_window_sequences(normal_window, self.WINDOW_SIZE)
+        train_windows = sliding_window_sequences(normal_window.values, self.WINDOW_SIZE)
         test_windows = sliding_window_sequences(rr_intervals, self.WINDOW_SIZE)
 
         train_sequence, test_sequence = prepare_sequences(train_windows, test_windows)
