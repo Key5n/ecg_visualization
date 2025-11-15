@@ -23,7 +23,11 @@ def _load_sequence_from_artifact(
 
     with tempfile.TemporaryDirectory() as tmpdir:
         destination = Path(tmpdir) / f"{artifact_label}.npz"
-        download_artifact(artifact_store, artifact_id, str(destination))
+        download_artifact(
+            artifact_store=artifact_store,
+            artifact_id=artifact_id,
+            file_path=str(destination),
+        )
         payload = np.load(destination, allow_pickle=False)
         values = payload["values"]
         times = payload["times"]
