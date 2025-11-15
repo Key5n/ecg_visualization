@@ -16,7 +16,7 @@ MAX_NORMAL_RR_INTERVAL_SEC = 1.0
 NORMAL_SEGMENT_DURATION_SEC = 10 * 60  # 10 minutes
 
 
-@dataclass
+@dataclass(slots=True)
 class ECG_Entity:
     """
     Class representing a single ECG record/entity
@@ -200,7 +200,7 @@ class ECG_Entity:
         return merge_overlapping_windows(extreme_windows)
 
 
-@dataclass
+@dataclass(slots=True)
 class ECG_Dataset:
     """
     Base class for ECG Datasets
@@ -311,7 +311,7 @@ class ECG_Dataset:
 
 
 # https://physionet.org/content/cudb/1.0.0/
-@dataclass
+@dataclass(slots=True)
 class CUDB(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "cudb", "1.0.0")
     name: str = "Tachyarrythmia"
@@ -320,7 +320,7 @@ class CUDB(ECG_Dataset):
 
 
 # https://physionet.org/content/afpdb/1.0.0/
-@dataclass
+@dataclass(slots=True)
 class AFPDB(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "afpdb", "1.0.0")
     name: str = "PAF Prediction Challenge Database"
@@ -329,7 +329,7 @@ class AFPDB(ECG_Dataset):
 
 
 # https://physionet.org/content/mitdb/1.0.0/
-@dataclass
+@dataclass(slots=True)
 class MITDB(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "mitdb", "1.0.0")
     name: str = "MIT-BIH Arrhythmia Database"
@@ -338,7 +338,7 @@ class MITDB(ECG_Dataset):
 
 
 # https://physionet.org/content/afdb/1.0.0/
-@dataclass
+@dataclass(slots=True)
 class AFDB(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "afdb", "1.0.0")
     name: str = "MIT-BIH Atrial Fibrillation Database"
@@ -359,7 +359,7 @@ class AFDB(ECG_Dataset):
 
 
 # https://physionet.org/content/ltafdb/1.0.0/
-@dataclass
+@dataclass(slots=True)
 class LTAFDB(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "ltafdb", "1.0.0")
     name: str = "Long Term AF Database"
@@ -368,7 +368,7 @@ class LTAFDB(ECG_Dataset):
 
 
 # https://physionet.org/content/shdb-af/1.0.1/
-@dataclass
+@dataclass(slots=True)
 class SHDBAF(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "shdb-af", "1.0.1")
     name: str = "SHDB-AF: a Japanese Holter ECG database of atrial fibrillation"
@@ -389,7 +389,7 @@ class SHDBAF(ECG_Dataset):
 
 
 # https://physionet.org/content/sddb/1.0.0/
-@dataclass
+@dataclass(slots=True)
 class SDDB(ECG_Dataset):
     dir_path: str = os.path.join(dataset_root_dir, "sddb", "1.0.0")
     name: str = "Sudden Cardiac Death Holter Database"
