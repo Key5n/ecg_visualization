@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from ecg_visualization.utils.timed_sequence import TimedSequence
 import matplotlib.pyplot as plt
 import numpy as np
 import optuna
@@ -91,18 +92,25 @@ def visualize_entity(entity: ECG_Entity):
         tqdm.write(f"Skipping {study_name}: {exc}")
         return
 
-    signals_sequence = vis_record.signal_sequence
-    score_sequence = vis_record.score_sequence
-    annotation_sequence = vis_record.annotation_sequence
-    beat_sequence = vis_record.beat_sequence
-
-    ts_paged = paginate_signals(
-        len(signals_sequence.values), entity.sr, PAGINATION_CONFIG
+    signal_sequence = TimedSequence.from_time_axis(
+        values=entity.signals,
+        time_axis=np.arange(len(entity.signals)) / entity.sr,
     )
+    score_sequence = vis_record.score_sequence
+    annotation_sequence = TimedSequence.from_time_axis(
+        values=entity.annotation.symbol,
+        time_axis=np.asarray(entity.annotation.sample, dtype=float) / entity.sr,
+    )
+    beat_sequence = TimedSequence.from_time_axis(
+        values=np.zeros_like(entity.beats),
+        time_axis=entity.beats / entity.sr,
+    )
+
+    ts_paged = paginate_signals(entity.signals, entity.sr, PAGINATION_CONFIG)
     n_rows = PAGINATION_CONFIG.rows_per_page
 
     ylim_lower, ylim_upper = compute_ylim(
-        signals_sequence.values,
+        entity.signals,
         lower_bound=-5.0,
         upper_bound=5.0,
     )
@@ -124,7 +132,8 @@ def visualize_entity(entity: ECG_Entity):
             fig, axs = create_page_layout(n_rows)
             for ts, ax in zip(ts_row, axs):
                 window_start, window_end = ts[0], ts[-1]
-                signals_in_window = signals_sequence.slice_between(
+
+                signal_in_window = signal_sequence.slice_between(
                     window_start, window_end
                 )
                 beats_in_window = beat_sequence.slice_between(window_start, window_end)
@@ -138,7 +147,7 @@ def visualize_entity(entity: ECG_Entity):
                 plot_signal(
                     ax,
                     ts,
-                    signals_in_window.values,
+                    signal_in_window.values,
                     ylim_lower=ylim_lower,
                     ylim_upper=ylim_upper,
                 )

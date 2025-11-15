@@ -23,11 +23,7 @@ def _load_sequence_from_artifact(
 
     with tempfile.TemporaryDirectory() as tmpdir:
         destination = Path(tmpdir) / f"{artifact_label}.npz"
-        download_artifact(
-            artifact_store=artifact_store,
-            artifact_id=artifact_id,
-            file_path=str(destination),
-        )
+        download_artifact(artifact_store, artifact_id, str(destination))
         payload = np.load(destination, allow_pickle=False)
         values = payload["values"]
         times = payload["times"]
@@ -55,9 +51,6 @@ class Record:
     entity_id: str
     dataset_name: str
     score_sequence_artifact_id: str
-    annotation_sequence_artifact_id: str
-    beat_sequence_artifact_id: str
-    signal_sequence_artifact_id: str
 
     @classmethod
     def from_trial(cls, trial: FrozenTrial, *, study_name: str) -> "Record":
@@ -68,9 +61,6 @@ class Record:
         entity_id = trial.user_attrs.get("entity_id")
         dataset_name = trial.user_attrs.get("dataset_name")
         score_artifact_id = trial.user_attrs.get("score_sequence_artifact_id")
-        annotation_artifact_id = trial.user_attrs.get("annotation_sequence_artifact_id")
-        beat_artifact_id = trial.user_attrs.get("beat_sequence_artifact_id")
-        signal_artifact_id = trial.user_attrs.get("signal_sequence_artifact_id")
         trial_id = getattr(trial, "_trial_id", trial.number)
 
         return cls(
@@ -87,9 +77,6 @@ class Record:
             entity_id=entity_id,
             dataset_name=dataset_name,
             score_sequence_artifact_id=score_artifact_id,
-            annotation_sequence_artifact_id=annotation_artifact_id,
-            beat_sequence_artifact_id=beat_artifact_id,
-            signal_sequence_artifact_id=signal_artifact_id,
         )
 
 
@@ -101,9 +88,6 @@ class VisualizationRecord:
 
     record: Record
     score_sequence: TimedSequence
-    annotation_sequence: TimedSequence
-    beat_sequence: TimedSequence
-    signal_sequence: TimedSequence
 
     @classmethod
     def from_trial(
@@ -136,26 +120,7 @@ class VisualizationRecord:
             artifact_id=record.score_sequence_artifact_id,
             artifact_label="score_sequence",
         )
-        annotation_sequence = _load_sequence_from_artifact(
-            artifact_store=artifact_store,
-            artifact_id=record.annotation_sequence_artifact_id,
-            artifact_label="annotation_sequence",
-        )
-        beat_sequence = _load_sequence_from_artifact(
-            artifact_store=artifact_store,
-            artifact_id=record.beat_sequence_artifact_id,
-            artifact_label="beat_sequence",
-        )
-        signal_sequence = _load_sequence_from_artifact(
-            artifact_store=artifact_store,
-            artifact_id=record.user_attrs.get("signal_sequence_artifact_id"),
-            artifact_label="signal_sequence",
-        )
-
         return cls(
             record=record,
             score_sequence=score_sequence,
-            annotation_sequence=annotation_sequence,
-            beat_sequence=beat_sequence,
-            signal_sequence=signal_sequence,
         )

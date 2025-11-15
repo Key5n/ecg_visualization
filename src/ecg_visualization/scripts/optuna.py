@@ -124,54 +124,20 @@ class Objective:
 
         scores = model.predict(test_sequence)
 
-        signal_sequence = TimedSequence.from_time_axis(
-            values=self.entity.signals,
-            time_axis=np.arange(len(self.entity.signals)) / self.entity.sr,
-        )
-
         beat_times = self.entity.beats / self.entity.sr
-        beat_sequence = TimedSequence.from_time_axis(
-            values=np.zeros_like(beat_times),  # placeholder values; only times are used
-            time_axis=beat_times,
-        )
-
         score_times = beat_times[self.WINDOW_SIZE :]
         score_sequence = TimedSequence.from_time_axis(
             values=scores,
             time_axis=score_times,
         )
 
-        annotation_sequence = TimedSequence.from_time_axis(
-            values=self.entity.annotation.symbol,
-            time_axis=np.asarray(self.entity.annotation.sample, dtype=float)
-            / self.entity.sr,
-        )
-
-        signal_artifact = self._store_sequence_artifact(
-            name="signal_sequence",
-            sequence=signal_sequence,
-            trial=trial,
-        )
         score_artifact = self._store_sequence_artifact(
             name="score_sequence",
             sequence=score_sequence,
             trial=trial,
         )
-        annotation_artifact = self._store_sequence_artifact(
-            name="annotation_sequence",
-            sequence=annotation_sequence,
-            trial=trial,
-        )
-        beat_artifact = self._store_sequence_artifact(
-            name="beat_sequence",
-            sequence=beat_sequence,
-            trial=trial,
-        )
 
-        trial.set_user_attr("signal_sequence_artifact_id", signal_artifact)
         trial.set_user_attr("score_sequence_artifact_id", score_artifact)
-        trial.set_user_attr("annotation_sequence_artifact_id", annotation_artifact)
-        trial.set_user_attr("beat_sequence_artifact_id", beat_artifact)
         trial.set_user_attr("entity_id", self.entity.data_id)
         trial.set_user_attr("dataset_name", self.entity.dataset_name)
 
