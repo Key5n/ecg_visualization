@@ -1,7 +1,7 @@
 from ecg_visualization.scripts.ecg_visualization import ecg_visualization
 from ecg_visualization.scripts.RRI_histogram import RRI_histogram
 from ecg_visualization.scripts.run_md_rs import run_md_rs
-from ecg_visualization.scripts.study_all_entities import study_all_entities
+from ecg_visualization.scripts.study import study_all_entities
 from ecg_visualization.scripts.visualize import visualize_all_entities
 
 __all__ = [
