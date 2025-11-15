@@ -82,7 +82,7 @@ def load_study_for_entity(
 ) -> optuna.Study | None:
     """Load the Optuna study for an entity with shared logging behavior."""
 
-    study_name = f"{entity.dataset_name} {entity.data_id}"
+    study_name = f"{entity.dataset_id} {entity.entity_id}"
     log = log_fn or tqdm.write
     try:
         study = optuna.load_study(study_name=study_name, storage=storage_name)
@@ -105,7 +105,7 @@ def create_study_for_entity(
 ) -> optuna.Study:
     """Create (or reuse) an Optuna study for a specific entity."""
 
-    study_name = f"{entity.dataset_name} {entity.data_id}"
+    study_name = f"{entity.dataset_id} {entity.entity_id}"
     kwargs.setdefault("load_if_exists", True)
     return optuna.create_study(
         study_name=study_name,

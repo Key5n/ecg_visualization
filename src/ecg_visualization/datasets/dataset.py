@@ -22,23 +22,25 @@ class ECG_Entity:
     Class representing a single ECG record/entity
 
     Attributes:
-        data_id (str): Identifier for the ECG record
-        dataset_name (str): Name of the dataset the record belongs to
+        entity_id (str): Identifier for the ECG record
+        dataset_name (str): Human-readable dataset label the record belongs to
+        dataset_id (str): Identifier matching ECG_Dataset.dataset_id for stable storage lookups
         sr (int): Sampling rate of the ECG signal
         signals (npt.NDArray[np.float64]): ECG signal data
         annotation (Annotation): Annotation object containing metadata about the ECG record
         beats (npt.NDArray[np.int_]): Array of beat sample indices, each element divided by its sampling rate representing the times of beats in seconds
     """
 
-    data_id: str
+    entity_id: str
     dataset_name: str
+    dataset_id: str
     sr: int
     signals: npt.NDArray[np.float64]
     annotation: Annotation
     beats: npt.NDArray[np.int_]
 
     def __str__(self):
-        return self.data_id
+        return self.entity_id
 
     def get_window_durations(
         self,
@@ -83,7 +85,9 @@ class ECG_Entity:
         """
 
         if self.beats.size < 2:
-            raise ValueError(f"{self.data_id} does not contain enough beats to analyze")
+            raise ValueError(
+                f"{self.entity_id} does not contain enough beats to analyze"
+            )
 
         beat_times = self.beats / self.sr
         rr_intervals = self.compute_rr_intervals()
@@ -112,7 +116,8 @@ class ECG_Entity:
                 )
 
         raise ValueError(
-            f"No 10-minute normal beat segment found for {self.data_id} ({self.dataset_name})"
+            f"No 10-minute normal beat segment found for {self.entity_id} "
+            f"({self.dataset_name})"
         )
 
     def compute_rr_intervals(self) -> npt.NDArray[np.float64]:
@@ -120,7 +125,9 @@ class ECG_Entity:
         Return consecutive RR intervals (seconds) derived from beat indices.
         """
         if self.beats.size < 2:
-            raise ValueError(f"{self.data_id} does not contain enough beats to analyze")
+            raise ValueError(
+                f"{self.entity_id} does not contain enough beats to analyze"
+            )
         beat_times = self.beats / self.sr
         return np.diff(beat_times)
 
@@ -271,7 +278,15 @@ class ECG_Dataset:
 
         record = wfdb.rdheader(data_path)
         sr = record.fs
-        return ECG_Entity(data_id, self.name, sr, squeezed, annotation, beats)
+        return ECG_Entity(
+            entity_id=data_id,
+            dataset_name=self.name,
+            dataset_id=self.dataset_id,
+            sr=sr,
+            signals=squeezed,
+            annotation=annotation,
+            beats=beats,
+        )
 
     def extract_normal_segments(
         self,
@@ -287,7 +302,7 @@ class ECG_Dataset:
         segments: dict[str, npt.NDArray[np.float64]] = {}
         for entity in self.data_entities:
             segment = entity.extract_normal_segment()
-            segments[entity.data_id] = segment
+            segments[entity.entity_id] = segment
 
         return segments
 

@@ -59,7 +59,9 @@ def ecg_visualization() -> None:
         os.makedirs(dataset_result_dir, exist_ok=True)
 
         for entity in tqdm(data_source.data_entities):
-            result_file_path = os.path.join(dataset_result_dir, f"{entity.data_id}.pdf")
+            result_file_path = os.path.join(
+                dataset_result_dir, f"{entity.entity_id}.pdf"
+            )
             with pdf_exporter(result_file_path) as exporter:
                 for window_size in HISTOGRAM_WINDOW_SIZES:
                     windows = entity.get_window_durations(window_size)
@@ -78,7 +80,7 @@ def ecg_visualization() -> None:
                         histogram_ax,
                         durations,
                         bins="auto",
-                        title=f"{entity.dataset_name}: {entity.data_id} "
+                        title=f"{entity.dataset_name}: {entity.entity_id} "
                         f"(RR window={window_size})",
                         xlabel="Window duration (sec)",
                         ylabel="Count",
@@ -107,7 +109,7 @@ def ecg_visualization() -> None:
 
                 symbol_list = sorted(set(entity.annotation.symbol))
                 tqdm.write(
-                    f"{entity.data_id}, {entity.dataset_name} {"".join(symbol_list)} "
+                    f"{entity.entity_id}, {entity.dataset_name} {"".join(symbol_list)} "
                     f"The number of extreme window: {len(extreme_windows)}"
                 )
 
@@ -161,7 +163,7 @@ def ecg_visualization() -> None:
 
                     if page_idx == 0:
                         fig.suptitle(
-                            f"{entity.dataset_name}: {entity.data_id} {"".join(symbol_list)} {RR_WINDOW_BEATS}"
+                            f"{entity.dataset_name}: {entity.entity_id} {"".join(symbol_list)} {RR_WINDOW_BEATS}"
                         )
                     fig.supxlabel("Time (sec)")
                     fig.subplots_adjust(left=0.08, right=0.94, bottom=0.05, top=0.95)

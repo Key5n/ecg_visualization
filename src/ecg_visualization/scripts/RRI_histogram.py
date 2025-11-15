@@ -72,7 +72,7 @@ def RRI_histogram() -> None:
             if not entity_durations:
                 continue
 
-            result_path = os.path.join(dataset_dir, f"{entity.data_id}.pdf")
+            result_path = os.path.join(dataset_dir, f"{entity.entity_id}.pdf")
             with pdf_exporter(result_path) as exporter:
                 for window_size, durations in entity_durations:
                     fig, ax = plt.subplots(figsize=(8, 4))
@@ -80,7 +80,7 @@ def RRI_histogram() -> None:
                         ax,
                         durations,
                         bins="auto",
-                        title=f"{entity.dataset_name} / {entity.data_id} (k={window_size})",
+                        title=f"{entity.dataset_name} / {entity.entity_id} (k={window_size})",
                         xlabel="Time for R-peak window (sec)",
                         ylabel="Count",
                         percentile_lines=percentile_bounds,

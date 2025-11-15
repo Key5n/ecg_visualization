@@ -64,7 +64,7 @@ class StudyVisualizer:
         self.pagination_config = pagination_config
         self.visualization_root = visualization_root
         self.rr_window_beats = rr_window_beats
-        self.study_name = f"{entity.dataset_name} {entity.data_id}"
+        self.study_name = f"{entity.dataset_id} {entity.entity_id}"
         self._log = log_fn or tqdm.write
 
     def visualize(self) -> Path | None:
@@ -165,9 +165,9 @@ class StudyVisualizer:
         return unique_symbols
 
     def _prepare_output_path(self) -> Path:
-        dataset_dir = self.visualization_root / self.entity.dataset_name
+        dataset_dir = self.visualization_root / self.entity.dataset_id
         dataset_dir.mkdir(parents=True, exist_ok=True)
-        return dataset_dir / f"{self.entity.data_id}.pdf"
+        return dataset_dir / f"{self.entity.entity_id}.pdf"
 
     def _export_pdf(
         self,
@@ -267,7 +267,7 @@ class StudyVisualizer:
         if page_idx == 0:
             symbol_tokens = "".join(symbol_list)
             fig.suptitle(
-                f"{self.entity.dataset_name}: {self.entity.data_id} "
+                f"{self.entity.dataset_name}: {self.entity.entity_id} "
                 f"{symbol_tokens} {self.rr_window_beats}"
             )
         fig.supxlabel("Time (sec)")

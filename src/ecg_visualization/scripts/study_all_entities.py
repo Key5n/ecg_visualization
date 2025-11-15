@@ -96,7 +96,7 @@ class Objective:
         try:
             normal_window = self.entity.extract_normal_segment()
         except ValueError:
-            tqdm.write(f"Skipping {self.entity.data_id}: no normal segment found.")
+            tqdm.write(f"Skipping {self.entity.entity_id}: no normal segment found.")
             return 0
 
         rr_intervals = self.entity.compute_rr_intervals()
@@ -136,8 +136,8 @@ class Objective:
         )
 
         trial.set_user_attr("score_sequence_artifact_id", score_artifact)
-        trial.set_user_attr("entity_id", self.entity.data_id)
-        trial.set_user_attr("dataset_name", self.entity.dataset_name)
+        trial.set_user_attr("entity_id", self.entity.entity_id)
+        trial.set_user_attr("dataset_id", self.entity.dataset_id)
 
         return 0
 
