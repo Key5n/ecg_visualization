@@ -1,4 +1,7 @@
+import os
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
+
 from dotenv import load_dotenv
 from tqdm import tqdm
 
@@ -31,7 +34,7 @@ VISUALIZATION_ROOT = Path("result") / "visualize"
 load_dotenv()
 
 
-def visualize_all_entities():
+def visualize_all_entities(max_workers: int | None = None):
     data_sources: list[ECG_Dataset] = [
         CUDB(),
         AFPDB(),
@@ -42,9 +45,27 @@ def visualize_all_entities():
         SDDB(),
     ]
 
-    for data_source in tqdm(data_sources):
-        for entity in tqdm(data_source.data_entities):
+    entities: list[ECG_Entity] = []
+    for data_source in data_sources:
+        entities.extend(data_source.data_entities)
+
+    worker_count = _determine_worker_count(max_workers)
+    if worker_count == 1:
+        for entity in tqdm(entities, desc="visualizations"):
             visualize_entity(entity)
+        return
+
+    with ProcessPoolExecutor(max_workers=worker_count) as executor:
+        results = executor.map(_run_visualization, entities, chunksize=1)
+        for dataset_id, entity_id, error in tqdm(
+            results,
+            total=len(entities),
+            desc="visualizations",
+        ):
+            if error:
+                tqdm.write(
+                    f"Visualization failed for {dataset_id}/{entity_id}: {error}"
+                )
 
 
 def visualize_entity(entity: ECG_Entity):
@@ -73,3 +94,25 @@ def visualize_entity(entity: ECG_Entity):
     output_path = visualizer.visualize()
     if output_path:
         tqdm.write(f"Saved visualization to {output_path}")
+
+
+def _determine_worker_count(max_workers: int | None) -> int:
+    if max_workers is not None:
+        return max(1, max_workers)
+
+    WORKER_ENV_VAR = "ECG_VISUALIZE_WORKERS"
+    env_value = os.getenv(WORKER_ENV_VAR)
+    if env_value and env_value.isdigit():
+        resolved = int(env_value)
+        if resolved > 0:
+            return resolved
+
+    return max(1, os.cpu_count() or 1)
+
+
+def _run_visualization(entity: ECG_Entity) -> tuple[str, str, Exception | None]:
+    try:
+        visualize_entity(entity)
+        return entity.dataset_id, entity.entity_id, None
+    except Exception as exc:  # pragma: no cover - worker error propagation
+        return entity.dataset_id, entity.entity_id, exc
