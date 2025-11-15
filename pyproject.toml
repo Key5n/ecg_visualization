@@ -23,7 +23,8 @@ dependencies = [
 ecg-visualization = "ecg_visualization:ecg_visualization"
 RRI-histogram = "ecg_visualization:RRI_histogram"
 md-rs = "ecg_visualization:run_md_rs"
-run_all_entities = "ecg_visualization:run_all_entities"
+experiment = "ecg_visualization:run_all_entities"
+visualize = "ecg_visualization:visualize_all_entities"
 
 [build-system]
 requires = ["hatchling"]
