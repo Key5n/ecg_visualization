@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import numpy as np
+import numpy.typing as npt
 from optuna.artifacts import FileSystemArtifactStore
 from optuna.study import Study
 from optuna.trial import FrozenTrial
@@ -206,7 +207,7 @@ class StudyVisualizer:
         self,
         *,
         ax: Axes,
-        ts: np.ndarray,
+        ts: npt.NDArray[np.float64],
         sequences: SequenceBundle,
         signal_ylim: tuple[float, float],
         score_ylim: tuple[float, float],
@@ -221,10 +222,12 @@ class StudyVisualizer:
             window_start, window_end
         )
 
+        signal_values = self._align_signal_to_window(ts, signal_in_window.values)
+
         plot_signal(
             ax,
             ts,
-            signal_in_window.values,
+            signal_values,
             ylim_lower=signal_ylim[0],
             ylim_upper=signal_ylim[1],
         )
@@ -256,6 +259,19 @@ class StudyVisualizer:
             ylim_upper=signal_ylim[1],
             color=EXTREME_INTERVAL_COLOR,
         )
+
+    @staticmethod
+    def _align_signal_to_window(
+        ts: npt.NDArray[np.float64],
+        signal_values: npt.NDArray[np.float64],
+    ) -> npt.NDArray[np.float64]:
+        if signal_values.size == ts.size:
+            return signal_values
+
+        padded = np.full(ts.shape, np.nan, dtype=float)
+        limit = min(signal_values.size, ts.size)
+        padded[:limit] = signal_values[:limit]
+        return padded
 
     def _decorate_page(
         self,
