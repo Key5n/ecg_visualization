@@ -44,7 +44,7 @@ DEFAULT_MD_RS_CONFIG: Final[dict[str, Any]] = {
 }
 
 
-def run_all_entities():
+def study_all_entities():
     configure_optuna_logging()
 
     data_sources: list[ECG_Dataset] = [
