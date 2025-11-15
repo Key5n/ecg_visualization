@@ -64,7 +64,9 @@ def run_all_entities():
             study_name = f"{entity.dataset_name} {entity.data_id}"
 
             storage_name = "mysql+pymysql://root:foo@localhost:3306/optuna"
-            study = optuna.create_study(study_name=study_name, storage=storage_name)
+            study = optuna.create_study(
+                study_name=study_name, storage=storage_name, load_if_exists=True
+            )
             study.optimize(
                 Objective(
                     entity=entity,
