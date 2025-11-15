@@ -8,9 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import numpy as np
-import optuna
 from optuna.artifacts import FileSystemArtifactStore
-from optuna.exceptions import OptunaError
 from optuna.study import Study
 from optuna.trial import FrozenTrial
 from tqdm import tqdm
@@ -53,7 +51,7 @@ class StudyVisualizer:
         self,
         *,
         entity: ECG_Entity,
-        storage_name: str,
+        study: Study,
         artifact_store: FileSystemArtifactStore,
         pagination_config: PaginationConfig,
         visualization_root: Path,
@@ -61,7 +59,7 @@ class StudyVisualizer:
         log_fn: Callable[[str], None] | None = None,
     ) -> None:
         self.entity = entity
-        self.storage_name = storage_name
+        self.study = study
         self.artifact_store = artifact_store
         self.pagination_config = pagination_config
         self.visualization_root = visualization_root
@@ -70,15 +68,11 @@ class StudyVisualizer:
         self._log = log_fn or tqdm.write
 
     def visualize(self) -> Path | None:
-        study = self._load_study()
-        if study is None:
-            return None
-
-        trial = self._select_trial(study)
+        trial = self._select_trial(self.study)
         if trial is None:
             return None
 
-        vis_record = self._build_visualization_record(study, trial)
+        vis_record = self._build_visualization_record(self.study, trial)
         if vis_record is None:
             return None
 
@@ -112,16 +106,6 @@ class StudyVisualizer:
             output_path=output_path,
         )
         return output_path
-
-    def _load_study(self) -> Study | None:
-        try:
-            return optuna.load_study(
-                study_name=self.study_name,
-                storage=self.storage_name,
-            )
-        except OptunaError as exc:
-            self._log(f"Skipping {self.study_name}: failed to load study ({exc})")
-            return None
 
     def _select_trial(self, study: Study) -> FrozenTrial | None:
         if not study.trials:

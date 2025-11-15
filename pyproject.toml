@@ -13,6 +13,7 @@ dependencies = [
     "optuna>=4.6.0",
     "pandas>=2.3.3",
     "pymysql>=1.1.2",
+    "python-dotenv>=1.2.1",
     "scikit-learn>=1.5.2",
     "seaborn>=0.13.2",
     "tqdm>=4.67.1",

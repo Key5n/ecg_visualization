@@ -9,6 +9,6 @@
 !AGENTS.md
 !compose.yaml
 !db/
-!db/.env.template
+!.env.template
 __pycache__/
 

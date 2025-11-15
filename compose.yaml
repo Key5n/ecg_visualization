@@ -1,7 +1,7 @@
 services:
   db:
     image: mariadb:11.8.4
-    env_file: ./db/.env
+    env_file: .env
     ports:
       - "3306:3306"
     volumes:

@@ -1,15 +1,21 @@
+import os
 import tempfile
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, TYPE_CHECKING
 
 import numpy as np
 import optuna
 from optuna.artifacts import FileSystemArtifactStore, download_artifact
+from optuna.exceptions import OptunaError
 from optuna.trial import FrozenTrial
+from tqdm import tqdm
 
 from ecg_visualization.utils.timed_sequence import TimedSequence
+
+if TYPE_CHECKING:
+    from ecg_visualization.datasets.dataset import ECG_Entity
 
 
 def _load_sequence_from_artifact(
@@ -28,6 +34,63 @@ def _load_sequence_from_artifact(
         values = payload["values"]
         times = payload["times"]
         return TimedSequence(values=values, times=times)
+
+
+def create_artifact_store(base_dir: str | Path) -> FileSystemArtifactStore:
+    """Build a FileSystemArtifactStore rooted at base_dir, ensuring the directory exists."""
+
+    base_path = Path(base_dir)
+    base_path.mkdir(parents=True, exist_ok=True)
+    return FileSystemArtifactStore(base_path=str(base_path))
+
+
+def build_storage_name(
+    *,
+    driver_env: str = "OPTUNA_DB_DRIVER",
+    user_env: str = "OPTUNA_DB_USER",
+    password_env: str = "OPTUNA_DB_PASSWORD",
+    host_env: str = "OPTUNA_DB_HOST",
+    port_env: str = "OPTUNA_DB_PORT",
+    database_env: str = "OPTUNA_DB_NAME",
+    default_driver: str = "mysql+pymysql",
+    default_user: str = "root",
+    default_password: str = "foo",
+    default_host: str = "localhost",
+    default_port: str = "3306",
+    default_database: str = "optuna",
+) -> str:
+    """Construct an Optuna storage URL using environment variables with defaults."""
+
+    driver = os.getenv(driver_env, default_driver)
+    user = os.getenv(user_env, default_user)
+    password = os.getenv(password_env, default_password)
+    host = os.getenv(host_env, default_host)
+    port = os.getenv(port_env, default_port)
+    database = os.getenv(database_env, default_database)
+    return f"{driver}://{user}:{password}@{host}:{port}/{database}"
+
+
+def load_study_for_entity(
+    entity: "ECG_Entity",
+    *,
+    storage_name: str,
+    log_fn: Callable[[str], None] | None = None,
+) -> optuna.Study | None:
+    """Load the Optuna study for an entity with shared logging behavior."""
+
+    study_name = f"{entity.dataset_name} {entity.data_id}"
+    log = log_fn or tqdm.write
+    try:
+        study = optuna.load_study(study_name=study_name, storage=storage_name)
+    except OptunaError as exc:
+        log(f"Skipping {study_name}: failed to load study ({exc})")
+        return None
+
+    if not study.trials:
+        log(f"Skipping {study_name}: no trials available.")
+        return None
+
+    return study
 
 
 @dataclass(slots=True)
