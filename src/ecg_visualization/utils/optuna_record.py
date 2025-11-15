@@ -3,13 +3,15 @@ import tempfile
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, TYPE_CHECKING
+from threading import Lock
+from typing import Any, Callable, TYPE_CHECKING, ClassVar
 
 import numpy as np
 import optuna
 from optuna.artifacts import FileSystemArtifactStore, download_artifact
 from optuna.exceptions import OptunaError
 from optuna.trial import FrozenTrial
+from optuna.storages import RDBStorage
 from tqdm import tqdm
 
 from ecg_visualization.utils.timed_sequence import TimedSequence
@@ -74,27 +76,52 @@ def build_storage_name(
     return f"{driver}://{user}:{password}@{host}:{port}/{database}"
 
 
-def load_study_for_entity(
-    entity: "ECG_Entity",
-    *,
-    storage_name: str,
-    log_fn: Callable[[str], None] | None = None,
-) -> optuna.Study | None:
-    """Load the Optuna study for an entity with shared logging behavior."""
+class StudyLoader:
+    """Singleton per storage URL to reuse Optuna RDB storage connections."""
 
-    study_name = f"{entity.dataset_id} {entity.entity_id}"
-    log = log_fn or tqdm.write
-    try:
-        study = optuna.load_study(study_name=study_name, storage=storage_name)
-    except OptunaError as exc:
-        log(f"Skipping {study_name}: failed to load study ({exc})")
-        return None
+    _instances: ClassVar[dict[str, "StudyLoader"]] = {}
+    _lock: ClassVar[Lock] = Lock()
 
-    if not study.trials:
-        log(f"Skipping {study_name}: no trials available.")
-        return None
+    def __new__(cls, storage_name: str):
+        with cls._lock:
+            instance = cls._instances.get(storage_name)
+            if instance is None:
+                instance = super().__new__(cls)
+                instance._initialize(storage_name)
+                cls._instances[storage_name] = instance
+            return instance
 
-    return study
+    def _initialize(self, storage_name: str) -> None:
+        self._storage_name = storage_name
+        self._storage = RDBStorage(
+            storage_name,
+            engine_kwargs={"pool_size": 1, "max_overflow": 0},
+        )
+
+    def load(
+        self,
+        entity: "ECG_Entity",
+        *,
+        log_fn: Callable[[str], None] | None = None,
+    ) -> optuna.Study | None:
+        """Load the Optuna study for the provided entity."""
+
+        study_name = f"{entity.dataset_id} {entity.entity_id}"
+        log = log_fn or tqdm.write
+        try:
+            study = optuna.load_study(
+                study_name=study_name,
+                storage=self._storage,
+            )
+        except OptunaError as exc:
+            log(f"Skipping {study_name}: failed to load study ({exc})")
+            return None
+
+        if not study.trials:
+            log(f"Skipping {study_name}: no trials available.")
+            return None
+
+        return study
 
 
 def create_study_for_entity(

@@ -25,7 +25,7 @@ ecg-visualization = "ecg_visualization:ecg_visualization"
 RRI-histogram = "ecg_visualization:RRI_histogram"
 md-rs = "ecg_visualization:run_md_rs"
 experiment = "ecg_visualization:study_all_entities"
-visualize = "ecg_visualization:visualize_all_entities"
+visualize = "ecg_visualization:visualize_all_studies"
 
 [build-system]
 requires = ["hatchling"]
