@@ -9,6 +9,11 @@ from ecg_visualization.logging import configure_optuna_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS
 from ecg_visualization.utils.timed_sequence import TimedSequence
 from ecg_visualization.utils.utils import prepare_sequences, sliding_window_sequences
+from ecg_visualization.utils.optuna_record import (
+    build_storage_name,
+    create_artifact_store,
+    create_study_for_entity,
+)
 import optuna
 from tqdm import tqdm
 from optuna.artifacts import FileSystemArtifactStore
@@ -52,19 +57,12 @@ def run_all_entities():
         SDDB(),
     ]
     artifact_root = Path("result") / "artifacts"
-    artifact_root.mkdir(parents=True, exist_ok=True)
-    artifact_store = FileSystemArtifactStore(base_path=str(artifact_root))
+    artifact_store = create_artifact_store(artifact_root)
+    storage_name = build_storage_name()
 
     for data_source in tqdm(data_sources):
         for entity in tqdm(data_source.data_entities):
-            storage_name = "mysql+pymysql://root:foo@localhost:3306/optuna"
-
-            study_name = f"{entity.dataset_name} {entity.data_id}"
-
-            storage_name = "mysql+pymysql://root:foo@localhost:3306/optuna"
-            study = optuna.create_study(
-                study_name=study_name, storage=storage_name, load_if_exists=True
-            )
+            study = create_study_for_entity(entity=entity, storage_name=storage_name)
             study.optimize(
                 Objective(
                     entity=entity,

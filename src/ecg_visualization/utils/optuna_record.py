@@ -29,7 +29,11 @@ def _load_sequence_from_artifact(
 
     with tempfile.TemporaryDirectory() as tmpdir:
         destination = Path(tmpdir) / f"{artifact_label}.npz"
-        download_artifact(artifact_store, artifact_id, str(destination))
+        download_artifact(
+            artifact_store=artifact_store,
+            artifact_id=artifact_id,
+            file_path=str(destination),
+        )
         payload = np.load(destination, allow_pickle=False)
         values = payload["values"]
         times = payload["times"]
@@ -91,6 +95,23 @@ def load_study_for_entity(
         return None
 
     return study
+
+
+def create_study_for_entity(
+    entity: "ECG_Entity",
+    *,
+    storage_name: str,
+    **kwargs: Any,
+) -> optuna.Study:
+    """Create (or reuse) an Optuna study for a specific entity."""
+
+    study_name = f"{entity.dataset_name} {entity.data_id}"
+    kwargs.setdefault("load_if_exists", True)
+    return optuna.create_study(
+        study_name=study_name,
+        storage=storage_name,
+        **kwargs,
+    )
 
 
 @dataclass(slots=True)
