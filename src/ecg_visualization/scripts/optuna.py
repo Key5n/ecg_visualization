@@ -1,5 +1,3 @@
-import logging
-import sys
 import tempfile
 from pathlib import Path
 from typing import Any, Final
@@ -7,6 +5,7 @@ from typing import Any, Final
 import numpy as np
 
 from ecg_visualization.datasets.dataset import ECG_Entity
+from ecg_visualization.logging import configure_optuna_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS
 from ecg_visualization.utils.timed_sequence import TimedSequence
 from ecg_visualization.utils.utils import prepare_sequences, sliding_window_sequences
@@ -41,6 +40,8 @@ DEFAULT_MD_RS_CONFIG: Final[dict[str, Any]] = {
 
 
 def run_all_entities():
+    configure_optuna_logging()
+
     data_sources: list[ECG_Dataset] = [
         CUDB(),
         AFPDB(),
@@ -58,9 +59,6 @@ def run_all_entities():
         for entity in tqdm(data_source.data_entities):
             storage_name = "mysql+pymysql://root:foo@localhost:3306/optuna"
 
-            optuna.logging.get_logger("optuna").addHandler(
-                logging.StreamHandler(sys.stdout)
-            )
             study_name = f"{entity.dataset_name} {entity.data_id}"
 
             storage_name = "mysql+pymysql://root:foo@localhost:3306/optuna"
