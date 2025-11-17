@@ -2,6 +2,7 @@ import seaborn as sns
 
 ABNORMAL_INTERVAL_COLOR = "#f4a261"
 EXTREME_INTERVAL_COLOR = "#2a9d8f"
+TRAINING_INTERVAL_COLOR = "#264653"
 
 _CUSTOM_PARAMS = {
     "lines.linewidth": 0.5,

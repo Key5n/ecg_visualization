@@ -31,7 +31,10 @@ from ecg_visualization.visualization.plotters import (
     plot_signal,
     plot_symbols,
 )
-from ecg_visualization.visualization.styles import EXTREME_INTERVAL_COLOR
+from ecg_visualization.visualization.styles import (
+    EXTREME_INTERVAL_COLOR,
+    TRAINING_INTERVAL_COLOR,
+)
 
 
 @dataclass(slots=True)
@@ -78,6 +81,7 @@ class StudyVisualizer:
             return None
 
         sequences = self._build_sequences(vis_record)
+        training_window = self._load_training_window(vis_record)
         ts_paged = self._paginate_signals()
         if ts_paged.size == 0:
             self._log(f"Skipping {self.study_name}: no samples available.")
@@ -105,6 +109,7 @@ class StudyVisualizer:
             extreme_windows=extreme_windows,
             symbol_list=symbol_list,
             output_path=output_path,
+            training_window=training_window,
         )
         return output_path
 
@@ -151,6 +156,22 @@ class StudyVisualizer:
             beats=beat_sequence,
         )
 
+    def _load_training_window(
+        self,
+        vis_record: VisualizationRecord,
+    ) -> tuple[float, float] | None:
+        attrs = vis_record.record.user_attrs
+        start_time = attrs.get("normal_window_start_time")
+        end_time = attrs.get("normal_window_end_time")
+        if start_time is None or end_time is None:
+            return None
+
+        start_time = float(start_time)
+        end_time = float(end_time)
+        if end_time <= start_time:
+            return None
+        return (start_time, end_time)
+
     def _paginate_signals(self) -> np.ndarray:
         total_samples = int(self.entity.signals.size)
         return paginate_signals(
@@ -180,6 +201,7 @@ class StudyVisualizer:
         extreme_windows: Iterable[tuple[float, float]],
         symbol_list: list[str],
         output_path: Path,
+        training_window: tuple[float, float] | None,
     ) -> None:
         n_rows = self.pagination_config.rows_per_page
         with pdf_exporter(str(output_path)) as exporter:
@@ -193,6 +215,7 @@ class StudyVisualizer:
                         signal_ylim=signal_ylim,
                         score_ylim=score_ylim,
                         extreme_windows=extreme_windows,
+                        training_window=training_window,
                     )
 
                 self._decorate_page(
@@ -212,6 +235,7 @@ class StudyVisualizer:
         signal_ylim: tuple[float, float],
         score_ylim: tuple[float, float],
         extreme_windows: Iterable[tuple[float, float]],
+        training_window: tuple[float, float] | None,
     ) -> None:
         window_start, window_end = float(ts[0]), float(ts[-1])
 
@@ -259,6 +283,15 @@ class StudyVisualizer:
             ylim_upper=signal_ylim[1],
             color=EXTREME_INTERVAL_COLOR,
         )
+        if training_window:
+            highlight_windows(
+                ax,
+                [training_window],
+                window_start=window_start,
+                window_end=window_end,
+                ylim_upper=signal_ylim[1],
+                color=TRAINING_INTERVAL_COLOR,
+            )
 
     @staticmethod
     def _align_signal_to_window(

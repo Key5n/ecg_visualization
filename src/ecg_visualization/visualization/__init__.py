@@ -4,6 +4,7 @@ from .styles import (
     apply_default_style,
     ABNORMAL_INTERVAL_COLOR,
     EXTREME_INTERVAL_COLOR,
+    TRAINING_INTERVAL_COLOR,
 )
 from .plotters import (
     highlight_windows,
@@ -20,6 +21,7 @@ __all__ = [
     "apply_default_style",
     "ABNORMAL_INTERVAL_COLOR",
     "EXTREME_INTERVAL_COLOR",
+    "TRAINING_INTERVAL_COLOR",
     "plot_anomaly_score",
     "plot_normal_beats",
     "plot_signal",
