@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Any, Final
 
@@ -59,6 +60,8 @@ MD_RS_CONFIG: Final[dict[str, Any]] = {
     "N_x_tilde": 128,
     "seed": 0,
 }
+
+LOGGER = logging.getLogger(__name__)
 
 
 def run_md_rs() -> None:
@@ -128,9 +131,10 @@ def run_md_rs() -> None:
                 )
 
                 symbol_list = sorted(set(entity.annotation.symbol))
-                tqdm.write(
-                    f"{entity.entity_id}, {entity.dataset_name} {"".join(symbol_list)} "
-                    f"The number of extreme window: {len(extreme_windows)}"
+                LOGGER.info(
+                    f"{entity.entity_id}, {entity.dataset_name} "
+                    f"{''.join(symbol_list)} The number of extreme window: "
+                    f"{len(extreme_windows)}"
                 )
 
                 annotation_events = TimedSequence.from_time_axis(
@@ -149,7 +153,9 @@ def run_md_rs() -> None:
                 try:
                     normal_window = entity.extract_normal_segment()
                 except ValueError:
-                    tqdm.write(f"Skipping {entity.entity_id}: no normal segment found.")
+                    LOGGER.warning(
+                        f"Skipping {entity.entity_id}: no normal segment found."
+                    )
                     continue
                 rr_intervals = entity.compute_rr_intervals()
 

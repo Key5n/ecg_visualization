@@ -1,3 +1,4 @@
+import logging
 import tempfile
 from pathlib import Path
 from typing import Any, Final
@@ -15,9 +16,9 @@ from ecg_visualization.utils.optuna_record import (
     create_study_for_entity,
 )
 import optuna
-from tqdm import tqdm
 from optuna.artifacts import FileSystemArtifactStore
 from optuna.artifacts import upload_artifact
+from tqdm import tqdm
 
 
 from ecg_visualization.datasets.dataset import (
@@ -42,6 +43,8 @@ DEFAULT_MD_RS_CONFIG: Final[dict[str, Any]] = {
     "N_x_tilde": 128,
     "seed": 0,
 }
+
+LOGGER = logging.getLogger(__name__)
 
 
 def study_all_entities():
@@ -96,7 +99,9 @@ class Objective:
         try:
             normal_window = self.entity.extract_normal_segment()
         except ValueError:
-            tqdm.write(f"Skipping {self.entity.entity_id}: no normal segment found.")
+            LOGGER.warning(
+                f"Skipping {self.entity.entity_id}: no normal segment found."
+            )
             return 0
 
         rr_intervals = self.entity.compute_rr_intervals()

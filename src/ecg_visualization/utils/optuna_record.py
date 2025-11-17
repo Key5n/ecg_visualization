@@ -1,10 +1,11 @@
+import logging
 import os
 import tempfile
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from threading import Lock
-from typing import Any, Callable, TYPE_CHECKING, ClassVar
+from typing import Any, TYPE_CHECKING, ClassVar
 
 import numpy as np
 import optuna
@@ -12,12 +13,13 @@ from optuna.artifacts import FileSystemArtifactStore, download_artifact
 from optuna.exceptions import OptunaError
 from optuna.trial import FrozenTrial
 from optuna.storages import RDBStorage
-from tqdm import tqdm
 
 from ecg_visualization.utils.timed_sequence import TimedSequence
 
 if TYPE_CHECKING:
     from ecg_visualization.datasets.dataset import ECG_Entity
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _load_sequence_from_artifact(
@@ -111,34 +113,29 @@ class StudyLoader:
     def load(
         self,
         entity: "ECG_Entity",
-        *,
-        log_fn: Callable[[str], None] | None = None,
     ) -> optuna.Study | None:
         """Load the Optuna study for the provided entity."""
 
         study_name = f"{entity.dataset_id} {entity.entity_id}"
-        return self.load_by_name(study_name, log_fn=log_fn)
+        return self.load_by_name(study_name)
 
     def load_by_name(
         self,
         study_name: str,
-        *,
-        log_fn: Callable[[str], None] | None = None,
     ) -> optuna.Study | None:
         """Load a study by name, logging errors and filtering empty trials."""
 
-        log = log_fn or tqdm.write
         try:
             study = optuna.load_study(
                 study_name=study_name,
                 storage=self._storage,
             )
         except OptunaError as exc:
-            log(f"Skipping {study_name}: failed to load study ({exc})")
+            LOGGER.warning(f"Skipping {study_name}: failed to load study ({exc})")
             return None
 
         if not study.trials:
-            log(f"Skipping {study_name}: no trials available.")
+            LOGGER.info(f"Skipping {study_name}: no trials available.")
             return None
 
         return study

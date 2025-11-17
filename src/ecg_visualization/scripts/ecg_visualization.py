@@ -1,3 +1,4 @@
+import logging
 import os
 import matplotlib.pyplot as plt
 import numpy as np
@@ -38,6 +39,8 @@ MAX_RR_INTERVAL_SEC = 1.0
 RR_WINDOW_BEATS = 100
 HISTOGRAM_WINDOW_SIZES = (10, 50, 100)
 PAGINATION_CONFIG = PaginationConfig()
+
+LOGGER = logging.getLogger(__name__)
 
 
 def ecg_visualization() -> None:
@@ -108,9 +111,10 @@ def ecg_visualization() -> None:
                 )
 
                 symbol_list = sorted(set(entity.annotation.symbol))
-                tqdm.write(
-                    f"{entity.entity_id}, {entity.dataset_name} {"".join(symbol_list)} "
-                    f"The number of extreme window: {len(extreme_windows)}"
+                LOGGER.info(
+                    f"{entity.entity_id}, {entity.dataset_name} "
+                    f"{''.join(symbol_list)} The number of extreme window: "
+                    f"{len(extreme_windows)}"
                 )
 
                 annotation_events = [

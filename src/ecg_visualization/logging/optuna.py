@@ -1,30 +1,30 @@
 import logging
 
 import optuna
-from tqdm import tqdm
 
-
-class _OptunaTqdmHandler(logging.Handler):
-    """Route optuna logs through tqdm.write to preserve progress bars."""
-
-    def emit(self, record: logging.LogRecord) -> None:
-        try:
-            tqdm.write(self.format(record))
-        except Exception:
-            self.handleError(record)
+from ecg_visualization.logging.tqdm_multiprocessing import TqdmLoggingHandler
 
 
 def configure_optuna_logging() -> None:
     """
-    Configure optuna to use tqdm-aware logging once for the lifetime of the process.
+    Configure optuna to propagate logs through Python's logging system while ensuring
+    a tqdm-friendly handler exists for callers that have not configured logging yet.
     """
 
     logger = optuna.logging.get_logger("optuna")
-    if any(isinstance(handler, _OptunaTqdmHandler) for handler in logger.handlers):
-        return
 
     optuna.logging.disable_default_handler()
-    handler = _OptunaTqdmHandler()
-    handler.setLevel(logging.INFO)
-    handler.setFormatter(logging.Formatter("%(message)s"))
-    logger.addHandler(handler)
+    logger.handlers.clear()
+    logger.propagate = True
+
+    root = logging.getLogger()
+    has_tqdm_handler = any(
+        isinstance(handler, TqdmLoggingHandler) for handler in root.handlers
+    )
+    if not has_tqdm_handler:
+        handler = TqdmLoggingHandler()
+        handler.setLevel(logging.INFO)
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        if root.level == logging.NOTSET:
+            root.setLevel(logging.INFO)
+        root.addHandler(handler)

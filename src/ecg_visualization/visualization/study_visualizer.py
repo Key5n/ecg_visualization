@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Iterable
 
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
@@ -12,7 +13,6 @@ import numpy.typing as npt
 from optuna.artifacts import FileSystemArtifactStore
 from optuna.study import Study
 from optuna.trial import FrozenTrial
-from tqdm import tqdm
 
 from ecg_visualization.datasets.dataset import (
     DATASET_CLASS_BY_ID,
@@ -44,6 +44,8 @@ from ecg_visualization.visualization.styles import (
 )
 from ecg_visualization.visualization.pdf_metadata import build_pdf_metadata
 
+LOGGER = logging.getLogger(__name__)
+
 
 @dataclass(slots=True)
 class SequenceBundle:
@@ -67,7 +69,6 @@ class StudyVisualizer:
         pagination_config: PaginationConfig,
         visualization_root: Path,
         rr_window_beats: int,
-        log_fn: Callable[[str], None] | None = None,
     ) -> None:
         self.study = study
         self.artifact_store = artifact_store
@@ -75,7 +76,6 @@ class StudyVisualizer:
         self.visualization_root = visualization_root
         self.rr_window_beats = rr_window_beats
         self.study_name = study.study_name
-        self._log = log_fn or tqdm.write
         self.entity = self._load_entity_from_study(study)
 
     def visualize(self) -> Path | None:
@@ -91,7 +91,7 @@ class StudyVisualizer:
         training_window = self._load_training_window(vis_record)
         ts_paged = self._paginate_signals()
         if ts_paged.size == 0:
-            self._log(f"Skipping {self.study_name}: no samples available.")
+            LOGGER.warning(f"Skipping {self.study_name}: no samples available.")
             return None
 
         signal_ylim = compute_ylim(
@@ -136,7 +136,7 @@ class StudyVisualizer:
 
     def _select_trial(self, study: Study) -> FrozenTrial | None:
         if not study.trials:
-            self._log(f"Skipping {self.study_name}: no trials available.")
+            LOGGER.warning(f"Skipping {self.study_name}: no trials available.")
             return None
         return study.best_trial
 
@@ -152,7 +152,7 @@ class StudyVisualizer:
                 artifact_store=self.artifact_store,
             )
         except ValueError as exc:
-            self._log(f"Skipping {self.study_name}: {exc}")
+            LOGGER.warning(f"Skipping {self.study_name}: {exc}")
             return None
 
     def _build_sequences(self, vis_record: VisualizationRecord) -> SequenceBundle:

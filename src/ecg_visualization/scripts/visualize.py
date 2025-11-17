@@ -1,12 +1,17 @@
+import logging
+import multiprocessing as mp
 import os
-from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-import optuna
 
+import optuna
 from dotenv import load_dotenv
 from tqdm import tqdm
 
-from ecg_visualization.logging import configure_optuna_logging
+from ecg_visualization.logging import (
+    configure_optuna_logging,
+    queue_logging_context,
+    worker_logging_initializer,
+)
 from ecg_visualization.utils.optuna_record import (
     StudyLoader,
     build_storage_name,
@@ -24,6 +29,7 @@ VISUALIZATION_ROOT = Path("result") / "visualize"
 
 load_dotenv()
 WORKER_ENV_VAR = "ECG_VISUALIZE_WORKERS"
+LOGGER = logging.getLogger(__name__)
 
 
 def visualize_all_studies(max_workers: int | None = None):
@@ -38,17 +44,22 @@ def visualize_all_studies(max_workers: int | None = None):
             visualize_study(study)
         return
 
-    with ProcessPoolExecutor(max_workers=worker_count) as executor:
-        results = executor.map(_run_visualization, studies, chunksize=1)
-        for dataset_id, entity_id, error in tqdm(
-            results,
-            total=len(studies),
-            desc="visualizations",
-        ):
-            if error:
-                tqdm.write(
-                    f"Visualization failed for {dataset_id}/{entity_id}: {error}"
-                )
+    with queue_logging_context() as log_queue:
+        with mp.Pool(
+            processes=worker_count,
+            initializer=worker_logging_initializer,
+            initargs=(log_queue,),
+        ) as pool:
+            results = pool.imap(_run_visualization, studies, chunksize=1)
+            for dataset_id, entity_id, error in tqdm(
+                results,
+                total=len(studies),
+                desc="visualizations",
+            ):
+                if error:
+                    LOGGER.error(
+                        f"Visualization failed for {dataset_id}/{entity_id}: {error}"
+                    )
 
 
 def visualize_study(study: optuna.Study):
@@ -66,7 +77,7 @@ def visualize_study(study: optuna.Study):
     )
     output_path = visualizer.visualize()
     if output_path:
-        tqdm.write(f"Saved visualization to {output_path}")
+        LOGGER.info(f"Saved visualization to {output_path}")
 
 
 def _determine_worker_count(max_workers: int | None) -> int:
@@ -96,7 +107,7 @@ def load_studies(storage_name: str) -> list[optuna.Study]:
     loader = StudyLoader(storage_name)
     studies: list[optuna.Study] = []
     for study_name in study_names:
-        study = loader.load_by_name(study_name, log_fn=tqdm.write)
+        study = loader.load_by_name(study_name)
         if study is None:
             continue
         studies.append(study)
