@@ -76,6 +76,16 @@ def build_storage_name(
     return f"{driver}://{user}:{password}@{host}:{port}/{database}"
 
 
+def get_study_identifiers(study: optuna.Study) -> tuple[str, str]:
+    dataset_id = study.user_attrs.get("dataset_id")
+    entity_id = study.user_attrs.get("entity_id")
+    if dataset_id is None or entity_id is None:
+        raise ValueError(
+            f"Study '{study.study_name}' is missing dataset_id/entity_id user attrs"
+        )
+    return str(dataset_id), str(entity_id)
+
+
 class StudyLoader:
     """Singleton per storage URL to reuse Optuna RDB storage connections."""
 
@@ -107,6 +117,16 @@ class StudyLoader:
         """Load the Optuna study for the provided entity."""
 
         study_name = f"{entity.dataset_id} {entity.entity_id}"
+        return self.load_by_name(study_name, log_fn=log_fn)
+
+    def load_by_name(
+        self,
+        study_name: str,
+        *,
+        log_fn: Callable[[str], None] | None = None,
+    ) -> optuna.Study | None:
+        """Load a study by name, logging errors and filtering empty trials."""
+
         log = log_fn or tqdm.write
         try:
             study = optuna.load_study(
@@ -134,11 +154,16 @@ def create_study_for_entity(
 
     study_name = f"{entity.dataset_id} {entity.entity_id}"
     kwargs.setdefault("load_if_exists", True)
-    return optuna.create_study(
+    study = optuna.create_study(
         study_name=study_name,
         storage=storage_name,
         **kwargs,
     )
+    if study.user_attrs.get("dataset_id") != entity.dataset_id:
+        study.set_user_attr("dataset_id", entity.dataset_id)
+    if study.user_attrs.get("entity_id") != entity.entity_id:
+        study.set_user_attr("entity_id", entity.entity_id)
+    return study
 
 
 @dataclass(slots=True)

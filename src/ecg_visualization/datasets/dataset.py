@@ -401,3 +401,14 @@ class SDDB(ECG_Dataset):
     name: ClassVar[str] = "Sudden Cardiac Death Holter Database"
     dataset_id: ClassVar[str] = "sddb"
     sr: ClassVar[int] = 250
+
+
+DATASET_CLASS_BY_ID: dict[str, type[ECG_Dataset]] = {
+    CUDB.dataset_id: CUDB,
+    AFPDB.dataset_id: AFPDB,
+    MITDB.dataset_id: MITDB,
+    AFDB.dataset_id: AFDB,
+    LTAFDB.dataset_id: LTAFDB,
+    SHDBAF.dataset_id: SHDBAF,
+    SDDB.dataset_id: SDDB,
+}

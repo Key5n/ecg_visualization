@@ -1,29 +1,17 @@
 import os
 from concurrent.futures import ProcessPoolExecutor
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 import optuna
 
 from dotenv import load_dotenv
 from tqdm import tqdm
 
-from ecg_visualization.datasets.dataset import (
-    AFDB,
-    AFPDB,
-    CUDB,
-    LTAFDB,
-    MITDB,
-    SDDB,
-    SHDBAF,
-    ECG_Dataset,
-    ECG_Entity,
-)
 from ecg_visualization.logging import configure_optuna_logging
 from ecg_visualization.utils.optuna_record import (
     StudyLoader,
     build_storage_name,
     create_artifact_store,
+    get_study_identifiers,
 )
 from ecg_visualization.visualization.layouts import PaginationConfig
 from ecg_visualization.visualization.styles import apply_default_style
@@ -38,43 +26,23 @@ load_dotenv()
 WORKER_ENV_VAR = "ECG_VISUALIZE_WORKERS"
 
 
-@dataclass(slots=True)
-class VisualizationJob:
-    entity: ECG_Entity
-    study: optuna.Study
-
-
 def visualize_all_studies(max_workers: int | None = None):
-    data_sources: list[ECG_Dataset] = [
-        CUDB(),
-        AFPDB(),
-        MITDB(),
-        AFDB(),
-        LTAFDB(),
-        SHDBAF(),
-        SDDB(),
-    ]
-
-    entities: list[ECG_Entity] = []
-    for data_source in data_sources:
-        entities.extend(data_source.data_entities)
-
     storage_name = build_storage_name()
-    jobs = _prepare_visualization_jobs(entities, storage_name)
-    if not jobs:
+    studies = load_studies(storage_name)
+    if not studies:
         return
 
     worker_count = _determine_worker_count(max_workers)
     if worker_count == 1:
-        for job in tqdm(jobs, desc="visualizations"):
-            visualize_study(job)
+        for study in tqdm(studies, desc="visualizations"):
+            visualize_study(study)
         return
 
     with ProcessPoolExecutor(max_workers=worker_count) as executor:
-        results = executor.map(_run_visualization, jobs, chunksize=1)
+        results = executor.map(_run_visualization, studies, chunksize=1)
         for dataset_id, entity_id, error in tqdm(
             results,
-            total=len(jobs),
+            total=len(studies),
             desc="visualizations",
         ):
             if error:
@@ -83,15 +51,14 @@ def visualize_all_studies(max_workers: int | None = None):
                 )
 
 
-def visualize_study(job: VisualizationJob):
+def visualize_study(study: optuna.Study):
     apply_default_style()
     configure_optuna_logging()
 
     artifact_store = create_artifact_store(ARTIFACT_ROOT)
 
     visualizer = StudyVisualizer(
-        entity=job.entity,
-        study=job.study,
+        study=study,
         artifact_store=artifact_store,
         pagination_config=PAGINATION_CONFIG,
         visualization_root=VISUALIZATION_ROOT,
@@ -115,28 +82,22 @@ def _determine_worker_count(max_workers: int | None) -> int:
     return max(1, os.cpu_count() or 1)
 
 
-def _run_visualization(job: VisualizationJob) -> tuple[str, str, Exception | None]:
+def _run_visualization(study: optuna.Study) -> tuple[str, str, Exception | None]:
+    dataset_id, entity_id = get_study_identifiers(study)
     try:
-        visualize_study(job)
-        return job.entity.dataset_id, job.entity.entity_id, None
+        visualize_study(study)
+        return dataset_id, entity_id, None
     except Exception as exc:  # pragma: no cover - worker error propagation
-        return job.entity.dataset_id, job.entity.entity_id, exc
+        return dataset_id, entity_id, exc
 
 
-def _prepare_visualization_jobs(
-    entities: Iterable[ECG_Entity],
-    storage_name: str,
-) -> list[VisualizationJob]:
-    jobs: list[VisualizationJob] = []
+def load_studies(storage_name: str) -> list[optuna.Study]:
+    study_names = optuna.study.get_all_study_names(storage_name)
     loader = StudyLoader(storage_name)
-    for entity in entities:
-        study = loader.load(entity, log_fn=tqdm.write)
+    studies: list[optuna.Study] = []
+    for study_name in study_names:
+        study = loader.load_by_name(study_name, log_fn=tqdm.write)
         if study is None:
             continue
-        jobs.append(
-            VisualizationJob(
-                entity=entity,
-                study=study,
-            )
-        )
-    return jobs
+        studies.append(study)
+    return studies

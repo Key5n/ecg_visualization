@@ -14,8 +14,14 @@ from optuna.study import Study
 from optuna.trial import FrozenTrial
 from tqdm import tqdm
 
-from ecg_visualization.datasets.dataset import ECG_Entity
-from ecg_visualization.utils.optuna_record import VisualizationRecord
+from ecg_visualization.datasets.dataset import (
+    DATASET_CLASS_BY_ID,
+    ECG_Entity,
+)
+from ecg_visualization.utils.optuna_record import (
+    VisualizationRecord,
+    get_study_identifiers,
+)
 from ecg_visualization.utils.timed_sequence import TimedSequence
 from ecg_visualization.visualization.export import pdf_exporter
 from ecg_visualization.visualization.layouts import (
@@ -54,7 +60,6 @@ class StudyVisualizer:
     def __init__(
         self,
         *,
-        entity: ECG_Entity,
         study: Study,
         artifact_store: FileSystemArtifactStore,
         pagination_config: PaginationConfig,
@@ -62,14 +67,14 @@ class StudyVisualizer:
         rr_window_beats: int,
         log_fn: Callable[[str], None] | None = None,
     ) -> None:
-        self.entity = entity
         self.study = study
         self.artifact_store = artifact_store
         self.pagination_config = pagination_config
         self.visualization_root = visualization_root
         self.rr_window_beats = rr_window_beats
-        self.study_name = f"{entity.dataset_id} {entity.entity_id}"
+        self.study_name = study.study_name
         self._log = log_fn or tqdm.write
+        self.entity = self._load_entity_from_study(study)
 
     def visualize(self) -> Path | None:
         trial = self._select_trial(self.study)
@@ -112,6 +117,15 @@ class StudyVisualizer:
             training_window=training_window,
         )
         return output_path
+
+    def _load_entity_from_study(self, study: Study) -> ECG_Entity:
+        dataset_id, entity_id = get_study_identifiers(study)
+        dataset_cls = DATASET_CLASS_BY_ID.get(dataset_id)
+        if dataset_cls is None:
+            raise ValueError(
+                f"Unknown dataset id '{dataset_id}' for study {study.study_name}"
+            )
+        return dataset_cls._load_entity(entity_id)
 
     def _select_trial(self, study: Study) -> FrozenTrial | None:
         if not study.trials:
