@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 
 from ecg_visualization.logging import (
-    configure_optuna_logging,
     queue_logging_context,
     worker_logging_initializer,
 )
@@ -64,7 +63,6 @@ def visualize_all_studies(max_workers: int | None = None):
 
 def visualize_study(study: optuna.Study):
     apply_default_style()
-    configure_optuna_logging()
 
     artifact_store = create_artifact_store(ARTIFACT_ROOT)
 
