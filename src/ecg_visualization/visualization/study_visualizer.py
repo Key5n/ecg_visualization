@@ -23,7 +23,7 @@ from ecg_visualization.utils.optuna_record import (
     get_study_identifiers,
 )
 from ecg_visualization.utils.timed_sequence import TimedSequence
-from ecg_visualization.visualization.export import pdf_exporter
+from ecg_visualization.visualization.export import PdfExporter, pdf_exporter
 from ecg_visualization.visualization.layouts import (
     PaginationConfig,
     create_page_layout,
@@ -33,6 +33,7 @@ from ecg_visualization.visualization.limits import compute_ylim
 from ecg_visualization.visualization.plotters import (
     highlight_windows,
     plot_anomaly_score,
+    plot_histogram,
     plot_normal_beats,
     plot_signal,
     plot_symbols,
@@ -226,7 +227,8 @@ class StudyVisualizer:
     ) -> None:
         n_rows = self.pagination_config.rows_per_page
         with pdf_exporter(str(output_path), metadata=pdf_metadata) as exporter:
-            for page_idx, ts_row in enumerate(ts_paged):
+            self._render_histogram_pages(exporter)
+            for signal_page_idx, ts_row in enumerate(ts_paged):
                 fig, axs = create_page_layout(n_rows)
                 for ts, ax in zip(ts_row, np.atleast_1d(axs), strict=True):
                     self._render_row(
@@ -241,11 +243,51 @@ class StudyVisualizer:
 
                 self._decorate_page(
                     fig=fig,
-                    page_idx=page_idx,
+                    page_idx=signal_page_idx,
                     symbol_list=symbol_list,
                 )
                 exporter.add_page(fig, pad_inches=0)
                 plt.close(fig)
+
+    def _render_histogram_pages(
+        self,
+        exporter: PdfExporter,
+        *,
+        window_sizes: tuple[int, ...] = (10, 50, 100),
+        percentile_bounds: tuple[float, float] = (5.0, 95.0),
+    ) -> None:
+        """Add histogram pages summarizing the R-peak window durations."""
+        beats = self.entity.beats
+        if beats.size == 0:
+            return
+
+        beat_times = beats.astype(np.float64) / self.entity.sr
+        for window_size in window_sizes:
+            if beats.size < window_size:
+                continue
+
+            end_times = beat_times[window_size - 1 :]
+            start_times = beat_times[: beat_times.size - window_size + 1]
+            durations = end_times - start_times
+            if durations.size == 0:
+                continue
+
+            fig, ax = plt.subplots(figsize=(8, 4))
+            plot_histogram(
+                ax,
+                durations,
+                bins="auto",
+                title=(
+                    f"{self.entity.dataset_name} / "
+                    f"{self.entity.entity_id} (k={window_size})"
+                ),
+                xlabel="Time for R-peak window (sec)",
+                ylabel="Count",
+                percentile_lines=percentile_bounds,
+            )
+            fig.tight_layout()
+            exporter.add_page(fig, pad_inches=0)
+            plt.close(fig)
 
     def _render_row(
         self,
