@@ -12,6 +12,7 @@ import multiprocessing as mp
 import os
 import random
 import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from tqdm import tqdm
 
@@ -41,17 +42,18 @@ def run_debug_visualize(
             return
 
         LOGGER.info(f"Running debug flow with {resolved_workers} workers.")
-        with mp.Pool(
-            processes=resolved_workers,
+        with ProcessPoolExecutor(
+            max_workers=resolved_workers,
             initializer=worker_logging_initializer,
             initargs=(log_queue,),
-        ) as pool:
-            results = pool.imap(_run_task, tasks, chunksize=1)
-            for task_id, error in tqdm(
-                results,
-                total=len(tasks),
+        ) as executor:
+            futures = [executor.submit(_run_task, task) for task in tasks]
+            for future in tqdm(
+                as_completed(futures),
+                total=len(futures),
                 desc="debug tasks",
             ):
+                task_id, error = future.result()
                 _handle_task(task_id, error)
 
 
@@ -72,7 +74,7 @@ def _run_task(task_id: int) -> tuple[int, Exception | None]:
 def _simulate_work(task_id: int) -> None:
     LOGGER.info(f"start task-{task_id}")
     # Add entropy so interleaving is easier to spot in logs.
-    time.sleep(random.uniform(0.1, 0.5))
+    time.sleep(random.uniform(1, 5))
     if task_id % 5 == 0:
         raise RuntimeError(f"debug failure for task-{task_id}")
     LOGGER.info(f"finish task-{task_id}")

@@ -1,6 +1,6 @@
 import logging
-import multiprocessing as mp
 import os
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import optuna
@@ -44,17 +44,18 @@ def visualize_all_studies(max_workers: int | None = None):
         return
 
     with queue_logging_context() as log_queue:
-        with mp.Pool(
-            processes=worker_count,
+        with ProcessPoolExecutor(
+            max_workers=worker_count,
             initializer=worker_logging_initializer,
             initargs=(log_queue,),
-        ) as pool:
-            results = pool.imap(_run_visualization, studies, chunksize=1)
-            for dataset_id, entity_id, error in tqdm(
-                results,
-                total=len(studies),
+        ) as executor:
+            futures = [executor.submit(_run_visualization, study) for study in studies]
+            for future in tqdm(
+                as_completed(futures),
+                total=len(futures),
                 desc="visualizations",
             ):
+                dataset_id, entity_id, error = future.result()
                 if error:
                     LOGGER.error(
                         f"Visualization failed for {dataset_id}/{entity_id}: {error}"
