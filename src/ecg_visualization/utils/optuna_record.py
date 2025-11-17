@@ -141,6 +141,20 @@ class StudyLoader:
         return study
 
 
+def load_studies(storage_name: str) -> list[optuna.Study]:
+    """Load every study in the storage, skipping ones that fail or lack trials."""
+
+    study_names = optuna.study.get_all_study_names(storage_name)
+    loader = StudyLoader(storage_name)
+    studies: list[optuna.Study] = []
+    for study_name in study_names:
+        study = loader.load_by_name(study_name)
+        if study is None:
+            continue
+        studies.append(study)
+    return studies
+
+
 def create_study_for_entity(
     entity: "ECG_Entity",
     *,

@@ -12,10 +12,10 @@ from ecg_visualization.logging import (
     worker_logging_initializer,
 )
 from ecg_visualization.utils.optuna_record import (
-    StudyLoader,
     build_storage_name,
     create_artifact_store,
     get_study_identifiers,
+    load_studies,
 )
 from ecg_visualization.visualization.layouts import PaginationConfig
 from ecg_visualization.visualization.styles import apply_default_style
@@ -99,14 +99,3 @@ def _run_visualization(study: optuna.Study) -> tuple[str, str, Exception | None]
     except Exception as exc:  # pragma: no cover - worker error propagation
         return dataset_id, entity_id, exc
 
-
-def load_studies(storage_name: str) -> list[optuna.Study]:
-    study_names = optuna.study.get_all_study_names(storage_name)
-    loader = StudyLoader(storage_name)
-    studies: list[optuna.Study] = []
-    for study_name in study_names:
-        study = loader.load_by_name(study_name)
-        if study is None:
-            continue
-        studies.append(study)
-    return studies
