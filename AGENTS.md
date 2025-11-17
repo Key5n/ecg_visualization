@@ -9,16 +9,16 @@
 
 ## Build, Test, and Development Commands
 
-- Install: `uv sync` creates a Python 3.12 environment with numpy, seaborn, wfdb, tqdm.
-- Run main pipeline: `uv run ecg-visualization` (or `uv run python -m ecg_visualization.scripts.ecg_visualization`) to generate per-record PDFs under `result/`.
-- Dry-run a single dataset: edit `src/ecg_visualization/scripts/ecg_visualization.py` to adjust `data_sources`, then rerun the command above.
-- Formatting check: `uv run python -m compileall src` catches syntax issues when no tests are present.
+- Install: `uv sync` creates a Python 3.12 environment
 
 ## Coding Style & Naming Conventions
 
 - Follow PEP 8 with 4-space indentation, descriptive snake_case function and variable names, and PascalCase for dataclasses (e.g., `ECG_Dataset`).
 - Prefer explicit typing (`numpy.typing.NDArray`, return annotations) and small, pure helpers in `utils/`.
-- Keep module boundaries intentional: loaders in `datasets`, orchestration in `scripts`, reusable math in `utils`.
+- Write main script in `src/ecg_visualization/scripts/study.py` and Write visualization script in `src/ecg_visualization/scripts/visualize.py`
+  - Use visualization logic instance `StudyVisualizer` in `visualize.py`
+  - In `study.py`, store any information to be used in `StudyVisualizer` to RDB by optuna or `FileSystemArtifactStore`
+  - In `StudyVisualizer`, load any information to be used in visualization from RDB by optuna or `FileSystemArtifactStore`
 
 ## Testing Guidelines
 
