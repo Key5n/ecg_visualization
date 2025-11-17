@@ -41,6 +41,7 @@ from ecg_visualization.visualization.styles import (
     EXTREME_INTERVAL_COLOR,
     TRAINING_INTERVAL_COLOR,
 )
+from ecg_visualization.visualization.pdf_metadata import build_pdf_metadata
 
 
 @dataclass(slots=True)
@@ -105,6 +106,10 @@ class StudyVisualizer:
         )
         symbol_list = self._collect_symbols(sequences.annotations)
         output_path = self._prepare_output_path()
+        pdf_metadata = build_pdf_metadata(
+            entity=self.entity,
+            record=vis_record.record,
+        )
 
         self._export_pdf(
             ts_paged=ts_paged,
@@ -115,6 +120,7 @@ class StudyVisualizer:
             symbol_list=symbol_list,
             output_path=output_path,
             training_window=training_window,
+            pdf_metadata=pdf_metadata,
         )
         return output_path
 
@@ -216,9 +222,10 @@ class StudyVisualizer:
         symbol_list: list[str],
         output_path: Path,
         training_window: tuple[float, float] | None,
+        pdf_metadata: dict[str, str] | None = None,
     ) -> None:
         n_rows = self.pagination_config.rows_per_page
-        with pdf_exporter(str(output_path)) as exporter:
+        with pdf_exporter(str(output_path), metadata=pdf_metadata) as exporter:
             for page_idx, ts_row in enumerate(ts_paged):
                 fig, axs = create_page_layout(n_rows)
                 for ts, ax in zip(ts_row, np.atleast_1d(axs), strict=True):

@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from typing import Iterator
+from typing import Iterator, Mapping
 
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.figure import Figure
@@ -17,9 +17,17 @@ class PdfExporter:
 
 
 @contextmanager
-def pdf_exporter(path: str) -> Iterator[PdfExporter]:
+def pdf_exporter(
+    path: str,
+    *,
+    metadata: Mapping[str, str] | None = None,
+) -> Iterator[PdfExporter]:
     """Context manager that yields a PdfExporter."""
     with PdfPages(path) as pdf_pages:
+        if metadata:
+            info_dict = pdf_pages.infodict()
+            for key, value in metadata.items():
+                info_dict[key] = value
         yield PdfExporter(pdf_pages)
 
 
