@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 import os
+from typing import ClassVar
 
 import numpy as np
 import numpy.typing as npt
@@ -215,15 +216,11 @@ class ECG_Dataset:
         data_entities (list[ECG_Entity]): List of ECG entities in the dataset
     """
 
-    dir_path: str
-    name: str
-    dataset_id: str
-    annotation_extention_priority: list[str] = field(
-        default_factory=lambda: ["atr", "qrs", "ari"]
-    )
-    beat_extention_priority: list[str] = field(
-        default_factory=lambda: ["atr", "qrs", "ari"]
-    )
+    dir_path: ClassVar[str]
+    name: ClassVar[str]
+    dataset_id: ClassVar[str]
+    annotation_extention_priority: ClassVar[tuple[str, ...]] = ("atr", "qrs", "ari")
+    beat_extention_priority: ClassVar[tuple[str, ...]] = ("atr", "qrs", "ari")
     data_ids: list[str] = field(init=False)
     data_entities: list[ECG_Entity] = field(default_factory=list)
 
@@ -235,18 +232,20 @@ class ECG_Dataset:
         for data_id in self.data_ids:
             self.data_entities.append(self._load_entity(data_id))
 
-    def _read_annotation(self, data_path: str) -> Annotation:
-        for ext in self.annotation_extention_priority:
+    @classmethod
+    def _read_annotation(cls, data_path: str) -> Annotation:
+        for ext in cls.annotation_extention_priority:
             annotation_file = f"{data_path}.{ext}"
             if os.path.isfile(annotation_file):
                 annotation = wfdb.rdann(data_path, ext)
                 return annotation
 
-    def _read_normal_beats(self, data_path: str) -> npt.NDArray[np.int_]:
-        for ext in self.beat_extention_priority:
+    @classmethod
+    def _read_normal_beats(cls, data_path: str) -> npt.NDArray[np.int_]:
+        for ext in cls.beat_extention_priority:
             annotation_file = f"{data_path}.{ext}"
             if os.path.isfile(annotation_file):
-                annotation = self._read_annotation(data_path)
+                annotation = cls._read_annotation(data_path)
                 if ext == "atr":
                     beats = np.array(
                         [
@@ -265,23 +264,28 @@ class ECG_Dataset:
 
         raise FileNotFoundError(f"No annotation file found for {data_path}")
 
-    def _load_entity(self, data_id: str) -> ECG_Entity:
-        data_path = os.path.join(self.dir_path, data_id)
+    @classmethod
+    def _load_entity(cls, data_id: str) -> ECG_Entity:
+        """
+        Load a single entity without instantiating the dataset and populating all
+        records.
+        """
+        data_path = os.path.join(cls.dir_path, data_id)
         signals, _ = wfdb.rdsamp(
             data_path,
             channels=[0],
         )
         squeezed = np.squeeze(signals)
 
-        annotation = self._read_annotation(data_path)
-        beats = self._read_normal_beats(data_path)
+        annotation = cls._read_annotation(data_path)
+        beats = cls._read_normal_beats(data_path)
 
         record = wfdb.rdheader(data_path)
         sr = record.fs
         return ECG_Entity(
             entity_id=data_id,
-            dataset_name=self.name,
-            dataset_id=self.dataset_id,
+            dataset_name=cls.name,
+            dataset_id=cls.dataset_id,
             sr=sr,
             signals=squeezed,
             annotation=annotation,
@@ -313,37 +317,37 @@ class ECG_Dataset:
 # https://physionet.org/content/cudb/1.0.0/
 @dataclass(slots=True)
 class CUDB(ECG_Dataset):
-    dir_path: str = os.path.join(dataset_root_dir, "cudb", "1.0.0")
-    name: str = "Tachyarrythmia"
-    dataset_id: str = "cudb"
-    sr: int = 250
+    dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "cudb", "1.0.0")
+    name: ClassVar[str] = "Tachyarrythmia"
+    dataset_id: ClassVar[str] = "cudb"
+    sr: ClassVar[int] = 250
 
 
 # https://physionet.org/content/afpdb/1.0.0/
 @dataclass(slots=True)
 class AFPDB(ECG_Dataset):
-    dir_path: str = os.path.join(dataset_root_dir, "afpdb", "1.0.0")
-    name: str = "PAF Prediction Challenge Database"
-    dataset_id: str = "afpdb"
-    sr: int = 128
+    dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "afpdb", "1.0.0")
+    name: ClassVar[str] = "PAF Prediction Challenge Database"
+    dataset_id: ClassVar[str] = "afpdb"
+    sr: ClassVar[int] = 128
 
 
 # https://physionet.org/content/mitdb/1.0.0/
 @dataclass(slots=True)
 class MITDB(ECG_Dataset):
-    dir_path: str = os.path.join(dataset_root_dir, "mitdb", "1.0.0")
-    name: str = "MIT-BIH Arrhythmia Database"
-    dataset_id: str = "mitdb"
-    sr: int = 360
+    dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "mitdb", "1.0.0")
+    name: ClassVar[str] = "MIT-BIH Arrhythmia Database"
+    dataset_id: ClassVar[str] = "mitdb"
+    sr: ClassVar[int] = 360
 
 
 # https://physionet.org/content/afdb/1.0.0/
 @dataclass(slots=True)
 class AFDB(ECG_Dataset):
-    dir_path: str = os.path.join(dataset_root_dir, "afdb", "1.0.0")
-    name: str = "MIT-BIH Atrial Fibrillation Database"
-    dataset_id: str = "afdb"
-    sr: int = 250
+    dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "afdb", "1.0.0")
+    name: ClassVar[str] = "MIT-BIH Atrial Fibrillation Database"
+    dataset_id: ClassVar[str] = "afdb"
+    sr: ClassVar[int] = 250
 
     def __post_init__(self):
         record_path = os.path.join(self.dir_path, "RECORDS")
@@ -361,20 +365,22 @@ class AFDB(ECG_Dataset):
 # https://physionet.org/content/ltafdb/1.0.0/
 @dataclass(slots=True)
 class LTAFDB(ECG_Dataset):
-    dir_path: str = os.path.join(dataset_root_dir, "ltafdb", "1.0.0")
-    name: str = "Long Term AF Database"
-    dataset_id: str = "ltafdb"
-    sr: int = 128
+    dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "ltafdb", "1.0.0")
+    name: ClassVar[str] = "Long Term AF Database"
+    dataset_id: ClassVar[str] = "ltafdb"
+    sr: ClassVar[int] = 128
 
 
 # https://physionet.org/content/shdb-af/1.0.1/
 @dataclass(slots=True)
 class SHDBAF(ECG_Dataset):
-    dir_path: str = os.path.join(dataset_root_dir, "shdb-af", "1.0.1")
-    name: str = "SHDB-AF: a Japanese Holter ECG database of atrial fibrillation"
-    dataset_id: str = "shdb-af"
-    sr: int = 200
-    beat_extention_priority: list[str] = field(default_factory=lambda: ["qrs"])
+    dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "shdb-af", "1.0.1")
+    name: ClassVar[str] = (
+        "SHDB-AF: a Japanese Holter ECG database of atrial fibrillation"
+    )
+    dataset_id: ClassVar[str] = "shdb-af"
+    sr: ClassVar[int] = 200
+    beat_extention_priority: ClassVar[tuple[str, ...]] = ("qrs",)
 
     def __post_init__(self):
         record_path = os.path.join(self.dir_path, "RECORDS.txt")
@@ -391,7 +397,7 @@ class SHDBAF(ECG_Dataset):
 # https://physionet.org/content/sddb/1.0.0/
 @dataclass(slots=True)
 class SDDB(ECG_Dataset):
-    dir_path: str = os.path.join(dataset_root_dir, "sddb", "1.0.0")
-    name: str = "Sudden Cardiac Death Holter Database"
-    dataset_id: str = "sddb"
-    sr: int = 250
+    dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "sddb", "1.0.0")
+    name: ClassVar[str] = "Sudden Cardiac Death Holter Database"
+    dataset_id: ClassVar[str] = "sddb"
+    sr: ClassVar[int] = 250
