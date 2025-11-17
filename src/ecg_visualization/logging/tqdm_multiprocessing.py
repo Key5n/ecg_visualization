@@ -87,5 +87,4 @@ def _install_queue_handler(root: logging.Logger, log_queue: mp.Queue, level: int
     queue_handler = logging.handlers.QueueHandler(log_queue)
     root.handlers.clear()
     root.addHandler(queue_handler)
-    if root.level == logging.NOTSET:
-        root.setLevel(level)
+    root.setLevel(level)
