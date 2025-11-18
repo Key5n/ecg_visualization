@@ -25,6 +25,7 @@ ecg-visualization = "ecg_visualization:ecg_visualization"
 experiment = "ecg_visualization:study_all_entities"
 visualize = "ecg_visualization:visualize_all_studies"
 debug = "ecg_visualization:run_debug_visualize"
+entity-info = "ecg_visualization:entity_info"
 
 [build-system]
 requires = ["hatchling"]
