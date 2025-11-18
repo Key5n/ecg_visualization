@@ -130,7 +130,7 @@ def _format_normal_segment_summary(entity: ECG_Entity) -> str:
 
 
 def _format_aux_note_summary(entity: ECG_Entity) -> str:
-    notes = [note.strip() for note in entity.annotation.aux_note if note.strip()]
+    notes = [note.strip() for note in entity.aux_notes if note.strip()]
     if not notes:
         return "None recorded"
 

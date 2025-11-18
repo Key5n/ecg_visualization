@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -33,6 +34,7 @@ from ecg_visualization.visualization.limits import compute_ylim
 from ecg_visualization.visualization.plotters import (
     highlight_windows,
     plot_anomaly_score,
+    plot_aux_notes,
     plot_histogram,
     plot_normal_beats,
     plot_signal,
@@ -53,6 +55,7 @@ class SequenceBundle:
     scores: TimedSequence
     annotations: TimedSequence
     beats: TimedSequence
+    aux_notes: TimedSequence
 
 
 class StudyVisualizer:
@@ -106,6 +109,7 @@ class StudyVisualizer:
             upper_percentile=95.0,
         )
         symbol_list = self._collect_symbols(sequences.annotations)
+        aux_note_summary = self._collect_aux_note_summary()
         output_path = self._prepare_output_path()
         pdf_metadata = build_pdf_metadata(
             entity=self.entity,
@@ -119,6 +123,7 @@ class StudyVisualizer:
             score_ylim=score_ylim,
             extreme_windows=extreme_windows,
             symbol_list=symbol_list,
+            aux_note_summary=aux_note_summary,
             output_path=output_path,
             training_window=training_window,
             pdf_metadata=pdf_metadata,
@@ -166,6 +171,10 @@ class StudyVisualizer:
             values=entity.annotation.symbol,
             time_axis=np.asarray(entity.annotation.sample, dtype=float) / entity.sr,
         )
+        aux_note_sequence = TimedSequence.from_time_axis(
+            values=np.asarray(entity.aux_notes, dtype=object),
+            time_axis=np.asarray(entity.annotation.sample, dtype=float) / entity.sr,
+        )
         beat_sequence = TimedSequence.from_time_axis(
             values=np.zeros_like(entity.beats),
             time_axis=entity.beats / entity.sr,
@@ -175,6 +184,7 @@ class StudyVisualizer:
             scores=vis_record.score_sequence,
             annotations=annotation_sequence,
             beats=beat_sequence,
+            aux_notes=aux_note_sequence,
         )
 
     def _load_training_window(
@@ -207,6 +217,15 @@ class StudyVisualizer:
         unique_symbols = sorted(set(annotation_sequence.values.tolist()))
         return unique_symbols
 
+    def _collect_aux_note_summary(self) -> str:
+        notes = [note.strip() for note in self.entity.aux_notes if note.strip()]
+        if not notes:
+            return "None"
+
+        counts = Counter(notes)
+        ordered_notes = sorted(counts.keys(), key=lambda n: (-counts[n], n))
+        return ", ".join(f"{note} ({counts[note]})" for note in ordered_notes)
+
     def _prepare_output_path(self) -> Path:
         dataset_dir = self.visualization_root / self.entity.dataset_id
         dataset_dir.mkdir(parents=True, exist_ok=True)
@@ -221,6 +240,7 @@ class StudyVisualizer:
         score_ylim: tuple[float, float],
         extreme_windows: Iterable[tuple[float, float]],
         symbol_list: list[str],
+        aux_note_summary: str,
         output_path: Path,
         training_window: tuple[float, float] | None,
         pdf_metadata: dict[str, str] | None = None,
@@ -245,6 +265,7 @@ class StudyVisualizer:
                     fig=fig,
                     page_idx=signal_page_idx,
                     symbol_list=symbol_list,
+                    aux_note_summary=aux_note_summary,
                 )
                 exporter.add_page(fig, pad_inches=0)
                 plt.close(fig)
@@ -308,6 +329,9 @@ class StudyVisualizer:
         symbols_in_window = sequences.annotations.slice_between(
             window_start, window_end
         )
+        aux_notes_in_window = sequences.aux_notes.slice_between(
+            window_start, window_end
+        )
 
         signal_values = self._align_signal_to_window(ts, signal_in_window.values)
 
@@ -337,6 +361,11 @@ class StudyVisualizer:
             ax,
             symbols_in_window.samples,
             ylim_lower=signal_ylim[0],
+        )
+        plot_aux_notes(
+            ax,
+            aux_notes_in_window.samples,
+            ylim_upper=signal_ylim[1],
         )
         highlight_windows(
             ax,
@@ -375,12 +404,14 @@ class StudyVisualizer:
         fig: Figure,
         page_idx: int,
         symbol_list: list[str],
+        aux_note_summary: str,
     ) -> None:
         if page_idx == 0:
             symbol_tokens = "".join(symbol_list)
             fig.suptitle(
                 f"{self.entity.dataset_name}: {self.entity.entity_id} "
-                f"{symbol_tokens} {self.rr_window_beats}"
+                f"{symbol_tokens} {self.rr_window_beats}\n"
+                f"Aux notes: {aux_note_summary}"
             )
         fig.supxlabel("Time (sec)")
         fig.subplots_adjust(left=0.08, right=0.94, bottom=0.05, top=0.95)

@@ -30,6 +30,7 @@ class ECG_Entity:
         signals (npt.NDArray[np.float64]): ECG signal data
         annotation (Annotation): Annotation object containing metadata about the ECG record
         beats (npt.NDArray[np.int_]): Array of beat sample indices, each element divided by its sampling rate representing the times of beats in seconds
+        aux_notes (tuple[str, ...]): Annotation auxiliary notes aligned with annotation.sample for rhythm labels
     """
 
     entity_id: str
@@ -39,6 +40,7 @@ class ECG_Entity:
     signals: npt.NDArray[np.float64]
     annotation: Annotation
     beats: npt.NDArray[np.int_]
+    aux_notes: tuple[str, ...]
 
     def __str__(self):
         return self.entity_id
@@ -290,6 +292,7 @@ class ECG_Dataset:
             signals=squeezed,
             annotation=annotation,
             beats=beats,
+            aux_notes=tuple(annotation.aux_note),
         )
 
     def extract_normal_segments(

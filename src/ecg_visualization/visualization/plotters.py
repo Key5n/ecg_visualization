@@ -93,6 +93,34 @@ def plot_symbols(
         )
 
 
+def plot_aux_notes(
+    ax: Axes,
+    aux_note_events: Iterable[tuple[float, str]],
+    *,
+    ylim_upper: float,
+    fontsize: float = 7,
+) -> None:
+    """Render auxiliary rhythm notes (e.g., AFIB markers) above the waveform."""
+    ylim = ax.get_ylim()
+    y_offset = (ylim_upper - ylim[0]) * 0.02
+    y_pos = ylim_upper + y_offset
+    for sample_time, note in aux_note_events:
+        text = str(note).strip()
+        if not text:
+            continue
+        ax.axvline(sample_time, color="tab:blue", alpha=0.3, linestyle=":")
+        ax.text(
+            sample_time,
+            y_pos,
+            text,
+            fontsize=fontsize,
+            rotation=90,
+            horizontalalignment="center",
+            verticalalignment="bottom",
+            color="tab:blue",
+        )
+
+
 def highlight_windows(
     ax: Axes,
     abnormal_windows: Iterable[tuple[float, float]],
