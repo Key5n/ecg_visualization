@@ -406,6 +406,27 @@ class SDDB(ECG_Dataset):
     sr: ClassVar[int] = 250
 
 
+# https://physionet.org/content/vfdb/1.0.0/
+@dataclass(slots=True)
+class VFDB(ECG_Dataset):
+    dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "vfdb", "1.0.0")
+    name: ClassVar[str] = "MIT-BIH Malignant Ventricular Ectopy Database"
+    dataset_id: ClassVar[str] = "vfdb"
+    sr: ClassVar[int] = 250
+
+    def __post_init__(self):
+        self.data_ids = sorted(
+            {
+                filename[: -len(".hea")]
+                for filename in os.listdir(self.dir_path)
+                if filename.endswith(".hea")
+            }
+        )
+
+        for data_id in self.data_ids:
+            self.data_entities.append(self._load_entity(data_id))
+
+
 DATASET_CLASS_BY_ID: dict[str, type[ECG_Dataset]] = {
     CUDB.dataset_id: CUDB,
     AFPDB.dataset_id: AFPDB,
@@ -414,4 +435,5 @@ DATASET_CLASS_BY_ID: dict[str, type[ECG_Dataset]] = {
     LTAFDB.dataset_id: LTAFDB,
     SHDBAF.dataset_id: SHDBAF,
     SDDB.dataset_id: SDDB,
+    VFDB.dataset_id: VFDB,
 }

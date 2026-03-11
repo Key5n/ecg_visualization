@@ -12,3 +12,5 @@ wget -r -N -c -np https://physionet.org/files/ltafdb/1.0.0/
 wget -r -N -c -np https://physionet.org/files/shdb-af/1.0.1/
 # Sudden Cardiac Death Holter Database
 wget -r -N -c -np https://physionet.org/files/sddb/1.0.0/
+# MIT-BIH Malignant Ventricular Ectopy Database
+wget -r -N -c -np https://physionet.org/files/vfdb/1.0.0/
