@@ -301,7 +301,7 @@ def _plot_entity_scores(
     score_margin = (score_max - score_min) * 0.1 or 1.0
     score_ylim = (score_min - score_margin, score_max + score_margin)
 
-    fig, ax = plt.subplots(figsize=(32, 4))
+    fig, ax = plt.subplots(figsize=(128, 4))
     plot_signal(
         ax,
         ts,
@@ -332,8 +332,8 @@ def _plot_entity_scores(
     if beat_times.size:
         ax.scatter(
             beat_times,
-            np.interp(beat_times, ts, signal),
-            s=6,
+            np.full(beat_times.shape, signal_ylim[0]),
+            s=8,
             color="tab:green",
             alpha=0.8,
             label="R-peaks",
