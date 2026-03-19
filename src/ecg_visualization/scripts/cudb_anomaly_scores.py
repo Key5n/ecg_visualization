@@ -17,6 +17,7 @@ from ecg_visualization.utils.utils import (
     prepare_sequences,
     sliding_window_sequences,
 )
+from ecg_visualization.visualization.export import pdf_exporter
 from ecg_visualization.visualization.plotters import (
     highlight_windows,
     plot_anomaly_score,
@@ -169,15 +170,15 @@ SINUS_DURATIONS: tuple[SinusDuration, ...] = (
 )
 
 
-OUTPUT_DIR = Path("result/cudb/anomaly_scores")
+OUTPUT_PATH = Path("result/cudb/anomaly_scores.pdf")
 WINDOW_SIZE = 10
 
 
 def cudb_anomaly_scores() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    output_dir = OUTPUT_DIR
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = OUTPUT_PATH
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     config = DEFAULT_MD_RS_CONFIG.copy()
     apply_default_style()
@@ -188,39 +189,42 @@ def cudb_anomaly_scores() -> None:
 
     sinus_windows_by_entity = _build_sinus_windows_by_entity(SINUS_DURATIONS)
 
-    for entity in tqdm(dataset.data_entities, desc="CUDB"):
-        sinus_windows = sinus_windows_by_entity.get(entity.entity_id)
-        if not sinus_windows:
-            LOGGER.warning("Skipping %s: no sinus windows provided.", entity.entity_id)
-            skipped += 1
-            continue
+    with pdf_exporter(str(output_path)) as exporter:
+        for entity in tqdm(dataset.data_entities, desc="CUDB"):
+            sinus_windows = sinus_windows_by_entity.get(entity.entity_id)
+            if not sinus_windows:
+                LOGGER.warning(
+                    "Skipping %s: no sinus windows provided.", entity.entity_id
+                )
+                skipped += 1
+                continue
 
-        try:
-            score_sequence, used_windows = _score_entity(
+            try:
+                score_sequence, used_windows = _score_entity(
+                    entity=entity,
+                    sinus_windows=sinus_windows,
+                    window_size=WINDOW_SIZE,
+                    model_config=config,
+                )
+            except ValueError as exc:
+                LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
+                skipped += 1
+                continue
+
+            fig = _plot_entity_scores(
                 entity=entity,
-                sinus_windows=sinus_windows,
-                window_size=WINDOW_SIZE,
-                model_config=config,
+                score_sequence=score_sequence,
+                training_windows=used_windows,
             )
-        except ValueError as exc:
-            LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
-            skipped += 1
-            continue
-
-        output_path = output_dir / f"{entity.entity_id}.pdf"
-        _plot_entity_scores(
-            entity=entity,
-            score_sequence=score_sequence,
-            training_windows=used_windows,
-            output_path=output_path,
-        )
-        processed += 1
+            exporter.add_page(fig)
+            plt.close(fig)
+            processed += 1
 
     LOGGER.info(
-        "Finished scoring. processed=%d skipped=%d output_dir=%s",
+        "Finished scoring. processed=%d skipped=%d output_path=%s",
         processed,
         skipped,
-        output_dir,
+        output_path,
     )
 
 
@@ -283,8 +287,7 @@ def _plot_entity_scores(
     entity: ECG_Entity,
     score_sequence: TimedSequence,
     training_windows: Iterable[tuple[float, float]],
-    output_path: Path,
-) -> None:
+) -> plt.Figure:
     ts = np.arange(entity.signals.size, dtype=float) / entity.sr
     signal = entity.signals
 
@@ -329,8 +332,7 @@ def _plot_entity_scores(
     ax.set_title(f"{entity.dataset_name} {entity.entity_id}")
     ax.set_xlabel("Time (sec)")
     fig.tight_layout()
-    fig.savefig(output_path, format="pdf")
-    plt.close(fig)
+    return fig
 
 
 def _normalize_windows(
