@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
+import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 
@@ -15,6 +16,15 @@ from ecg_visualization.utils.utils import (
     merge_overlapping_windows,
     prepare_sequences,
     sliding_window_sequences,
+)
+from ecg_visualization.visualization.plotters import (
+    highlight_windows,
+    plot_anomaly_score,
+    plot_signal,
+)
+from ecg_visualization.visualization.styles import (
+    TRAINING_INTERVAL_COLOR,
+    apply_default_style,
 )
 
 DEFAULT_MD_RS_CONFIG: dict[str, float | int] = {
@@ -170,6 +180,7 @@ def cudb_anomaly_scores() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     config = DEFAULT_MD_RS_CONFIG.copy()
+    apply_default_style()
 
     dataset = CUDB()
     processed = 0
@@ -196,12 +207,12 @@ def cudb_anomaly_scores() -> None:
             skipped += 1
             continue
 
-        output_path = output_dir / f"{entity.entity_id}.npz"
-        np.savez_compressed(
-            output_path,
-            values=score_sequence.values,
-            times=score_sequence.times,
-            train_windows=np.asarray(used_windows, dtype=np.float64),
+        output_path = output_dir / f"{entity.entity_id}.pdf"
+        _plot_entity_scores(
+            entity=entity,
+            score_sequence=score_sequence,
+            training_windows=used_windows,
+            output_path=output_path,
         )
         processed += 1
 
@@ -265,6 +276,61 @@ def _score_entity(
     )
 
     return score_sequence, normalized_windows
+
+
+def _plot_entity_scores(
+    *,
+    entity: ECG_Entity,
+    score_sequence: TimedSequence,
+    training_windows: Iterable[tuple[float, float]],
+    output_path: Path,
+) -> None:
+    ts = np.arange(entity.signals.size, dtype=float) / entity.sr
+    signal = entity.signals
+
+    signal_min = float(np.nanmin(signal))
+    signal_max = float(np.nanmax(signal))
+    signal_margin = (signal_max - signal_min) * 0.05 or 1.0
+    signal_ylim = (signal_min - signal_margin, signal_max + signal_margin)
+
+    score_min = float(np.nanmin(score_sequence.values))
+    score_max = float(np.nanmax(score_sequence.values))
+    score_margin = (score_max - score_min) * 0.1 or 1.0
+    score_ylim = (score_min - score_margin, score_max + score_margin)
+
+    fig, ax = plt.subplots(figsize=(11, 4))
+    plot_signal(
+        ax,
+        ts,
+        signal,
+        ylim_lower=signal_ylim[0],
+        ylim_upper=signal_ylim[1],
+    )
+
+    highlight_windows(
+        ax,
+        training_windows,
+        window_start=float(ts[0]),
+        window_end=float(ts[-1]),
+        ylim_upper=signal_ylim[1],
+        color=TRAINING_INTERVAL_COLOR,
+    )
+
+    score_ax = ax.twinx()
+    plot_anomaly_score(
+        score_ax,
+        score_sequence.times.tolist(),
+        score_sequence.values.tolist(),
+        ylim_lower=score_ylim[0],
+        ylim_upper=score_ylim[1],
+        label="Anomaly Score",
+    )
+
+    ax.set_title(f"{entity.dataset_name} {entity.entity_id}")
+    ax.set_xlabel("Time (sec)")
+    fig.tight_layout()
+    fig.savefig(output_path, format="pdf")
+    plt.close(fig)
 
 
 def _normalize_windows(
