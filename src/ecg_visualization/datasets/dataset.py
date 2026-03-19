@@ -404,6 +404,28 @@ class SDDB(ECG_Dataset):
     name: ClassVar[str] = "Sudden Cardiac Death Holter Database"
     dataset_id: ClassVar[str] = "sddb"
     sr: ClassVar[int] = 250
+    vf_onset_seconds: ClassVar[dict[str, int]] = {
+        "30": 28473,
+        "31": 49344,
+        "32": 60318,
+        "33": 17179,
+        "34": 23744,
+        "35": 88496,
+        "36": 68341,
+        "37": 5473,
+        "38": 28914,
+        "39": 16671,
+        "41": 10764,
+        "43": 56231,
+        "44": 70725,
+        "45": 65357,
+        "46": 13307,
+        "47": 22381,
+        "48": 8980,
+        "50": 42343,
+        "51": 82703,
+        "52": 9160,
+    }
 
 
 # https://physionet.org/content/vfdb/1.0.0/

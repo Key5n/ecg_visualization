@@ -26,6 +26,7 @@ experiment = "ecg_visualization:study_all_entities"
 visualize = "ecg_visualization:visualize_all_studies"
 entity-info = "ecg_visualization:entity_info"
 cudb-anomaly-scores = "ecg_visualization:cudb_anomaly_scores"
+sddb-concat = "ecg_visualization:concat_sddb"
 
 [build-system]
 requires = ["hatchling"]
