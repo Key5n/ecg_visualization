@@ -57,7 +57,7 @@ class MDRS:
         """
         U: input data
         """
-        covariance_matrix = np.zeros((self.N_x_tilde, self.N_x_tilde))
+        covariance_matrix = self.delta * np.eye(self.N_x_tilde)
         train_length = len(U)
 
         for n in range(train_length):
