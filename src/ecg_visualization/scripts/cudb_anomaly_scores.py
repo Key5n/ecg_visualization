@@ -332,7 +332,7 @@ def _plot_entity_scores(
     if beat_times.size:
         ax.scatter(
             beat_times,
-            np.full(beat_times.shape, signal_ylim[0]),
+            np.zeros_like(beat_times),
             s=8,
             color="tab:green",
             alpha=0.8,
