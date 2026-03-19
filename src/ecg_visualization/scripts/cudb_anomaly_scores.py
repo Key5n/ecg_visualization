@@ -68,103 +68,103 @@ class SinusDuration:
 SINUS_DURATIONS: tuple[SinusDuration, ...] = (
     SinusDuration(
         entity_id="cu01",
-        windows=(SinusWindow(0.0, 200.0)),
+        windows=(SinusWindow(0.0, 200.0),),
     ),
     SinusDuration(
         entity_id="cu06",
-        windows=(SinusWindow(0, 180.0)),
+        windows=(SinusWindow(0, 180.0),),
     ),
     SinusDuration(
         entity_id="cu07",
-        windows=(SinusWindow(0, 140.0)),
+        windows=(SinusWindow(0, 140.0),),
     ),
     SinusDuration(
         entity_id="cu10",
-        windows=(SinusWindow(0, 300.0)),
+        windows=(SinusWindow(0, 300.0),),
     ),
     SinusDuration(
         entity_id="cu11",
-        windows=(SinusWindow(0, 310.0)),
+        windows=(SinusWindow(0, 310.0),),
     ),
     SinusDuration(
         entity_id="cu12",
-        windows=(SinusWindow(0, 250.0)),
+        windows=(SinusWindow(0, 250.0),),
     ),
     SinusDuration(
         entity_id="cu13",
-        windows=(SinusWindow(0, 380.0)),
+        windows=(SinusWindow(0, 380.0),),
     ),
     SinusDuration(
         entity_id="cu14",
-        windows=(SinusWindow(0, 350.0)),
+        windows=(SinusWindow(0, 350.0),),
     ),
     SinusDuration(
         entity_id="cu15",
-        windows=(SinusWindow(0, 300.0)),
+        windows=(SinusWindow(0, 300.0),),
     ),
     SinusDuration(
         entity_id="cu16",
-        windows=(SinusWindow(0, 250.0)),
+        windows=(SinusWindow(0, 250.0),),
     ),
     SinusDuration(
         entity_id="cu17",
-        windows=(SinusWindow(0, 380.0)),
+        windows=(SinusWindow(0, 380.0),),
     ),
     SinusDuration(
         entity_id="cu18",
-        windows=(SinusWindow(0, 330.0)),
+        windows=(SinusWindow(0, 330.0),),
     ),
     SinusDuration(
         entity_id="cu19",
-        windows=(SinusWindow(0, 400.0)),
+        windows=(SinusWindow(0, 400.0),),
     ),
     SinusDuration(
         entity_id="cu20",
-        windows=(SinusWindow(0, 280.0)),
+        windows=(SinusWindow(0, 280.0),),
     ),
     SinusDuration(
         entity_id="cu22",
-        windows=(SinusWindow(0, 340.0)),
+        windows=(SinusWindow(0, 340.0),),
     ),
     SinusDuration(
         entity_id="cu23",
-        windows=(SinusWindow(0, 340.0)),
+        windows=(SinusWindow(0, 340.0),),
     ),
     SinusDuration(
         entity_id="cu24",
-        windows=(SinusWindow(0, 350.0)),
+        windows=(SinusWindow(0, 350.0),),
     ),
     SinusDuration(
         entity_id="cu25",
-        windows=(SinusWindow(0, 410.0)),
+        windows=(SinusWindow(0, 410.0),),
     ),
     SinusDuration(
         entity_id="cu26",
-        windows=(SinusWindow(0, 350.0)),
+        windows=(SinusWindow(0, 350.0),),
     ),
     SinusDuration(
         entity_id="cu27",
-        windows=(SinusWindow(30, 300.0)),
+        windows=(SinusWindow(30, 300.0),),
     ),
     SinusDuration(
         entity_id="cu29",
-        windows=(SinusWindow(0, 370.0)),
+        windows=(SinusWindow(0, 370.0),),
     ),
     SinusDuration(
         entity_id="cu32",
-        windows=(SinusWindow(0, 430.0)),
+        windows=(SinusWindow(0, 430.0),),
     ),
     SinusDuration(
         entity_id="cu33",
-        windows=(SinusWindow(0, 400.0)),
+        windows=(SinusWindow(0, 400.0),),
     ),
     SinusDuration(
         entity_id="cu34",
-        windows=(SinusWindow(0, 110.0)),
+        windows=(SinusWindow(0, 110.0),),
     ),
     SinusDuration(
         entity_id="cu34",
-        windows=(SinusWindow(310, 380.0)),
+        windows=(SinusWindow(310, 380.0),),
     ),
 )
 
