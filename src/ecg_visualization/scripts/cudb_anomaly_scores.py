@@ -161,11 +161,7 @@ SINUS_DURATIONS: tuple[SinusDuration, ...] = (
     ),
     SinusDuration(
         entity_id="cu34",
-        windows=(SinusWindow(0, 110.0),),
-    ),
-    SinusDuration(
-        entity_id="cu34",
-        windows=(SinusWindow(310, 380.0),),
+        windows=(SinusWindow(0, 110.0), SinusWindow(310, 380.0)),
     ),
 )
 
