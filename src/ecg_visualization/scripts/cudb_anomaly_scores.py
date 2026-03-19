@@ -301,7 +301,7 @@ def _plot_entity_scores(
     score_margin = (score_max - score_min) * 0.1 or 1.0
     score_ylim = (score_min - score_margin, score_max + score_margin)
 
-    fig, ax = plt.subplots(figsize=(11, 4))
+    fig, ax = plt.subplots(figsize=(32, 4))
     plot_signal(
         ax,
         ts,
