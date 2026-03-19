@@ -328,6 +328,17 @@ def _plot_entity_scores(
         ylim_upper=score_ylim[1],
         label="Anomaly Score",
     )
+    beat_times = entity.beats / entity.sr
+    if beat_times.size:
+        ax.scatter(
+            beat_times,
+            np.interp(beat_times, ts, signal),
+            s=6,
+            color="tab:green",
+            alpha=0.8,
+            label="R-peaks",
+            zorder=3,
+        )
 
     ax.set_title(f"{entity.dataset_name} {entity.entity_id}")
     ax.set_xlabel("Time (sec)")
