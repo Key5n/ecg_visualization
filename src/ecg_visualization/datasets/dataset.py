@@ -14,7 +14,7 @@ dataset_root_dir = os.path.join("physionet.org", "files")
 
 MIN_NORMAL_RR_INTERVAL_SEC = 0.6
 MAX_NORMAL_RR_INTERVAL_SEC = 1.0
-NORMAL_SEGMENT_DURATION_SEC = 10 * 60  # 10 minutes
+NORMAL_SEGMENT_DURATION_SEC = 5 * 60  # 5 minutes
 
 
 @dataclass(slots=True)
@@ -76,7 +76,7 @@ class ECG_Entity:
 
     def extract_normal_segment(self) -> TimedSequence:
         """
-        Extract and return the RR intervals that compose a 10-minute normal beat
+        Extract and return the RR intervals that compose a 5-minute normal beat
         segment for this entity.
 
         Returns:
@@ -119,7 +119,7 @@ class ECG_Entity:
                 )
 
         raise ValueError(
-            f"No 10-minute normal beat segment found for {self.entity_id} "
+            f"No 5-minute normal beat segment found for {self.entity_id} "
             f"({self.dataset_name})"
         )
 
