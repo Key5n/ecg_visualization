@@ -9,6 +9,7 @@ from typing import ClassVar, Iterable
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
+from biosppy.signals.ecg import ecg as biosppy_ecg
 from matplotlib.axes import Axes
 
 from ecg_visualization.datasets.dataset import SDDB, ECG_Entity
@@ -27,6 +28,7 @@ LOGGER = logging.getLogger(__name__)
 SEGMENT_DURATION_SEC = 10 * 60
 OUTPUT_DIR = Path("result") / "sddb_concat"
 VISUALIZATION_DIR = OUTPUT_DIR / "visualize"
+MAX_REASONABLE_RR_INTERVAL_SEC = 3.0
 
 VF_ONSET_SECONDS = SDDB.vf_onset_seconds
 PAGINATION_CONFIG = PaginationConfig(seconds_per_row=10, rows_per_page=6)
@@ -409,6 +411,67 @@ def _segment_windows(segments_info: SegmentsInfo) -> list[tuple[str, SegmentWind
     ]
 
 
+def _minimum_required_beats(
+    segment_duration_sec: float,
+) -> int:
+    return max(2, int(np.ceil(segment_duration_sec / MAX_REASONABLE_RR_INTERVAL_SEC)))
+
+
+def _resolve_segment_beats(
+    entity: ECG_Entity,
+    name: str,
+    segment_samples: npt.NDArray[np.float64],
+    segment_beats: npt.NDArray[np.int_],
+) -> npt.NDArray[np.int_]:
+    segment_duration_sec = float(segment_samples.size) / float(entity.sr)
+    minimum_required_beats = _minimum_required_beats(segment_duration_sec)
+    if segment_beats.size >= minimum_required_beats:
+        return np.asarray(segment_beats, dtype=np.int_)
+
+    detected_beats = _detect_rpeaks(segment_samples, entity.sr)
+    if detected_beats.size >= max(2, segment_beats.size):
+        LOGGER.info(
+            "Using detected R-peaks for %s:%s (annotated=%d detected=%d min_required=%d).",
+            entity.entity_id,
+            name,
+            segment_beats.size,
+            detected_beats.size,
+            minimum_required_beats,
+        )
+        return detected_beats
+
+    LOGGER.warning(
+        "R-peak fallback for %s:%s was insufficient (annotated=%d detected=%d min_required=%d).",
+        entity.entity_id,
+        name,
+        segment_beats.size,
+        detected_beats.size,
+        minimum_required_beats,
+    )
+    return np.asarray(segment_beats, dtype=np.int_)
+
+
+def _detect_rpeaks(
+    signal: npt.NDArray[np.float64],
+    sampling_rate_hz: int,
+) -> npt.NDArray[np.int_]:
+    samples = np.asarray(signal, dtype=np.float64)
+    if samples.size < 3:
+        return np.array([], dtype=np.int_)
+
+    try:
+        result = biosppy_ecg(
+            signal=samples,
+            sampling_rate=float(sampling_rate_hz),
+            show=False,
+        )
+    except Exception as exc:
+        LOGGER.warning("biosppy R-peak detection failed: %s", exc)
+        return np.array([], dtype=np.int_)
+
+    return np.asarray(result["rpeaks"], dtype=np.int_)
+
+
 def _build_concatenated_sequence(
     entity: ECG_Entity,
     segments_info: SegmentsInfo,
@@ -461,13 +524,20 @@ def _build_concatenated_sequence(
             return None
 
         concatenated_samples.append(signal[start_sample:end_sample])
-        segment_beats = entity.beats[
+        annotated_segment_beats = entity.beats[
             (entity.beats >= start_sample) & (entity.beats < end_sample)
         ]
+        segment_samples = np.asarray(signal[start_sample:end_sample], dtype=np.float64)
+        segment_beats = _resolve_segment_beats(
+            entity,
+            name,
+            segment_samples,
+            np.asarray(annotated_segment_beats - start_sample, dtype=np.int_),
+        )
         segment_length = end_sample - start_sample
         concatenated_beats.append(
             np.asarray(
-                segment_beats - start_sample + running_offset,
+                segment_beats + running_offset,
                 dtype=np.int_,
             )
         )
@@ -498,7 +568,9 @@ def _export_concatenated_pdf(
         segment_samples = int(
             np.round((window.end_sec - window.start_sec) * concat.sampling_rate_hz)
         )
-        segments.append((name, running_start / sr, (running_start + segment_samples) / sr))
+        segments.append(
+            (name, running_start / sr, (running_start + segment_samples) / sr)
+        )
         running_start += segment_samples
 
     ts_paged = paginate_signals(
@@ -595,7 +667,6 @@ def _build_segments_info_by_entity(
     segments: Iterable[SegmentsInfo],
 ) -> dict[str, SegmentsInfo]:
     return {segment.entity_id: segment for segment in segments}
-
 
 
 def _validate_segment_window(
