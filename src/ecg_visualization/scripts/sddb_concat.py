@@ -389,6 +389,7 @@ def visualize_sddb_concat() -> None:
 @dataclass(frozen=True, slots=True)
 class ConcatenatedSequence:
     samples: npt.NDArray[np.float64]
+    beats: npt.NDArray[np.int_]
     sampling_rate_hz: float
     segments_info: SegmentsInfo
     SEGMENT_ORDER: ClassVar[tuple[str, ...]] = (
@@ -399,59 +400,58 @@ class ConcatenatedSequence:
     )
 
 
+def _segment_windows(segments_info: SegmentsInfo) -> list[tuple[str, SegmentWindow]]:
+    return [
+        ("sinus_train", segments_info.train),
+        ("pre_vf", segments_info.pre_vf),
+        ("vf", segments_info.vf),
+        ("sinus_test", segments_info.test),
+    ]
+
+
 def _build_concatenated_sequence(
     entity: ECG_Entity,
     segments_info: SegmentsInfo,
 ) -> ConcatenatedSequence | None:
     signal = entity.signals
     sr = float(entity.sr)
-    segment_samples = int(SEGMENT_DURATION_SEC * sr)
     total_duration_sec = signal.size / sr
 
-    train_start_sec = _validate_segment_window(
+    if not _validate_segment_window(
         entity,
         segments_info.train,
         label="sinus train",
         total_duration_sec=total_duration_sec,
-    )
-    if train_start_sec is None:
+    ):
         return None
-    test_start_sec = _validate_segment_window(
+    if not _validate_segment_window(
         entity,
         segments_info.test,
         label="sinus test",
         total_duration_sec=total_duration_sec,
-    )
-    if test_start_sec is None:
+    ):
         return None
-    pre_vf_start_sec = _validate_segment_window(
+    if not _validate_segment_window(
         entity,
         segments_info.pre_vf,
         label="pre-VF",
         total_duration_sec=total_duration_sec,
-    )
-    if pre_vf_start_sec is None:
+    ):
         return None
-    vf_start_sec = _validate_segment_window(
+    if not _validate_segment_window(
         entity,
         segments_info.vf,
         label="VF",
         total_duration_sec=total_duration_sec,
-    )
-    if vf_start_sec is None:
+    ):
         return None
 
-    segments = [
-        ("sinus_train", train_start_sec),
-        ("pre_vf", pre_vf_start_sec),
-        ("vf", vf_start_sec),
-        ("sinus_test", test_start_sec),
-    ]
-
     concatenated_samples: list[np.ndarray] = []
-    for name, start_sec in segments:
-        start_sample = int(np.round(start_sec * sr))
-        end_sample = start_sample + segment_samples
+    concatenated_beats: list[npt.NDArray[np.int_]] = []
+    running_offset = 0
+    for name, window in _segment_windows(segments_info):
+        start_sample = int(np.round(window.start_sec * sr))
+        end_sample = int(np.round(window.end_sec * sr))
         if end_sample > signal.size:
             LOGGER.warning(
                 "Skipping %s: %s segment exceeds record length.",
@@ -461,9 +461,25 @@ def _build_concatenated_sequence(
             return None
 
         concatenated_samples.append(signal[start_sample:end_sample])
+        segment_beats = entity.beats[
+            (entity.beats >= start_sample) & (entity.beats < end_sample)
+        ]
+        segment_length = end_sample - start_sample
+        concatenated_beats.append(
+            np.asarray(
+                segment_beats - start_sample + running_offset,
+                dtype=np.int_,
+            )
+        )
+        running_offset += segment_length
 
     return ConcatenatedSequence(
         samples=np.asarray(np.concatenate(concatenated_samples), dtype=np.float64),
+        beats=(
+            np.asarray(np.concatenate(concatenated_beats), dtype=np.int_)
+            if concatenated_beats
+            else np.array([], dtype=np.int_)
+        ),
         sampling_rate_hz=sr,
         segments_info=segments_info,
     )
@@ -476,10 +492,12 @@ def _export_concatenated_pdf(
 ) -> None:
     samples = np.asarray(concat.samples, dtype=float)
     sr = float(concat.sampling_rate_hz)
-    segment_samples = int(SEGMENT_DURATION_SEC * sr)
     segments: list[tuple[str, float, float]] = []
     running_start = 0
-    for name in ConcatenatedSequence.SEGMENT_ORDER:
+    for name, window in _segment_windows(concat.segments_info):
+        segment_samples = int(
+            np.round((window.end_sec - window.start_sec) * concat.sampling_rate_hz)
+        )
         segments.append((name, running_start / sr, (running_start + segment_samples) / sr))
         running_start += segment_samples
 
@@ -586,24 +604,14 @@ def _validate_segment_window(
     *,
     label: str,
     total_duration_sec: float,
-) -> float | None:
+) -> bool:
     if window.end_sec <= window.start_sec:
         LOGGER.warning(
             "Skipping %s: %s window has invalid bounds.",
             entity.entity_id,
             label,
         )
-        return None
-
-    duration = window.end_sec - window.start_sec
-    if duration < SEGMENT_DURATION_SEC:
-        LOGGER.warning(
-            "Skipping %s: %s window is shorter than %ds.",
-            entity.entity_id,
-            label,
-            SEGMENT_DURATION_SEC,
-        )
-        return None
+        return False
 
     if window.start_sec < 0 or window.end_sec > total_duration_sec:
         LOGGER.warning(
@@ -612,6 +620,6 @@ def _validate_segment_window(
             label,
             total_duration_sec,
         )
-        return None
+        return False
 
-    return window.start_sec
+    return True
