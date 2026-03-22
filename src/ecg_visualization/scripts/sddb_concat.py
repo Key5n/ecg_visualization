@@ -194,19 +194,6 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
         ),
     ),
     SegmentsInfo(
-        entity_id="40",
-        train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
-        pre_vf=SegmentWindow(
-            VF_ONSET_SECONDS["40"] - SEGMENT_DURATION_SEC,
-            VF_ONSET_SECONDS["40"],
-        ),
-        vf=SegmentWindow(
-            VF_ONSET_SECONDS["40"],
-            VF_ONSET_SECONDS["40"] + SEGMENT_DURATION_SEC,
-        ),
-    ),
-    SegmentsInfo(
         entity_id="41",
         train=SegmentWindow(0.0, 600.0),
         test=SegmentWindow(72000.0, 72600.0),
@@ -217,19 +204,6 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
         vf=SegmentWindow(
             VF_ONSET_SECONDS["41"],
             VF_ONSET_SECONDS["41"] + SEGMENT_DURATION_SEC,
-        ),
-    ),
-    SegmentsInfo(
-        entity_id="42",
-        train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
-        pre_vf=SegmentWindow(
-            VF_ONSET_SECONDS["42"] - SEGMENT_DURATION_SEC,
-            VF_ONSET_SECONDS["42"],
-        ),
-        vf=SegmentWindow(
-            VF_ONSET_SECONDS["42"],
-            VF_ONSET_SECONDS["42"] + SEGMENT_DURATION_SEC,
         ),
     ),
     SegmentsInfo(
@@ -321,19 +295,6 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
         vf=SegmentWindow(
             VF_ONSET_SECONDS["48"],
             VF_ONSET_SECONDS["48"] + SEGMENT_DURATION_SEC,
-        ),
-    ),
-    SegmentsInfo(
-        entity_id="49",
-        train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
-        pre_vf=SegmentWindow(
-            VF_ONSET_SECONDS["49"] - SEGMENT_DURATION_SEC,
-            VF_ONSET_SECONDS["49"],
-        ),
-        vf=SegmentWindow(
-            VF_ONSET_SECONDS["49"],
-            VF_ONSET_SECONDS["49"] + SEGMENT_DURATION_SEC,
         ),
     ),
     SegmentsInfo(
