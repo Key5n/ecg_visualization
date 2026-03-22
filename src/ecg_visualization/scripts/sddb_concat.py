@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Iterable
 
 import matplotlib.pyplot as plt
-from matplotlib.axes import Axes
 import numpy as np
+from matplotlib.axes import Axes
 
 from ecg_visualization.datasets.dataset import (
     MAX_NORMAL_RR_INTERVAL_SEC,
@@ -39,10 +41,157 @@ SEGMENT_COLORS = {
 }
 
 
+@dataclass(frozen=True, slots=True)
+class SinusWindow:
+    start_sec: float
+    end_sec: float
+
+
+@dataclass(frozen=True, slots=True)
+class SinusSegments:
+    entity_id: str
+    train: SinusWindow
+    test: SinusWindow
+
+
+# Define fixed sinus segments per entity here (seconds).
+# Example:
+# SINUS_SEGMENTS = (
+#     SinusSegments(
+#         entity_id="30",
+#         train=SinusWindow(0.0, 600.0),
+#         test=SinusWindow(72000.0, 72600.0),
+#     ),
+# )
+SINUS_SEGMENTS: tuple[SinusSegments, ...] = (
+    SinusSegments(
+        entity_id="30",
+        train=SinusWindow(2280.0, 2880.0),
+        test=SinusWindow(5220.0, 5820.0),
+    ),
+    SinusSegments(
+        entity_id="31",
+        train=SinusWindow(600.0, 1200.0),
+        test=SinusWindow(10080.0, 10680.0),
+    ),
+    SinusSegments(
+        entity_id="32",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(4980.0, 5580.0),
+    ),
+    SinusSegments(
+        entity_id="33",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(7500.0, 8100.0),
+    ),
+    SinusSegments(
+        entity_id="34",
+        train=SinusWindow(420.0, 1020.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="35",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="36",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="37",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="38",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="39",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="40",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="41",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="42",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="43",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="43",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="44",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="45",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="46",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="47",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="48",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="49",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="50",
+        train=SinusWindow(0.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="51",
+        train=SinusWindow(1.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+    SinusSegments(
+        entity_id="52",
+        train=SinusWindow(1.0, 600.0),
+        test=SinusWindow(72000.0, 72600.0),
+    ),
+)
+
+
 def concat_sddb() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     dataset = SDDB()
+    sinus_by_entity = _build_sinus_segments_by_entity(SINUS_SEGMENTS)
     for entity in dataset.data_entities:
         entity_id = entity.entity_id
         if entity_id not in SDDB.vf_onset_seconds:
@@ -52,7 +201,11 @@ def concat_sddb() -> None:
             )
             continue
 
-        concat = _build_concatenated_sequence(entity, SDDB.vf_onset_seconds[entity_id])
+        concat = _build_concatenated_sequence(
+            entity,
+            SDDB.vf_onset_seconds[entity_id],
+            sinus_by_entity.get(entity_id),
+        )
         if concat is None:
             continue
 
@@ -67,6 +220,7 @@ def visualize_sddb_concat() -> None:
     VISUALIZATION_DIR.mkdir(parents=True, exist_ok=True)
 
     dataset = SDDB()
+    sinus_by_entity = _build_sinus_segments_by_entity(SINUS_SEGMENTS)
     for entity in dataset.data_entities:
         entity_id = entity.entity_id
         vf_onset = SDDB.vf_onset_seconds.get(entity_id)
@@ -77,7 +231,11 @@ def visualize_sddb_concat() -> None:
             )
             continue
 
-        concat = _build_concatenated_sequence(entity, vf_onset)
+        concat = _build_concatenated_sequence(
+            entity,
+            vf_onset,
+            sinus_by_entity.get(entity_id),
+        )
         if concat is None:
             continue
 
@@ -89,6 +247,7 @@ def visualize_sddb_concat() -> None:
 def _build_concatenated_sequence(
     entity: ECG_Entity,
     vf_onset_sec: int,
+    sinus_segments: SinusSegments | None,
 ) -> dict[str, np.ndarray] | None:
     signal = entity.signals
     sr = float(entity.sr)
@@ -115,31 +274,49 @@ def _build_concatenated_sequence(
         )
         return None
 
-    train_start_sec = _find_normal_segment_start(
-        entity,
-        start_bound=0.0,
-        end_bound=pre_vf_start_sec,
-        duration_sec=SEGMENT_DURATION_SEC,
-    )
-    if train_start_sec is None:
-        LOGGER.warning(
-            "Skipping %s: no 10-min sinus segment before pre-VF window.",
-            entity.entity_id,
+    if sinus_segments is None:
+        train_start_sec = _find_normal_segment_start(
+            entity,
+            start_bound=0.0,
+            end_bound=pre_vf_start_sec,
+            duration_sec=SEGMENT_DURATION_SEC,
         )
-        return None
+        if train_start_sec is None:
+            LOGGER.warning(
+                "Skipping %s: no 10-min sinus segment before pre-VF window.",
+                entity.entity_id,
+            )
+            return None
 
-    test_start_sec = _find_normal_segment_start(
-        entity,
-        start_bound=vf_end_sec,
-        end_bound=total_duration_sec,
-        duration_sec=SEGMENT_DURATION_SEC,
-    )
-    if test_start_sec is None:
-        LOGGER.warning(
-            "Skipping %s: no 10-min sinus segment after VF window.",
-            entity.entity_id,
+        test_start_sec = _find_normal_segment_start(
+            entity,
+            start_bound=vf_end_sec,
+            end_bound=total_duration_sec,
+            duration_sec=SEGMENT_DURATION_SEC,
         )
-        return None
+        if test_start_sec is None:
+            LOGGER.warning(
+                "Skipping %s: no 10-min sinus segment after VF window.",
+                entity.entity_id,
+            )
+            return None
+    else:
+        train_start_sec = _validate_sinus_window(
+            entity,
+            sinus_segments.train,
+            label="train",
+            total_duration_sec=total_duration_sec,
+        )
+        if train_start_sec is None:
+            return None
+        test_start_sec = _validate_sinus_window(
+            entity,
+            sinus_segments.test,
+            label="test",
+            total_duration_sec=total_duration_sec,
+        )
+        if test_start_sec is None:
+            return None
 
     segments = [
         ("sinus_train", train_start_sec),
@@ -299,6 +476,49 @@ def _extract_window(
     end_sample = min(start_sample + length, samples.size)
     window[: end_sample - start_sample] = samples[start_sample:end_sample]
     return window
+
+
+def _build_sinus_segments_by_entity(
+    segments: Iterable[SinusSegments],
+) -> dict[str, SinusSegments]:
+    return {segment.entity_id: segment for segment in segments}
+
+
+def _validate_sinus_window(
+    entity: ECG_Entity,
+    window: SinusWindow,
+    *,
+    label: str,
+    total_duration_sec: float,
+) -> float | None:
+    if window.end_sec <= window.start_sec:
+        LOGGER.warning(
+            "Skipping %s: sinus %s window has invalid bounds.",
+            entity.entity_id,
+            label,
+        )
+        return None
+
+    duration = window.end_sec - window.start_sec
+    if duration < SEGMENT_DURATION_SEC:
+        LOGGER.warning(
+            "Skipping %s: sinus %s window is shorter than %ds.",
+            entity.entity_id,
+            label,
+            SEGMENT_DURATION_SEC,
+        )
+        return None
+
+    if window.start_sec < 0 or window.end_sec > total_duration_sec:
+        LOGGER.warning(
+            "Skipping %s: sinus %s window exceeds record length (%.1fs).",
+            entity.entity_id,
+            label,
+            total_duration_sec,
+        )
+        return None
+
+    return window.start_sec
 
 
 def _find_normal_segment_start(
