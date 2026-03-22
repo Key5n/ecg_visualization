@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import logging
+import pickle
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import ClassVar, Iterable
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 from matplotlib.axes import Axes
 
 from ecg_visualization.datasets.dataset import SDDB, ECG_Entity
@@ -355,8 +357,9 @@ def concat_sddb() -> None:
         if concat is None:
             continue
 
-        output_path = OUTPUT_DIR / f"{entity_id}.npz"
-        np.savez_compressed(output_path, **concat.as_npz_dict())
+        output_path = OUTPUT_DIR / f"{entity_id}.pkl"
+        with output_path.open("wb") as handle:
+            pickle.dump(concat, handle, protocol=pickle.HIGHEST_PROTOCOL)
         LOGGER.info("Saved concatenated sequence to %s", output_path)
 
 
@@ -385,24 +388,15 @@ def visualize_sddb_concat() -> None:
 
 @dataclass(frozen=True, slots=True)
 class ConcatenatedSequence:
-    samples: np.ndarray
-    sampling_rate_hz: np.ndarray
-    segment_names: np.ndarray
-    segment_start_samples: np.ndarray
-    segment_end_samples: np.ndarray
-    source_start_seconds: np.ndarray
-    source_end_seconds: np.ndarray
-
-    def as_npz_dict(self) -> dict[str, np.ndarray]:
-        return {
-            "samples": self.samples,
-            "sampling_rate_hz": self.sampling_rate_hz,
-            "segment_names": self.segment_names,
-            "segment_start_samples": self.segment_start_samples,
-            "segment_end_samples": self.segment_end_samples,
-            "source_start_seconds": self.source_start_seconds,
-            "source_end_seconds": self.source_end_seconds,
-        }
+    samples: npt.NDArray[np.float64]
+    sampling_rate_hz: float
+    segments_info: SegmentsInfo
+    SEGMENT_ORDER: ClassVar[tuple[str, ...]] = (
+        "sinus_train",
+        "pre_vf",
+        "vf",
+        "sinus_test",
+    )
 
 
 def _build_concatenated_sequence(
@@ -455,13 +449,6 @@ def _build_concatenated_sequence(
     ]
 
     concatenated_samples: list[np.ndarray] = []
-    segment_names: list[str] = []
-    segment_start_samples: list[int] = []
-    segment_end_samples: list[int] = []
-    source_start_seconds: list[float] = []
-    source_end_seconds: list[float] = []
-
-    running_start = 0
     for name, start_sec in segments:
         start_sample = int(np.round(start_sec * sr))
         end_sample = start_sample + segment_samples
@@ -474,21 +461,11 @@ def _build_concatenated_sequence(
             return None
 
         concatenated_samples.append(signal[start_sample:end_sample])
-        segment_names.append(name)
-        segment_start_samples.append(running_start)
-        running_start += segment_samples
-        segment_end_samples.append(running_start)
-        source_start_seconds.append(start_sample / sr)
-        source_end_seconds.append(end_sample / sr)
 
     return ConcatenatedSequence(
-        samples=np.concatenate(concatenated_samples),
-        sampling_rate_hz=np.array([sr], dtype=np.float64),
-        segment_names=np.asarray(segment_names, dtype=object),
-        segment_start_samples=np.asarray(segment_start_samples, dtype=np.int_),
-        segment_end_samples=np.asarray(segment_end_samples, dtype=np.int_),
-        source_start_seconds=np.asarray(source_start_seconds, dtype=np.float64),
-        source_end_seconds=np.asarray(source_end_seconds, dtype=np.float64),
+        samples=np.asarray(np.concatenate(concatenated_samples), dtype=np.float64),
+        sampling_rate_hz=sr,
+        segments_info=segments_info,
     )
 
 
@@ -498,24 +475,13 @@ def _export_concatenated_pdf(
     output_path: Path,
 ) -> None:
     samples = np.asarray(concat.samples, dtype=float)
-    sr = float(np.asarray(concat.sampling_rate_hz, dtype=float)[0])
-    segment_names = concat.segment_names.astype(str).tolist()
-    segment_start_samples = concat.segment_start_samples.astype(int).tolist()
-    segment_end_samples = concat.segment_end_samples.astype(int).tolist()
-
-    segments = [
-        (
-            name,
-            start / sr,
-            end / sr,
-        )
-        for name, start, end in zip(
-            segment_names,
-            segment_start_samples,
-            segment_end_samples,
-            strict=True,
-        )
-    ]
+    sr = float(concat.sampling_rate_hz)
+    segment_samples = int(SEGMENT_DURATION_SEC * sr)
+    segments: list[tuple[str, float, float]] = []
+    running_start = 0
+    for name in ConcatenatedSequence.SEGMENT_ORDER:
+        segments.append((name, running_start / sr, (running_start + segment_samples) / sr))
+        running_start += segment_samples
 
     ts_paged = paginate_signals(
         samples.size,
@@ -611,6 +577,7 @@ def _build_segments_info_by_entity(
     segments: Iterable[SegmentsInfo],
 ) -> dict[str, SegmentsInfo]:
     return {segment.entity_id: segment for segment in segments}
+
 
 
 def _validate_segment_window(
