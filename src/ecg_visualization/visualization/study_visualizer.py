@@ -20,6 +20,7 @@ from ecg_visualization.datasets.dataset import (
     ECG_Entity,
 )
 from ecg_visualization.utils.optuna_record import (
+    Record,
     VisualizationRecord,
     get_study_identifiers,
 )
@@ -157,6 +158,20 @@ class StudyVisualizer:
                 artifact_store=self.artifact_store,
             )
         except ValueError as exc:
+            if str(exc).startswith("Missing artifact id for score_sequence"):
+                record = Record.from_trial(trial, study_name=study.study_name)
+                empty_scores = TimedSequence(
+                    values=np.asarray([], dtype=float),
+                    times=np.asarray([], dtype=float),
+                )
+                LOGGER.warning(
+                    f"Missing score_sequence artifact for {self.study_name}; "
+                    "plotting without anomaly scores."
+                )
+                return VisualizationRecord(
+                    record=record,
+                    score_sequence=empty_scores,
+                )
             LOGGER.warning(f"Skipping {self.study_name}: {exc}")
             return None
 
@@ -211,14 +226,30 @@ class StudyVisualizer:
             self.pagination_config,
         )
 
+    @staticmethod
+    def _sanitize_text(value: object) -> str:
+        text = str(value)
+        text = text.replace("\x00", "")
+        return text.strip()
+
     def _collect_symbols(self, annotation_sequence: TimedSequence) -> list[str]:
         if annotation_sequence.values.size == 0:
             return []
         unique_symbols = sorted(set(annotation_sequence.values.tolist()))
-        return unique_symbols
+        return [
+            symbol
+            for symbol in (
+                self._sanitize_text(raw_symbol) for raw_symbol in unique_symbols
+            )
+            if symbol
+        ]
 
     def _collect_aux_note_summary(self) -> str:
-        notes = [note.strip() for note in self.entity.aux_notes if note.strip()]
+        notes = [
+            self._sanitize_text(note)
+            for note in self.entity.aux_notes
+            if self._sanitize_text(note)
+        ]
         if not notes:
             return "None"
 
@@ -343,15 +374,16 @@ class StudyVisualizer:
             ylim_upper=signal_ylim[1],
         )
 
-        score_ax = ax.twinx()
-        plot_anomaly_score(
-            score_ax,
-            scores_in_window.times.tolist(),
-            scores_in_window.values.tolist(),
-            ylim_lower=score_ylim[0],
-            ylim_upper=score_ylim[1],
-            label="Anomaly Score",
-        )
+        if sequences.scores.values.size > 0:
+            score_ax = ax.twinx()
+            plot_anomaly_score(
+                score_ax,
+                scores_in_window.times.tolist(),
+                scores_in_window.values.tolist(),
+                ylim_lower=score_ylim[0],
+                ylim_upper=score_ylim[1],
+                label="Anomaly Score",
+            )
         plot_normal_beats(
             ax,
             beats_in_window.times.tolist(),
@@ -407,9 +439,15 @@ class StudyVisualizer:
         aux_note_summary: str,
     ) -> None:
         if page_idx == 0:
-            symbol_tokens = "".join(symbol_list)
+            symbol_tokens = "".join(
+                symbol
+                for symbol in (self._sanitize_text(token) for token in symbol_list)
+                if symbol
+            )
+            dataset_name = self._sanitize_text(self.entity.dataset_name)
+            entity_id = self._sanitize_text(self.entity.entity_id)
             fig.suptitle(
-                f"{self.entity.dataset_name}: {self.entity.entity_id} "
+                f"{dataset_name}: {entity_id} "
                 f"{symbol_tokens} {self.rr_window_beats}\n"
                 f"Aux notes: {aux_note_summary}"
             )
