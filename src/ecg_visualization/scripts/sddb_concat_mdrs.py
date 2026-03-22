@@ -33,7 +33,7 @@ DEFAULT_MD_RS_CONFIG: dict[str, float | int] = {
     "seed": 0,
 }
 
-WINDOW_SIZE = 256
+WINDOW_SIZE = 10
 OUTPUT_DIR = Path("result") / "sddb_concat" / "mdrs_scores"
 
 
