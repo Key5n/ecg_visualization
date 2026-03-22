@@ -20,7 +20,7 @@ from ecg_visualization.visualization.layouts import (
     paginate_signals,
 )
 from ecg_visualization.visualization.limits import compute_ylim
-from ecg_visualization.visualization.plotters import plot_signal
+from ecg_visualization.visualization.plotters import plot_signal, plot_symbols
 from ecg_visualization.visualization.styles import apply_default_style
 
 LOGGER = logging.getLogger(__name__)
@@ -69,8 +69,8 @@ class SegmentsInfo:
 SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     SegmentsInfo(
         entity_id="30",
-        train=SegmentWindow(2280.0, 2880.0),
-        test=SegmentWindow(5220.0, 5820.0),
+        train=SegmentWindow(2280.0, 2280.0 + SEGMENT_DURATION_SEC),
+        test=SegmentWindow(30000.0, 30000.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["30"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["30"],
@@ -82,8 +82,8 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     ),
     SegmentsInfo(
         entity_id="31",
-        train=SegmentWindow(600.0, 1200.0),
-        test=SegmentWindow(10080.0, 10680.0),
+        train=SegmentWindow(600.0, 600.0 + SEGMENT_DURATION_SEC),
+        test=SegmentWindow(4200.0, 4200.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["31"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["31"],
@@ -96,7 +96,7 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     SegmentsInfo(
         entity_id="32",
         train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(4980.0, 5580.0),
+        test=SegmentWindow(4980.0, 4980.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["32"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["32"],
@@ -108,8 +108,8 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     ),
     SegmentsInfo(
         entity_id="33",
-        train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(7500.0, 8100.0),
+        train=SegmentWindow(0.0, SEGMENT_DURATION_SEC),
+        test=SegmentWindow(60000.0, 60000.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["33"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["33"],
@@ -121,8 +121,8 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     ),
     SegmentsInfo(
         entity_id="34",
-        train=SegmentWindow(420.0, 1020.0),
-        test=SegmentWindow(72000.0, 72600.0),
+        train=SegmentWindow(0.0, 0.0 + SEGMENT_DURATION_SEC),
+        test=SegmentWindow(6000.0, 6000.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["34"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["34"],
@@ -134,8 +134,8 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     ),
     SegmentsInfo(
         entity_id="35",
-        train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
+        train=SegmentWindow(0.0, SEGMENT_DURATION_SEC),
+        test=SegmentWindow(30000.0, 30000.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["35"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["35"],
@@ -147,8 +147,8 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     ),
     SegmentsInfo(
         entity_id="36",
-        train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
+        train=SegmentWindow(0.0, SEGMENT_DURATION_SEC),
+        test=SegmentWindow(30000.0, 30000.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["36"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["36"],
@@ -160,8 +160,8 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     ),
     SegmentsInfo(
         entity_id="37",
-        train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
+        train=SegmentWindow(30000.0, 30000.0 + SEGMENT_DURATION_SEC),
+        test=SegmentWindow(60000.0, 60000.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["37"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["37"],
@@ -173,8 +173,8 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     ),
     SegmentsInfo(
         entity_id="38",
-        train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
+        train=SegmentWindow(0.0, SEGMENT_DURATION_SEC),
+        test=SegmentWindow(18000.0, 18000.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["38"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["38"],
@@ -187,7 +187,7 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     SegmentsInfo(
         entity_id="39",
         train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
+        test=SegmentWindow(6000.0, 6000.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["39"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["39"],
@@ -200,7 +200,7 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     SegmentsInfo(
         entity_id="41",
         train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
+        test=SegmentWindow(6000.0, 6000.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["41"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["41"],
@@ -213,7 +213,7 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     SegmentsInfo(
         entity_id="43",
         train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
+        test=SegmentWindow(66000.0, 66000.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["43"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["43"],
@@ -238,8 +238,8 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     ),
     SegmentsInfo(
         entity_id="44",
-        train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
+        train=SegmentWindow(21000.0, 21000.0 + SEGMENT_DURATION_SEC),
+        test=SegmentWindow(30000.0, 30000.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["44"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["44"],
@@ -251,7 +251,7 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     ),
     SegmentsInfo(
         entity_id="45",
-        train=SegmentWindow(0.0, 600.0),
+        train=SegmentWindow(300.0, 300.0 + SEGMENT_DURATION_SEC),
         test=SegmentWindow(72000.0, 72600.0),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["45"] - SEGMENT_DURATION_SEC,
@@ -265,7 +265,7 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     SegmentsInfo(
         entity_id="46",
         train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
+        test=SegmentWindow(2100.0, 2100.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["46"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["46"],
@@ -277,8 +277,8 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     ),
     SegmentsInfo(
         entity_id="47",
-        train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
+        train=SegmentWindow(24000.0, 24000.0 + SEGMENT_DURATION_SEC),
+        test=SegmentWindow(69720.0, 69720.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["47"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["47"],
@@ -290,8 +290,8 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     ),
     SegmentsInfo(
         entity_id="48",
-        train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
+        train=SegmentWindow(34000.0, 34000.0 + SEGMENT_DURATION_SEC),
+        test=SegmentWindow(78000.0, 78000.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["48"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["48"],
@@ -303,8 +303,8 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     ),
     SegmentsInfo(
         entity_id="50",
-        train=SegmentWindow(0.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
+        train=SegmentWindow(2400.0, 2400.0 + SEGMENT_DURATION_SEC),
+        test=SegmentWindow(60000.0, 60000.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["50"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["50"],
@@ -316,8 +316,8 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     ),
     SegmentsInfo(
         entity_id="51",
-        train=SegmentWindow(1.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
+        train=SegmentWindow(2160.0, 2160.0 + SEGMENT_DURATION_SEC),
+        test=SegmentWindow(21600.0, 21600.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["51"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["51"],
@@ -329,8 +329,8 @@ SINUS_SEGMENTS: tuple[SegmentsInfo, ...] = (
     ),
     SegmentsInfo(
         entity_id="52",
-        train=SegmentWindow(1.0, 600.0),
-        test=SegmentWindow(72000.0, 72600.0),
+        train=SegmentWindow(600.0, 600.0 + SEGMENT_DURATION_SEC),
+        test=SegmentWindow(12000.0, 12000.0 + SEGMENT_DURATION_SEC),
         pre_vf=SegmentWindow(
             VF_ONSET_SECONDS["52"] - SEGMENT_DURATION_SEC,
             VF_ONSET_SECONDS["52"],
@@ -392,6 +392,8 @@ def visualize_sddb_concat() -> None:
 class ConcatenatedSequence:
     samples: npt.NDArray[np.float64]
     beats: npt.NDArray[np.int_]
+    symbol_samples: npt.NDArray[np.int_]
+    symbol_values: tuple[str, ...]
     sampling_rate_hz: float
     segments_info: SegmentsInfo
     SEGMENT_ORDER: ClassVar[tuple[str, ...]] = (
@@ -511,6 +513,8 @@ def _build_concatenated_sequence(
 
     concatenated_samples: list[np.ndarray] = []
     concatenated_beats: list[npt.NDArray[np.int_]] = []
+    concatenated_symbol_samples: list[npt.NDArray[np.int_]] = []
+    concatenated_symbol_values: list[str] = []
     running_offset = 0
     for name, window in _segment_windows(segments_info):
         start_sample = int(np.round(window.start_sec * sr))
@@ -541,6 +545,19 @@ def _build_concatenated_sequence(
                 dtype=np.int_,
             )
         )
+        annotation_mask = (entity.annotation.sample >= start_sample) & (
+            entity.annotation.sample < end_sample
+        )
+        segment_symbol_samples = np.asarray(
+            entity.annotation.sample[annotation_mask] - start_sample + running_offset,
+            dtype=np.int_,
+        )
+        concatenated_symbol_samples.append(segment_symbol_samples)
+        concatenated_symbol_values.extend(
+            entity.annotation.symbol[idx]
+            for idx, in_segment in enumerate(annotation_mask)
+            if in_segment
+        )
         running_offset += segment_length
 
     return ConcatenatedSequence(
@@ -550,6 +567,12 @@ def _build_concatenated_sequence(
             if concatenated_beats
             else np.array([], dtype=np.int_)
         ),
+        symbol_samples=(
+            np.asarray(np.concatenate(concatenated_symbol_samples), dtype=np.int_)
+            if concatenated_symbol_samples
+            else np.array([], dtype=np.int_)
+        ),
+        symbol_values=tuple(concatenated_symbol_values),
         sampling_rate_hz=sr,
         segments_info=segments_info,
     )
@@ -598,6 +621,26 @@ def _export_concatenated_pdf(
                     row_signal,
                     ylim_lower=signal_ylim[0],
                     ylim_upper=signal_ylim[1],
+                )
+                row_start_sample = start_sample
+                row_end_sample = start_sample + ts.size
+                symbol_mask = (concat.symbol_samples >= row_start_sample) & (
+                    concat.symbol_samples < row_end_sample
+                )
+                row_symbol_events = [
+                    (symbol_sample / sr, symbol_value)
+                    for symbol_sample, symbol_value, in_row in zip(
+                        concat.symbol_samples,
+                        concat.symbol_values,
+                        symbol_mask,
+                        strict=True,
+                    )
+                    if in_row
+                ]
+                plot_symbols(
+                    ax,
+                    row_symbol_events,
+                    ylim_lower=signal_ylim[0],
                 )
                 _highlight_segments(
                     ax,
