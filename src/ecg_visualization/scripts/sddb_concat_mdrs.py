@@ -94,10 +94,7 @@ def _score_concatenated_sequence(concat: ConcatenatedSequence) -> ScoreResult:
 
     train_segment_samples = int(
         np.round(
-            (
-                concat.segments_info.train.end_sec
-                - concat.segments_info.train.start_sec
-            )
+            (concat.segments_info.train.end_sec - concat.segments_info.train.start_sec)
             * concat.sampling_rate_hz
         )
     )
@@ -156,8 +153,7 @@ def _plot_concat_scores(
         2,
         1,
         sharex=True,
-        figsize=(12, 4.5),
-        gridspec_kw={"height_ratios": [2, 1]},
+        figsize=(9, 6),
     )
 
     signal_ax.plot(ts, samples, "-", linewidth=0.8)
