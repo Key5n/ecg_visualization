@@ -107,7 +107,6 @@ class StudyLoader:
         self._storage_name = storage_name
         self._storage = RDBStorage(
             storage_name,
-            engine_kwargs={"pool_size": 1, "max_overflow": 0},
         )
 
     def load(
