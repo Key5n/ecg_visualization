@@ -146,8 +146,11 @@ def _plot_concat_scores(
     positive_scores = scores[scores > 0]
     score_min = float(np.nanmin(positive_scores)) if positive_scores.size else 1e-6
     score_max = float(np.nanmax(scores)) if scores.size else 1.0
-    score_margin = (score_max - score_min) * 0.1 or score_min * 0.1 or 1e-6
-    score_ylim = (max(score_min - score_margin, 1e-12), score_max + score_margin)
+    score_margin = min(
+        (score_max - score_min) * 0.1 or score_min * 0.1 or 1e-6,
+        score_min * 0.99,
+    )
+    score_ylim = (score_min - score_margin, score_max + score_margin)
 
     fig, (signal_ax, score_ax) = plt.subplots(
         2,
