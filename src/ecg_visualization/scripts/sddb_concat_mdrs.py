@@ -24,12 +24,12 @@ LOGGER = logging.getLogger(__name__)
 
 DEFAULT_MD_RS_CONFIG: dict[str, float | int] = {
     "N_x": 256,
-    "input_scale": 0.5,
+    "input_scale": 1.0,
     "rho": 0.9,
-    "leaking_rate": 0.3,
+    "leaking_rate": 0.9,
     "delta": 1e-3,
     "trans_length": 10,
-    "N_x_tilde": 128,
+    "N_x_tilde": 256,
     "seed": 0,
 }
 
@@ -121,6 +121,7 @@ def _score_concatenated_sequence(concat: ConcatenatedSequence) -> ScoreResult:
     model.reset_states()
 
     scores = model.predict(test_sequence)
+    scores[: config["trans_length"]] = np.nan
     score_times = beat_times[WINDOW_SIZE:]
     return ScoreResult(times_sec=score_times, scores=scores)
 
@@ -153,7 +154,7 @@ def _plot_concat_scores(
         2,
         1,
         sharex=True,
-        figsize=(9, 6),
+        figsize=(5, 2),
     )
 
     signal_ax.plot(ts, samples, "-", linewidth=0.8)
