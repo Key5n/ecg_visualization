@@ -27,11 +27,3 @@
 ## Commit & Pull Request Guidelines
 
 - Follow the existing Conventional Commit style (`feat:`, `fix:`, `chore:`) as seen in recent history.
-- Each PR should describe the dataset subset touched, expected impacts on generated PDFs, and reference any PhysioNet issues.
-- Attach before/after snippets or PDF thumbnails when visuals change, and confirm large artifacts stay out of version control.
-- Link related issues and request review once `uv run ecg-visualization` (or targeted tests) completes without errors.
-
-## Data Handling Tips
-
-- Keep `dataset.sh` runs manual to avoid accidental re-downloads; document new datasets in both the script and loader registry.
-- When sharing results, export summary metrics instead of raw patient data unless privacy clearance is confirmed.
