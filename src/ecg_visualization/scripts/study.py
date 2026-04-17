@@ -4,34 +4,24 @@ from pathlib import Path
 from typing import Any, Final
 
 import numpy as np
+import optuna
+from optuna.artifacts import FileSystemArtifactStore, upload_artifact
+from tqdm import tqdm
 
-from ecg_visualization.datasets.dataset import ECGEntity
+from ecg_visualization.datasets.dataset import (
+    SDDB,
+    ECGDataset,
+    ECGEntity,
+)
 from ecg_visualization.logging import configure_optuna_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS
-from ecg_visualization.utils.timed_sequence import TimedSequence
-from ecg_visualization.utils.utils import prepare_sequences, sliding_window_sequences
 from ecg_visualization.utils.optuna_record import (
     build_storage_name,
     create_artifact_store,
     create_study_for_entity,
 )
-import optuna
-from optuna.artifacts import FileSystemArtifactStore
-from optuna.artifacts import upload_artifact
-from tqdm import tqdm
-
-
-from ecg_visualization.datasets.dataset import (
-    AFDB,
-    AFPDB,
-    CUDB,
-    LTAFDB,
-    MITDB,
-    SDDB,
-    SHDBAF,
-    ECGDataset,
-)
-
+from ecg_visualization.utils.timed_sequence import TimedSequence
+from ecg_visualization.utils.utils import prepare_sequences, sliding_window_sequences
 
 DEFAULT_MD_RS_CONFIG: Final[dict[str, Any]] = {
     "N_x": 256,
@@ -51,13 +41,14 @@ def study_all_entities():
     configure_optuna_logging()
 
     data_sources: list[ECGDataset] = [
-        CUDB(),
-        AFPDB(),
-        MITDB(),
-        AFDB(),
-        LTAFDB(),
-        SHDBAF(),
+        # CUDB(),
+        # AFPDB(),
+        # MITDB(),
+        # AFDB(),
+        # LTAFDB(),
+        # SHDBAF(),
         SDDB(),
+        # VFDB()
     ]
     artifact_root = Path("result") / "artifacts"
     artifact_store = create_artifact_store(artifact_root)
