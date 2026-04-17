@@ -5,6 +5,8 @@ import numpy as np
 import numpy.typing as npt
 from sklearn.preprocessing import StandardScaler
 
+IndexRange = tuple[int, int]
+
 
 def padding_reshape(array: npt.NDArray, shape: Tuple, fill_value=np.nan):
     total = math.prod(shape)
@@ -34,6 +36,32 @@ def merge_overlapping_windows(
         else:
             merged[-1][1] = max(merged[-1][1], end_time)
     return {(pair[0], pair[1]) for pair in merged}
+
+
+def find_true_runs(
+    array: npt.NDArray[np.bool_] | list[bool],
+) -> list[IndexRange]:
+    values = np.asarray(array, dtype=np.bool_)
+    if values.ndim != 1:
+        raise ValueError("find_true_runs expects a 1D array-like input")
+
+    runs: list[IndexRange] = []
+    current_start: int | None = None
+
+    for idx, value in enumerate(values):
+        if value:
+            if current_start is None:
+                current_start = idx
+            continue
+
+        if current_start is not None:
+            runs.append((current_start, idx - 1))
+            current_start = None
+
+    if current_start is not None:
+        runs.append((current_start, values.size - 1))
+
+    return runs
 
 
 def prepare_sequences(
