@@ -1,7 +1,8 @@
-from typing import Tuple
-import numpy.typing as npt
 import math
+from typing import Tuple
+
 import numpy as np
+import numpy.typing as npt
 from sklearn.preprocessing import StandardScaler
 
 

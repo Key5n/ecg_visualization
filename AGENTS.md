@@ -22,7 +22,10 @@
 
 ## Testing Guidelines
 
-- Don't run any tests. this project is just an individual's trial.
+- Use `unittest` for tests and place them under `tests/`.
+- Keep `tests/__init__.py` so discovery works consistently.
+- Preferred discovery command: `uv run python -m unittest discover -s tests`
+- Don't run any tests. This project is just an individual's trial.
 
 ## Commit & Pull Request Guidelines
 
