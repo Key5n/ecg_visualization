@@ -3,13 +3,13 @@ from __future__ import annotations
 import json
 from typing import Any, Mapping
 
-from ecg_visualization.datasets.dataset import ECG_Entity
+from ecg_visualization.datasets.dataset import ECGEntity
 from ecg_visualization.utils.optuna_record import Record
 
 
 def build_pdf_metadata(
     *,
-    entity: ECG_Entity,
+    entity: ECGEntity,
     record: Record,
 ) -> dict[str, str]:
     """Construct a PdfPages-compatible metadata dictionary."""

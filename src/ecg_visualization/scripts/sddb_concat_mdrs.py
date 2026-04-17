@@ -7,7 +7,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ecg_visualization.datasets.dataset import SDDB, ECG_Entity
+from ecg_visualization.datasets.dataset import SDDB, ECGEntity
 from ecg_visualization.models.md_rs.md_rs import MDRS
 from ecg_visualization.scripts.sddb_concat import (
     SINUS_SEGMENTS,
@@ -126,7 +126,7 @@ def _score_concatenated_sequence(concat: ConcatenatedSequence) -> ScoreResult:
 
 
 def _plot_concat_scores(
-    entity: ECG_Entity,
+    entity: ECGEntity,
     concat: ConcatenatedSequence,
     score_result: ScoreResult,
 ) -> plt.Figure:

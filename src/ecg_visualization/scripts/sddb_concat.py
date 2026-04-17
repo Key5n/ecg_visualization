@@ -12,7 +12,7 @@ import numpy.typing as npt
 from biosppy.signals.ecg import ecg as biosppy_ecg
 from matplotlib.axes import Axes
 
-from ecg_visualization.datasets.dataset import SDDB, ECG_Entity
+from ecg_visualization.datasets.dataset import SDDB, ECGEntity
 from ecg_visualization.visualization.export import pdf_exporter
 from ecg_visualization.visualization.layouts import (
     PaginationConfig,
@@ -420,7 +420,7 @@ def _minimum_required_beats(
 
 
 def _resolve_segment_beats(
-    entity: ECG_Entity,
+    entity: ECGEntity,
     name: str,
     segment_samples: npt.NDArray[np.float64],
     segment_beats: npt.NDArray[np.int_],
@@ -475,7 +475,7 @@ def _detect_rpeaks(
 
 
 def _build_concatenated_sequence(
-    entity: ECG_Entity,
+    entity: ECGEntity,
     segments_info: SegmentsInfo,
 ) -> ConcatenatedSequence | None:
     signal = entity.signals
@@ -579,7 +579,7 @@ def _build_concatenated_sequence(
 
 
 def _export_concatenated_pdf(
-    entity: ECG_Entity,
+    entity: ECGEntity,
     concat: ConcatenatedSequence,
     output_path: Path,
 ) -> None:
@@ -713,7 +713,7 @@ def _build_segments_info_by_entity(
 
 
 def _validate_segment_window(
-    entity: ECG_Entity,
+    entity: ECGEntity,
     window: SegmentWindow,
     *,
     label: str,

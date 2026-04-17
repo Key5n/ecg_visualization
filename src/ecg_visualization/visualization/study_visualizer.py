@@ -17,7 +17,7 @@ from optuna.trial import FrozenTrial
 
 from ecg_visualization.datasets.dataset import (
     DATASET_CLASS_BY_ID,
-    ECG_Entity,
+    ECGEntity,
 )
 from ecg_visualization.utils.optuna_record import (
     Record,
@@ -131,7 +131,7 @@ class StudyVisualizer:
         )
         return output_path
 
-    def _load_entity_from_study(self, study: Study) -> ECG_Entity:
+    def _load_entity_from_study(self, study: Study) -> ECGEntity:
         dataset_id, entity_id = get_study_identifiers(study)
         dataset_cls = DATASET_CLASS_BY_ID.get(dataset_id)
         if dataset_cls is None:

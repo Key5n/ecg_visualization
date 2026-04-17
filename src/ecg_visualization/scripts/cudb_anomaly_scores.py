@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 
-from ecg_visualization.datasets.dataset import CUDB, ECG_Entity
+from ecg_visualization.datasets.dataset import CUDB, ECGEntity
 from ecg_visualization.models.md_rs.md_rs import MDRS
 from ecg_visualization.utils.timed_sequence import TimedSequence
 from ecg_visualization.utils.utils import (
@@ -226,7 +226,7 @@ def cudb_anomaly_scores() -> None:
 
 def _score_entity(
     *,
-    entity: ECG_Entity,
+    entity: ECGEntity,
     sinus_windows: Iterable[tuple[float, float]],
     window_size: int,
     model_config: dict[str, float | int],
@@ -280,7 +280,7 @@ def _score_entity(
 
 def _plot_entity_scores(
     *,
-    entity: ECG_Entity,
+    entity: ECGEntity,
     score_sequence: TimedSequence,
     training_windows: Iterable[tuple[float, float]],
 ) -> plt.Figure:

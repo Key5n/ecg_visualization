@@ -18,14 +18,14 @@ NORMAL_SEGMENT_DURATION_SEC = 5 * 60  # 5 minutes
 
 
 @dataclass(slots=True)
-class ECG_Entity:
+class ECGEntity:
     """
     Class representing a single ECG record/entity
 
     Attributes:
         entity_id (str): Identifier for the ECG record
         dataset_name (str): Human-readable dataset label the record belongs to
-        dataset_id (str): Identifier matching ECG_Dataset.dataset_id for stable storage lookups
+        dataset_id (str): Identifier matching ECGDataset.dataset_id for stable storage lookups
         sr (int): Sampling rate of the ECG signal
         signals (npt.NDArray[np.float64]): ECG signal data
         annotation (Annotation): Annotation object containing metadata about the ECG record
@@ -204,9 +204,9 @@ class ECG_Entity:
 
 
 @dataclass(slots=True)
-class ECG_Dataset:
+class ECGDataset:
     """
-    Base class for ECG Datasets
+    Base class for ECG datasets
 
     Attributes:
         dir_path (str): Path to the dataset directory
@@ -215,7 +215,7 @@ class ECG_Dataset:
         annotation_extention_priority (list[str]): List of annotation file extensions in order of priority
         beat_extention_priority (list[str]): List of beat annotation file extensions in order of priority
         data_ids (list[str]): List of data record identifiers
-        data_entities (list[ECG_Entity]): List of ECG entities in the dataset
+        data_entities (list[ECGEntity]): List of ECG entities in the dataset
     """
 
     dir_path: ClassVar[str]
@@ -224,7 +224,7 @@ class ECG_Dataset:
     annotation_extention_priority: ClassVar[tuple[str, ...]] = ("atr", "qrs", "ari")
     beat_extention_priority: ClassVar[tuple[str, ...]] = ("atr", "qrs", "ari")
     data_ids: list[str] = field(init=False)
-    data_entities: list[ECG_Entity] = field(default_factory=list)
+    data_entities: list[ECGEntity] = field(default_factory=list)
 
     def __post_init__(self):
         record_path = os.path.join(self.dir_path, "RECORDS")
@@ -267,7 +267,7 @@ class ECG_Dataset:
         raise FileNotFoundError(f"No annotation file found for {data_path}")
 
     @classmethod
-    def _load_entity(cls, data_id: str) -> ECG_Entity:
+    def _load_entity(cls, data_id: str) -> ECGEntity:
         """
         Load a single entity without instantiating the dataset and populating all
         records.
@@ -284,7 +284,7 @@ class ECG_Dataset:
 
         record = wfdb.rdheader(data_path)
         sr = record.fs
-        return ECG_Entity(
+        return ECGEntity(
             entity_id=data_id,
             dataset_name=cls.name,
             dataset_id=cls.dataset_id,
@@ -319,7 +319,7 @@ class ECG_Dataset:
 
 # https://physionet.org/content/cudb/1.0.0/
 @dataclass(slots=True)
-class CUDB(ECG_Dataset):
+class CUDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "cudb", "1.0.0")
     name: ClassVar[str] = "Tachyarrythmia"
     dataset_id: ClassVar[str] = "cudb"
@@ -328,7 +328,7 @@ class CUDB(ECG_Dataset):
 
 # https://physionet.org/content/afpdb/1.0.0/
 @dataclass(slots=True)
-class AFPDB(ECG_Dataset):
+class AFPDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "afpdb", "1.0.0")
     name: ClassVar[str] = "PAF Prediction Challenge Database"
     dataset_id: ClassVar[str] = "afpdb"
@@ -337,7 +337,7 @@ class AFPDB(ECG_Dataset):
 
 # https://physionet.org/content/mitdb/1.0.0/
 @dataclass(slots=True)
-class MITDB(ECG_Dataset):
+class MITDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "mitdb", "1.0.0")
     name: ClassVar[str] = "MIT-BIH Arrhythmia Database"
     dataset_id: ClassVar[str] = "mitdb"
@@ -346,7 +346,7 @@ class MITDB(ECG_Dataset):
 
 # https://physionet.org/content/afdb/1.0.0/
 @dataclass(slots=True)
-class AFDB(ECG_Dataset):
+class AFDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "afdb", "1.0.0")
     name: ClassVar[str] = "MIT-BIH Atrial Fibrillation Database"
     dataset_id: ClassVar[str] = "afdb"
@@ -367,7 +367,7 @@ class AFDB(ECG_Dataset):
 
 # https://physionet.org/content/ltafdb/1.0.0/
 @dataclass(slots=True)
-class LTAFDB(ECG_Dataset):
+class LTAFDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "ltafdb", "1.0.0")
     name: ClassVar[str] = "Long Term AF Database"
     dataset_id: ClassVar[str] = "ltafdb"
@@ -376,7 +376,7 @@ class LTAFDB(ECG_Dataset):
 
 # https://physionet.org/content/shdb-af/1.0.1/
 @dataclass(slots=True)
-class SHDBAF(ECG_Dataset):
+class SHDBAF(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "shdb-af", "1.0.1")
     name: ClassVar[str] = (
         "SHDB-AF: a Japanese Holter ECG database of atrial fibrillation"
@@ -399,7 +399,7 @@ class SHDBAF(ECG_Dataset):
 
 # https://physionet.org/content/sddb/1.0.0/
 @dataclass(slots=True)
-class SDDB(ECG_Dataset):
+class SDDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "sddb", "1.0.0")
     name: ClassVar[str] = "Sudden Cardiac Death Holter Database"
     dataset_id: ClassVar[str] = "sddb"
@@ -430,7 +430,7 @@ class SDDB(ECG_Dataset):
 
 # https://physionet.org/content/vfdb/1.0.0/
 @dataclass(slots=True)
-class VFDB(ECG_Dataset):
+class VFDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(dataset_root_dir, "vfdb", "1.0.0")
     name: ClassVar[str] = "MIT-BIH Malignant Ventricular Ectopy Database"
     dataset_id: ClassVar[str] = "vfdb"
@@ -449,7 +449,7 @@ class VFDB(ECG_Dataset):
             self.data_entities.append(self._load_entity(data_id))
 
 
-DATASET_CLASS_BY_ID: dict[str, type[ECG_Dataset]] = {
+DATASET_CLASS_BY_ID: dict[str, type[ECGDataset]] = {
     CUDB.dataset_id: CUDB,
     AFPDB.dataset_id: AFPDB,
     MITDB.dataset_id: MITDB,

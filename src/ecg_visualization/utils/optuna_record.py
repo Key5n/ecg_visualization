@@ -17,7 +17,7 @@ from optuna.storages import RDBStorage
 from ecg_visualization.utils.timed_sequence import TimedSequence
 
 if TYPE_CHECKING:
-    from ecg_visualization.datasets.dataset import ECG_Entity
+    from ecg_visualization.datasets.dataset import ECGEntity
 
 LOGGER = logging.getLogger(__name__)
 
@@ -111,7 +111,7 @@ class StudyLoader:
 
     def load(
         self,
-        entity: "ECG_Entity",
+        entity: "ECGEntity",
     ) -> optuna.Study | None:
         """Load the Optuna study for the provided entity."""
 
@@ -155,7 +155,7 @@ def load_studies(storage_name: str) -> list[optuna.Study]:
 
 
 def create_study_for_entity(
-    entity: "ECG_Entity",
+    entity: "ECGEntity",
     *,
     storage_name: str,
     **kwargs: Any,

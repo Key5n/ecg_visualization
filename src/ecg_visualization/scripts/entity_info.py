@@ -8,7 +8,7 @@ from collections import Counter
 
 import numpy as np
 
-from ecg_visualization.datasets.dataset import DATASET_CLASS_BY_ID, ECG_Entity
+from ecg_visualization.datasets.dataset import DATASET_CLASS_BY_ID, ECGEntity
 
 
 def entity_info(argv: Sequence[str] | None = None) -> None:
@@ -71,7 +71,7 @@ def _print_supported_datasets() -> None:
         print(f"  - {dataset_id}: {dataset_cls.name}")
 
 
-def _print_entity_summary(entity: ECG_Entity, record_path: Path) -> None:
+def _print_entity_summary(entity: ECGEntity, record_path: Path) -> None:
     signal_samples = int(entity.signals.size)
     duration_sec = signal_samples / entity.sr if entity.sr else 0.0
     beat_count = int(entity.beats.size)
@@ -100,7 +100,7 @@ def _print_entity_summary(entity: ECG_Entity, record_path: Path) -> None:
     _print_rows(rows)
 
 
-def _format_rr_statistics(entity: ECG_Entity) -> str:
+def _format_rr_statistics(entity: ECGEntity) -> str:
     try:
         rr_intervals = entity.compute_rr_intervals()
     except ValueError as exc:
@@ -115,7 +115,7 @@ def _format_rr_statistics(entity: ECG_Entity) -> str:
     )
 
 
-def _format_normal_segment_summary(entity: ECG_Entity) -> str:
+def _format_normal_segment_summary(entity: ECGEntity) -> str:
     try:
         normal_segment = entity.extract_normal_segment()
     except ValueError as exc:
@@ -129,7 +129,7 @@ def _format_normal_segment_summary(entity: ECG_Entity) -> str:
     )
 
 
-def _format_aux_note_summary(entity: ECG_Entity) -> str:
+def _format_aux_note_summary(entity: ECGEntity) -> str:
     notes = [note.strip() for note in entity.aux_notes if note.strip()]
     if not notes:
         return "None recorded"

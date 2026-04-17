@@ -5,7 +5,7 @@ from typing import Any, Final
 
 import numpy as np
 
-from ecg_visualization.datasets.dataset import ECG_Entity
+from ecg_visualization.datasets.dataset import ECGEntity
 from ecg_visualization.logging import configure_optuna_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS
 from ecg_visualization.utils.timed_sequence import TimedSequence
@@ -29,7 +29,7 @@ from ecg_visualization.datasets.dataset import (
     MITDB,
     SDDB,
     SHDBAF,
-    ECG_Dataset,
+    ECGDataset,
 )
 
 
@@ -50,7 +50,7 @@ LOGGER = logging.getLogger(__name__)
 def study_all_entities():
     configure_optuna_logging()
 
-    data_sources: list[ECG_Dataset] = [
+    data_sources: list[ECGDataset] = [
         CUDB(),
         AFPDB(),
         MITDB(),
@@ -79,7 +79,7 @@ def study_all_entities():
 class Objective:
     def __init__(
         self,
-        entity: ECG_Entity,
+        entity: ECGEntity,
         artifact_store: FileSystemArtifactStore,
         MD_RS_CONFIG: dict[str, Any],
         WINDOW_SIZE=10,
