@@ -18,6 +18,7 @@ DEFAULT_MD_RS_CONFIG: dict[str, float | int] = {
 
 WINDOW_SIZE = 10
 OUTPUT_DIR = Path("result") / "sddb_concat" / "mdrs_scores"
+VISUALIZE_OUTPUT_DIR = Path("result") / "sddb_concat" / "visualize"
 SEGMENT_DURATION_SEC = 10 * 60
 MAX_REASONABLE_RR_INTERVAL_SEC = 3.0
 SINUS_RR_MEDIAN_THRESHOLD_SEC = 0.1
