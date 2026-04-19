@@ -12,6 +12,8 @@ from collections.abc import Iterator
 
 from tqdm import tqdm
 
+from ecg_visualization.logging.config import get_log_level
+
 DEFAULT_FORMAT = "%(asctime)s - %(message)s"
 
 __all__ = [
@@ -33,16 +35,16 @@ class TqdmLoggingHandler(logging.Handler):
 
 @contextlib.contextmanager
 def queue_logging_context(
-    level: int = logging.INFO,
+    level: int | None = None,
     fmt: str = DEFAULT_FORMAT,
 ) -> Iterator[mp.Queue]:
     """
     Replace the root logger handlers with a queue handler and forward records through
     a tqdm-aware listener until the context exits.
     """
-
+    resolved_level = get_log_level() if level is None else level
     log_queue: mp.Queue = mp.Queue()
-    listener_handler = _create_tqdm_handler(level=level, fmt=fmt)
+    listener_handler = _create_tqdm_handler(level=resolved_level, fmt=fmt)
     listener = logging.handlers.QueueListener(
         log_queue,
         listener_handler,
@@ -53,7 +55,7 @@ def queue_logging_context(
     previous_handlers = root.handlers[:]
     previous_level = root.level
 
-    _install_queue_handler(root, log_queue, level)
+    _install_queue_handler(root, log_queue, resolved_level)
 
     listener.start()
     try:
@@ -66,12 +68,13 @@ def queue_logging_context(
 
 def worker_logging_initializer(
     log_queue: mp.Queue,
-    level: int = logging.INFO,
+    level: int | None = None,
 ) -> None:
     """Configure worker processes to send logs to the shared queue."""
 
     root = logging.getLogger()
-    _install_queue_handler(root, log_queue, level)
+    resolved_level = get_log_level() if level is None else level
+    _install_queue_handler(root, log_queue, resolved_level)
 
 
 def _create_tqdm_handler(level: int, fmt: str) -> logging.Handler:

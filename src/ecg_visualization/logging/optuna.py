@@ -2,6 +2,7 @@ import logging
 
 import optuna
 
+from ecg_visualization.logging.config import get_log_level
 from ecg_visualization.logging.tqdm_multiprocessing import TqdmLoggingHandler
 
 
@@ -23,8 +24,8 @@ def configure_optuna_logging() -> None:
     )
     if not has_tqdm_handler:
         handler = TqdmLoggingHandler()
-        handler.setLevel(logging.INFO)
+        handler.setLevel(get_log_level())
         handler.setFormatter(logging.Formatter("%(message)s"))
         if root.level == logging.NOTSET:
-            root.setLevel(logging.INFO)
+            root.setLevel(get_log_level())
         root.addHandler(handler)

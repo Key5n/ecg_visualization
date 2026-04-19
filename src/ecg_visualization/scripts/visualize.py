@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 
 from ecg_visualization.logging import (
+    configure_root_logging,
     queue_logging_context,
     worker_logging_initializer,
 )
@@ -32,6 +33,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def visualize_all_studies(max_workers: int | None = None):
+    configure_root_logging()
     storage_name = build_storage_name()
     studies = load_studies(storage_name)
     if not studies:
@@ -99,4 +101,3 @@ def _run_visualization(study: optuna.Study) -> tuple[str, str, Exception | None]
         return dataset_id, entity_id, None
     except Exception as exc:  # pragma: no cover - worker error propagation
         return dataset_id, entity_id, exc
-

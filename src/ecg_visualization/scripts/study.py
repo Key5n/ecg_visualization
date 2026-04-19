@@ -13,7 +13,7 @@ from ecg_visualization.datasets.dataset import (
     ECGDataset,
     ECGEntity,
 )
-from ecg_visualization.logging import configure_optuna_logging
+from ecg_visualization.logging import configure_optuna_logging, configure_root_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS
 from ecg_visualization.utils.optuna_record import (
     build_storage_name,
@@ -38,6 +38,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def study_all_entities():
+    configure_root_logging()
     configure_optuna_logging()
 
     data_sources: list[ECGDataset] = [

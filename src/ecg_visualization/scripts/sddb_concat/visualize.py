@@ -7,6 +7,7 @@ import numpy as np
 from matplotlib.axes import Axes
 
 from ecg_visualization.datasets.dataset import ECGEntity
+from ecg_visualization.logging import configure_root_logging
 from ecg_visualization.scripts.sddb_concat.constants import (
     SEGMENT_COLORS,
     VISUALIZE_OUTPUT_DIR,
@@ -21,7 +22,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def sddb_concat_visualize() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    configure_root_logging()
     apply_default_style()
     VISUALIZE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 

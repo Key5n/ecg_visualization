@@ -10,6 +10,7 @@ import numpy as np
 from tqdm import tqdm
 
 from ecg_visualization.datasets.dataset import CUDB, ECGEntity
+from ecg_visualization.logging import configure_root_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS
 from ecg_visualization.utils.timed_sequence import TimedSequence
 from ecg_visualization.utils.utils import (
@@ -171,7 +172,7 @@ WINDOW_SIZE = 10
 
 
 def cudb_anomaly_scores() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    configure_root_logging()
 
     output_path = OUTPUT_PATH
     output_path.parent.mkdir(parents=True, exist_ok=True)

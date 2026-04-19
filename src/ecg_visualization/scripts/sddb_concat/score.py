@@ -8,6 +8,7 @@ import numpy as np
 from matplotlib.axes import Axes
 
 from ecg_visualization.datasets.dataset import ECGEntity
+from ecg_visualization.logging import configure_root_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS
 from ecg_visualization.scripts.sddb_concat.constants import (
     DEFAULT_MD_RS_CONFIG,
@@ -32,7 +33,7 @@ class ScoreResult:
 
 
 def sddb_concat_scores() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    configure_root_logging()
     apply_default_style()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
