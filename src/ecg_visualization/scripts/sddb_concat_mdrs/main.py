@@ -17,12 +17,18 @@ from ecg_visualization.scripts.sddb_concat_mdrs.constants import (
     MAX_REASONABLE_RR_INTERVAL_SEC,
     OUTPUT_DIR,
     SEGMENT_COLORS,
-    SINUS_SEGMENTS,
-    SegmentWindow,
-    SegmentsInfo,
+    SINUS_RR_MEDIAN_THRESHOLD_SEC,
     WINDOW_SIZE,
+    SegmentsInfo,
+    SegmentWindow,
+    build_fixed_vf_windows,
+    build_segments_info,
 )
-from ecg_visualization.utils.utils import prepare_sequences, sliding_window_sequences
+from ecg_visualization.utils.utils import (
+    find_true_runs,
+    prepare_sequences,
+    sliding_window_sequences,
+)
 from ecg_visualization.visualization.styles import apply_default_style
 
 LOGGER = logging.getLogger(__name__)
@@ -56,7 +62,11 @@ def sddb_concat_mdrs_scores() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     dataset = SDDB()
-    segments_info_by_entity = _build_segments_info_by_entity(SINUS_SEGMENTS)
+    sinus_segments = _build_sinus_segments(
+        dataset.data_entities,
+        rr_median_threshold_sec=SINUS_RR_MEDIAN_THRESHOLD_SEC,
+    )
+    segments_info_by_entity = _build_segments_info_by_entity(sinus_segments)
 
     processed = 0
     skipped = 0
@@ -101,6 +111,100 @@ def _segment_windows(segments_info: SegmentsInfo) -> list[tuple[str, SegmentWind
         ("vf", segments_info.vf),
         ("sinus_test", segments_info.test),
     ]
+
+
+def _build_sinus_segments(
+    entities: Iterable[ECGEntity],
+    *,
+    rr_median_threshold_sec: float,
+) -> tuple[SegmentsInfo, ...]:
+    segments: list[SegmentsInfo] = []
+    for entity in entities:
+        segments_info = _select_sinus_segments(
+            entity,
+            rr_median_threshold_sec=rr_median_threshold_sec,
+        )
+        if segments_info is None:
+            continue
+        segments.append(segments_info)
+
+    return tuple(segments)
+
+
+def _select_sinus_segments(
+    entity: ECGEntity,
+    *,
+    rr_median_threshold_sec: float,
+) -> SegmentsInfo | None:
+    try:
+        rr_intervals = np.asarray(entity.compute_rr_intervals(), dtype=np.float64)
+    except ValueError as exc:
+        LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
+        return None
+
+    if rr_intervals.size < 2:
+        LOGGER.warning("Skipping %s: not enough RR intervals.", entity.entity_id)
+        return None
+
+    beat_times_sec = np.asarray(entity.beats, dtype=np.float64) / float(entity.sr)
+    median_rr_interval_sec = float(np.median(rr_intervals))
+    near_median_mask = (
+        np.abs(rr_intervals - median_rr_interval_sec) <= rr_median_threshold_sec
+    )
+    try:
+        available_rr_mask = _build_available_rr_mask(entity.entity_id, beat_times_sec)
+    except ValueError as exc:
+        LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
+        return None
+
+    candidate_runs = find_true_runs(near_median_mask & available_rr_mask)
+    if len(candidate_runs) < 2:
+        LOGGER.warning(
+            "Skipping %s: expected 2 sinus runs, found %d.",
+            entity.entity_id,
+            len(candidate_runs),
+        )
+        return None
+
+    candidate_runs.sort(key=lambda run: (-(run[1] - run[0]), run[0]))
+    train_window = _rr_run_to_segment_window(beat_times_sec, candidate_runs[0])
+    test_window = _rr_run_to_segment_window(beat_times_sec, candidate_runs[1])
+    try:
+        return build_segments_info(
+            entity.entity_id,
+            train=train_window,
+            test=test_window,
+        )
+    except ValueError as exc:
+        LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
+        return None
+
+
+def _build_available_rr_mask(
+    entity_id: str,
+    beat_times_sec: npt.NDArray[np.float64],
+) -> npt.NDArray[np.bool_]:
+    pre_vf_window, vf_window = build_fixed_vf_windows(entity_id)
+    rr_start_times_sec = beat_times_sec[:-1]
+    rr_end_times_sec = beat_times_sec[1:]
+    overlaps_pre_vf = (rr_start_times_sec < pre_vf_window.end_sec) & (
+        rr_end_times_sec > pre_vf_window.start_sec
+    )
+    overlaps_vf = (rr_start_times_sec < vf_window.end_sec) & (
+        rr_end_times_sec > vf_window.start_sec
+    )
+    return ~(overlaps_pre_vf | overlaps_vf)
+
+
+def _rr_run_to_segment_window(
+    beat_times_sec: npt.NDArray[np.float64],
+    rr_run: tuple[int, int],
+) -> SegmentWindow:
+    start_idx, end_idx = rr_run
+    return SegmentWindow(
+        start_sec=float(beat_times_sec[start_idx]),
+        end_sec=float(beat_times_sec[end_idx]),
+    )
 
 
 def _minimum_required_beats(segment_duration_sec: float) -> int:
@@ -227,7 +331,9 @@ def _build_concatenated_sequence(
             np.asarray(annotated_segment_beats - start_sample, dtype=np.int_),
         )
         segment_length = end_sample - start_sample
-        concatenated_beats.append(np.asarray(segment_beats + running_offset, dtype=np.int_))
+        concatenated_beats.append(
+            np.asarray(segment_beats + running_offset, dtype=np.int_)
+        )
         annotation_mask = (entity.annotation.sample >= start_sample) & (
             entity.annotation.sample < end_sample
         )

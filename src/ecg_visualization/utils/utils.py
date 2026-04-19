@@ -55,11 +55,11 @@ def find_true_runs(
             continue
 
         if current_start is not None:
-            runs.append((current_start, idx - 1))
+            runs.append((current_start, idx))
             current_start = None
 
     if current_start is not None:
-        runs.append((current_start, values.size - 1))
+        runs.append((current_start, values.size))
 
     return runs
 
