@@ -178,12 +178,41 @@ def plot_histogram(
     percentile_lines: Sequence[float] | None = None,
     percentile_color: str = "tab:red",
     percentile_linestyle: str = "--",
+    focus_percentile_range: tuple[float, float] | None = None,
 ) -> None:
     """Render a styled histogram of the provided values."""
-    if values.size == 0:
+    cleaned_values = values[np.isfinite(values)]
+    if cleaned_values.size == 0:
         return
 
-    ax.hist(values, bins=bins, color=color, alpha=alpha)
+    histogram_values = cleaned_values
+    histogram_range: tuple[float, float] | None = None
+    if focus_percentile_range is not None:
+        lower_percentile, upper_percentile = focus_percentile_range
+        if lower_percentile >= upper_percentile:
+            raise ValueError("focus_percentile_range must be in ascending order")
+
+        lower_bound, upper_bound = np.percentile(
+            cleaned_values, [lower_percentile, upper_percentile]
+        )
+        if float(lower_bound) < float(upper_bound):
+            inlier_mask = (cleaned_values >= lower_bound) & (
+                cleaned_values <= upper_bound
+            )
+            focused_values = cleaned_values[inlier_mask]
+            if focused_values.size > 0:
+                histogram_values = focused_values
+                histogram_range = (float(lower_bound), float(upper_bound))
+
+    ax.hist(
+        histogram_values,
+        bins=bins,
+        range=histogram_range,
+        color=color,
+        alpha=alpha,
+    )
+    if histogram_range is not None:
+        ax.set_xlim(*histogram_range)
     if title:
         ax.set_title(title)
     if xlabel:
@@ -193,7 +222,7 @@ def plot_histogram(
     ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.5)
 
     if percentile_lines:
-        percentile_values = np.percentile(values, percentile_lines)
+        percentile_values = np.percentile(cleaned_values, percentile_lines)
         ylim_upper = ax.get_ylim()[1]
         y_pos = ylim_upper * 0.95
         for percentile, cutoff in zip(

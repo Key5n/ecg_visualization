@@ -336,6 +336,7 @@ class StudyVisualizer:
                 xlabel="Time for R-peak window (sec)",
                 ylabel="Count",
                 percentile_lines=percentile_bounds,
+                focus_percentile_range=(1.0, 99.0),
             )
             fig.tight_layout()
             exporter.add_page(fig, pad_inches=0)
