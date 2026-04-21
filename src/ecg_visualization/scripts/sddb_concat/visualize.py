@@ -13,6 +13,7 @@ from ecg_visualization.datasets.dataset import ECGEntity
 from ecg_visualization.logging import configure_root_logging
 from ecg_visualization.scripts.sddb_concat.constants import (
     SEGMENT_COLORS,
+    SINUS_RR_MEDIAN_THRESHOLD_SEC,
     VISUALIZE_OUTPUT_DIR,
 )
 from ecg_visualization.scripts.sddb_concat.utils import (
@@ -117,6 +118,14 @@ def _render_rr_interval_histogram_page(
             focus_percentile_range=(1.0, 99.0),
         )
         median_rr_interval = float(np.median(rr_intervals_sec))
+        sinus_lower = median_rr_interval - SINUS_RR_MEDIAN_THRESHOLD_SEC
+        sinus_upper = median_rr_interval + SINUS_RR_MEDIAN_THRESHOLD_SEC
+        ax.axvspan(
+            sinus_lower,
+            sinus_upper,
+            color="tab:green",
+            alpha=0.15,
+        )
         ax.axvline(
             median_rr_interval,
             color="tab:red",
