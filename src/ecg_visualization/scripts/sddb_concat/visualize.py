@@ -72,12 +72,12 @@ def _export_concatenated_pdf(
     output_path: Path,
 ) -> None:
     ts_paged = paginate_signals(
-        concat.samples.size,
-        int(concat.sampling_rate_hz),
+        entity.signals.size,
+        int(entity.sr),
         PAGINATION_CONFIG,
     )
     signal_ylim = compute_ylim(
-        concat.samples,
+        entity.signals,
         lower_bound=-5.0,
         upper_bound=5.0,
     )
@@ -90,6 +90,7 @@ def _export_concatenated_pdf(
                 _render_signal_row(
                     ax=ax,
                     ts=ts,
+                    entity=entity,
                     concat=concat,
                     signal_ylim=signal_ylim,
                 )
@@ -103,8 +104,8 @@ def _render_rr_interval_histogram_page(
     concat: ConcatenatedSequence,
     exporter: PdfExporter,
 ) -> None:
-    rr_intervals = np.diff(np.asarray(concat.beats, dtype=np.float64))
-    rr_intervals_sec = rr_intervals / float(concat.sampling_rate_hz)
+    rr_intervals = np.diff(np.asarray(entity.beats, dtype=np.float64))
+    rr_intervals_sec = rr_intervals / float(entity.sr)
 
     fig, ax = plt.subplots(figsize=(8, 4))
     if rr_intervals_sec.size > 0:
@@ -166,15 +167,16 @@ def _render_signal_row(
     *,
     ax: Axes,
     ts: npt.NDArray[np.float64],
+    entity: ECGEntity,
     concat: ConcatenatedSequence,
     signal_ylim: tuple[float, float],
 ) -> None:
     window_start, window_end = float(ts[0]), float(ts[-1])
-    sr = float(concat.sampling_rate_hz)
+    sr = float(entity.sr)
 
     start_idx = int(np.floor(window_start * sr))
-    end_idx = min(int(np.floor(window_end * sr)) + 1, concat.samples.size)
-    signal_values = _align_signal_to_window(ts, concat.samples[start_idx:end_idx])
+    end_idx = min(int(np.floor(window_end * sr)) + 1, entity.signals.size)
+    signal_values = _align_signal_to_window(ts, entity.signals[start_idx:end_idx])
 
     plot_signal(
         ax,
@@ -185,7 +187,7 @@ def _render_signal_row(
         label="Voltage [mV]",
     )
 
-    beat_times = np.asarray(concat.beats, dtype=np.float64) / sr
+    beat_times = np.asarray(entity.beats, dtype=np.float64) / sr
     beat_times_in_window = beat_times[
         (beat_times >= window_start) & (beat_times <= window_end)
     ]
@@ -195,12 +197,12 @@ def _render_signal_row(
         ylim_lower=signal_ylim[0],
     )
 
-    symbol_times = np.asarray(concat.symbol_samples, dtype=np.float64) / sr
+    symbol_times = np.asarray(entity.annotation.sample, dtype=np.float64) / sr
     symbol_events = [
         (sample_time, symbol)
         for sample_time, symbol in zip(
             symbol_times,
-            concat.symbol_values,
+            entity.annotation.symbol,
             strict=True,
         )
         if window_start <= sample_time <= window_end
@@ -216,6 +218,7 @@ def _render_signal_row(
         concat,
         window_start=window_start,
         window_end=window_end,
+        ylim_lower=signal_ylim[0],
         ylim_upper=signal_ylim[1],
     )
 
@@ -251,6 +254,7 @@ def _highlight_segments(
     *,
     window_start: float,
     window_end: float,
+    ylim_lower: float,
     ylim_upper: float,
 ) -> None:
     for name, start_sec, end_sec in segments:
@@ -261,17 +265,41 @@ def _highlight_segments(
         highlight_end = min(end_sec, window_end)
         color = SEGMENT_COLORS.get(name, "#adb5bd")
         ax.axvspan(highlight_start, highlight_end, color=color, alpha=0.15)
+        ax.axvline(
+            highlight_start,
+            color=color,
+            linestyle="--",
+            linewidth=0.8,
+            alpha=0.8,
+        )
+        ax.axvline(
+            highlight_end,
+            color=color,
+            linestyle="--",
+            linewidth=0.8,
+            alpha=0.8,
+        )
 
         midpoint = (start_sec + end_sec) / 2
         if window_start <= midpoint <= window_end:
+            label = (
+                f"{SEGMENT_LABELS.get(name, name)}\n"
+                f"{start_sec:.1f}-{end_sec:.1f}s"
+            )
             ax.text(
                 midpoint,
-                ylim_upper,
-                SEGMENT_LABELS.get(name, name),
+                ylim_upper - (ylim_upper - ylim_lower) * 0.02,
+                label,
                 fontsize=6,
                 horizontalalignment="center",
-                verticalalignment="bottom",
+                verticalalignment="top",
                 color=color,
+                bbox={
+                    "boxstyle": "round,pad=0.15",
+                    "facecolor": "white",
+                    "edgecolor": color,
+                    "alpha": 0.8,
+                },
             )
 
 
@@ -281,28 +309,23 @@ def _highlight_concat_segments(
     *,
     window_start: float,
     window_end: float,
+    ylim_lower: float,
     ylim_upper: float,
 ) -> None:
     segments: list[tuple[str, float, float]] = []
-    running_start = 0
     for name, window in (
         ("sinus_train", concat.segments_info.train),
         ("pre_vf", concat.segments_info.pre_vf),
         ("vf", concat.segments_info.vf),
         ("sinus_test", concat.segments_info.test),
     ):
-        segment_samples = int(
-            np.round((window.end_sec - window.start_sec) * concat.sampling_rate_hz)
-        )
-        start_sec = running_start / concat.sampling_rate_hz
-        end_sec = (running_start + segment_samples) / concat.sampling_rate_hz
-        segments.append((name, start_sec, end_sec))
-        running_start += segment_samples
+        segments.append((name, window.start_sec, window.end_sec))
 
     _highlight_segments(
         ax,
         segments,
         window_start=window_start,
         window_end=window_end,
+        ylim_lower=ylim_lower,
         ylim_upper=ylim_upper,
     )
