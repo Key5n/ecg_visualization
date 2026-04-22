@@ -38,6 +38,14 @@ from ecg_visualization.visualization.styles import apply_default_style
 LOGGER = logging.getLogger(__name__)
 
 PAGINATION_CONFIG = PaginationConfig(seconds_per_row=10, rows_per_page=6)
+RR_HISTOGRAM_XMIN_SEC = 0.0
+RR_HISTOGRAM_XMAX_SEC = 2.0
+RR_HISTOGRAM_BIN_WIDTH_SEC = 0.025
+RR_HISTOGRAM_BINS = np.arange(
+    RR_HISTOGRAM_XMIN_SEC,
+    RR_HISTOGRAM_XMAX_SEC + RR_HISTOGRAM_BIN_WIDTH_SEC,
+    RR_HISTOGRAM_BIN_WIDTH_SEC,
+)
 SEGMENT_LABELS = {
     "sinus_train": "train",
     "pre_vf": "pre-vf",
@@ -109,15 +117,24 @@ def _render_rr_interval_histogram_page(
 
     fig, ax = plt.subplots(figsize=(8, 4))
     if rr_intervals_sec.size > 0:
-        plot_histogram(
-            ax,
-            rr_intervals_sec,
-            bins="auto",
-            title=f"{entity.dataset_name} / {entity.entity_id} RR intervals",
-            xlabel="R-peak interval (sec)",
-            ylabel="Count",
-            focus_percentile_range=(1.0, 99.0),
-        )
+        rr_intervals_in_range = rr_intervals_sec[
+            (rr_intervals_sec >= RR_HISTOGRAM_XMIN_SEC)
+            & (rr_intervals_sec <= RR_HISTOGRAM_XMAX_SEC)
+        ]
+        if rr_intervals_in_range.size > 0:
+            plot_histogram(
+                ax,
+                rr_intervals_in_range,
+                bins=RR_HISTOGRAM_BINS,
+                title=f"{entity.dataset_name} / {entity.entity_id} RR intervals",
+                xlabel="R-peak interval (sec)",
+                ylabel="Count",
+            )
+        else:
+            ax.set_title(f"{entity.dataset_name} / {entity.entity_id} RR intervals")
+            ax.set_xlabel("R-peak interval (sec)")
+            ax.set_ylabel("Count")
+        ax.set_xlim(RR_HISTOGRAM_XMIN_SEC, RR_HISTOGRAM_XMAX_SEC)
         median_rr_interval = float(np.median(rr_intervals_sec))
         sinus_lower = median_rr_interval - SINUS_RR_MEDIAN_THRESHOLD_SEC
         sinus_upper = median_rr_interval + SINUS_RR_MEDIAN_THRESHOLD_SEC
@@ -282,10 +299,7 @@ def _highlight_segments(
 
         midpoint = (start_sec + end_sec) / 2
         if window_start <= midpoint <= window_end:
-            label = (
-                f"{SEGMENT_LABELS.get(name, name)}\n"
-                f"{start_sec:.1f}-{end_sec:.1f}s"
-            )
+            label = f"{SEGMENT_LABELS.get(name, name)}\n{start_sec:.1f}-{end_sec:.1f}s"
             ax.text(
                 midpoint,
                 ylim_upper - (ylim_upper - ylim_lower) * 0.02,
