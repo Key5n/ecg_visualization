@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Key5n", email = "k.nogami.472@stn.nitech.ac.jp" }
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     "biosppy>=2.2.4",
     "networkx>=3.5",
@@ -23,14 +23,14 @@ dependencies = [
     "wfdb>=4.3.0",
 ]
 
-[project.scripts]
-experiment = "ecg_visualization:study_all_entities"
-visualize = "ecg_visualization:visualize_all_studies"
-entity-info = "ecg_visualization:entity_info"
-cudb-anomaly-scores = "ecg_visualization:cudb_anomaly_scores"
-sddb-concat-scores = "ecg_visualization:sddb_concat_scores"
-sddb-concat-visualize = "ecg_visualization:sddb_concat_visualize"
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.uv]
+cache-dir = ".uv_cache"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.20",
+]
+
+[tool.ruff.lint]
+extend-select = ["I"]

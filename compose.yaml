@@ -1,8 +1,33 @@
 services:
-  db:
+  rdb:
     image: mariadb:11.8.4
     env_file: .env
     ports:
       - "3306:3306"
     volumes:
-      - ./db/data:/var/lib/mysql
+      - ./data/rdb:/var/lib/mysql
+  object-storage:
+    image: dxflrs/garage:v2.2.0
+    env_file: .env
+    volumes:
+      - ./data/object-storage/garage.toml:/etc/garage.toml:ro
+      - ./data/object-storage/meta:/var/lib/garage/meta
+      - ${GARAGE_DATA_DIR}:/var/lib/garage/data
+    ports:
+      - "3900:3900"
+      - "3901:3901"
+      - "3902:3902"
+      - "3903:3903"
+  python313:
+    image: python:3.13.14-trixie
+    working_dir: /app
+    volumes:
+      - ./:/app
+    env_file: .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - rdb
+      - object-storage
+    stdin_open: true
+    tty: true

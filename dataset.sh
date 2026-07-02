@@ -1,16 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+set -a
+source ".env"
+set +a
+
+rm -rf "$DATASET_ROOT"
+mkdir -p "$DATASET_ROOT"
+
+download_dataset() {
+  local url="$1"
+  wget -P "$DATASET_ROOT" -r -N -c -np "$url"
+}
+
 # PAF Prediction Challenge Database
-wget -r -N -c -np https://physionet.org/files/afpdb/1.0.0/
+download_dataset "https://physionet.org/files/afpdb/1.0.0/"
 # CU Ventricular Tachyarrrhythmia Database
-wget -r -N -c -np https://physionet.org/files/cudb/1.0.0/
+download_dataset "https://physionet.org/files/cudb/1.0.0/"
 # MIT-BIH Arrythmia Database
-wget -r -N -c -np https://physionet.org/files/mitdb/1.0.0/
+download_dataset "https://physionet.org/files/mitdb/1.0.0/"
 # MIT-BIH Atrial Fibrillation Database
-wget -r -N -c -np https://physionet.org/files/afdb/1.0.0/
+download_dataset "https://physionet.org/files/afdb/1.0.0/"
 # Long Term AF Database
-wget -r -N -c -np https://physionet.org/files/ltafdb/1.0.0/
+download_dataset "https://physionet.org/files/ltafdb/1.0.0/"
 # SHDB-AF: a Japanese Holter ECG database of atrial fibrillation
-wget -r -N -c -np https://physionet.org/files/shdb-af/1.0.1/
+download_dataset "https://physionet.org/files/shdb-af/1.0.1/"
 # Sudden Cardiac Death Holter Database
-wget -r -N -c -np https://physionet.org/files/sddb/1.0.0/
+download_dataset "https://physionet.org/files/sddb/1.0.0/"
 # MIT-BIH Malignant Ventricular Ectopy Database
-wget -r -N -c -np https://physionet.org/files/vfdb/1.0.0/
+download_dataset "https://physionet.org/files/vfdb/1.0.0/"

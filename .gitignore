@@ -1,6 +1,11 @@
 physionet.org/
-db/
 result/
+
+data/**
+!data/**/
+!data/**/.gitkeep
+!data/object-storage/garage.toml
+!data/object-storage/setup.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
