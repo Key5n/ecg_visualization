@@ -15,10 +15,7 @@ from optuna.artifacts import FileSystemArtifactStore
 from optuna.study import Study
 from optuna.trial import FrozenTrial
 
-from ecg_visualization.datasets.dataset import (
-    DATASET_CLASS_BY_ID,
-    ECGEntity,
-)
+from ecg_visualization.datasets.dataset import DATASET_REGISTRY, ECGEntity
 from ecg_visualization.utils.optuna_record import (
     Record,
     VisualizationRecord,
@@ -133,7 +130,7 @@ class StudyVisualizer:
 
     def _load_entity_from_study(self, study: Study) -> ECGEntity:
         dataset_id, entity_id = get_study_identifiers(study)
-        dataset_cls = DATASET_CLASS_BY_ID.get(dataset_id)
+        dataset_cls = DATASET_REGISTRY.get(dataset_id)
         if dataset_cls is None:
             raise ValueError(
                 f"Unknown dataset id '{dataset_id}' for study {study.study_name}"

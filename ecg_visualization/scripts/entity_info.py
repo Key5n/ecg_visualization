@@ -7,7 +7,7 @@ from typing import Iterable, Sequence
 
 import numpy as np
 
-from ecg_visualization.datasets.dataset import DATASET_CLASS_BY_ID, ECGEntity
+from ecg_visualization.datasets.dataset import DATASET_REGISTRY, ECGEntity
 
 
 def entity_info(argv: Sequence[str] | None = None) -> None:
@@ -28,7 +28,7 @@ def entity_info(argv: Sequence[str] | None = None) -> None:
         )
 
     dataset_id = args.dataset_id.lower()
-    dataset_cls = DATASET_CLASS_BY_ID.get(dataset_id)
+    dataset_cls = DATASET_REGISTRY.get(dataset_id)
     if dataset_cls is None:
         parser.error(
             f"Unknown dataset id '{args.dataset_id}'. "
@@ -66,7 +66,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def _print_supported_datasets() -> None:
     print("Available datasets:")
-    for dataset_id, dataset_cls in DATASET_CLASS_BY_ID.items():
+    for dataset_id, dataset_cls in DATASET_REGISTRY.items():
         print(f"  - {dataset_id}: {dataset_cls.name}")
 
 
