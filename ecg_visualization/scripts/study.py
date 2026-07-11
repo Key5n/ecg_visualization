@@ -8,10 +8,10 @@ import optuna
 from optuna.artifacts import FileSystemArtifactStore, upload_artifact
 from tqdm import tqdm
 
-from ecg_visualization.datasets.dataset import (
+from ecg_visualization.core.dataset import ECGDataset
+from ecg_visualization.core.entity import ECGEntity
+from ecg_visualization.datasets.physionet import (
     SDDB,
-    ECGDataset,
-    ECGEntity,
 )
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.logging.optuna import configure_optuna_logging

@@ -24,7 +24,7 @@ from ecg_visualization.config.settings import (
 from ecg_visualization.utils.timed_sequence import TimedSequence
 
 if TYPE_CHECKING:
-    from ecg_visualization.datasets.dataset import ECGEntity
+    from ecg_visualization.core.entity import ECGEntity
 
 LOGGER = logging.getLogger(__name__)
 

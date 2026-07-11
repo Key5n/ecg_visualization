@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from ecg_visualization.datasets.dataset import SDDB
+from ecg_visualization.datasets.physionet import SDDB
 
 DEFAULT_MD_RS_CONFIG: dict[str, float | int] = {
     "N_x": 256,

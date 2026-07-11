@@ -15,7 +15,8 @@ from optuna.artifacts import FileSystemArtifactStore
 from optuna.study import Study
 from optuna.trial import FrozenTrial
 
-from ecg_visualization.datasets.dataset import DATASET_REGISTRY, ECGEntity
+from ecg_visualization.core.entity import ECGEntity
+from ecg_visualization.datasets.physionet import DATASET_REGISTRY
 from ecg_visualization.utils.optuna_record import (
     Record,
     VisualizationRecord,

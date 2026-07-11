@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, Mapping
 
-from ecg_visualization.datasets.dataset import ECGEntity
+from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.utils.optuna_record import Record
 
 

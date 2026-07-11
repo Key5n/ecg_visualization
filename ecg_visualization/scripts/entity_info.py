@@ -7,7 +7,8 @@ from typing import Iterable, Sequence
 
 import numpy as np
 
-from ecg_visualization.datasets.dataset import DATASET_REGISTRY, ECGEntity
+from ecg_visualization.core.entity import ECGEntity
+from ecg_visualization.datasets.physionet import DATASET_REGISTRY
 
 
 def entity_info(argv: Sequence[str] | None = None) -> None:

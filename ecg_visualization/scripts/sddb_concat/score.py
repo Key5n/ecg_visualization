@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
-from ecg_visualization.datasets.dataset import ECGEntity
+from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS
 from ecg_visualization.scripts.sddb_concat.constants import (

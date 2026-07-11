@@ -8,7 +8,8 @@ import numpy as np
 import numpy.typing as npt
 from biosppy.signals.ecg import ecg as biosppy_ecg
 
-from ecg_visualization.datasets.dataset import SDDB, ECGEntity
+from ecg_visualization.core.entity import ECGEntity
+from ecg_visualization.datasets.physionet import SDDB
 from ecg_visualization.scripts.sddb_concat.constants import (
     MAX_REASONABLE_RR_INTERVAL_SEC,
     SINUS_RR_MEDIAN_THRESHOLD_SEC,

@@ -4,7 +4,6 @@ from typing import ClassVar, Type
 
 from ecg_visualization.config.settings import DATASET_ROOT
 from ecg_visualization.core.dataset import ECGDataset
-from ecg_visualization.core.entity import ECGEntity as ECGEntity
 
 physionet_root_dir = os.path.join(DATASET_ROOT, "physionet.org", "files")
 

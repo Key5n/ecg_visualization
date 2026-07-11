@@ -9,7 +9,7 @@ import numpy.typing as npt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from ecg_visualization.datasets.dataset import ECGEntity
+from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.scripts.sddb_concat.constants import (
     SEGMENT_COLORS,

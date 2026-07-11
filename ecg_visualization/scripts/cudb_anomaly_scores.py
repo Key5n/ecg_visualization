@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 
-from ecg_visualization.datasets.dataset import CUDB, ECGEntity
+from ecg_visualization.core.entity import ECGEntity
+from ecg_visualization.datasets.physionet import CUDB
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS
 from ecg_visualization.utils.timed_sequence import TimedSequence
