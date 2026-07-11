@@ -1,5 +1,4 @@
 import logging
-import os
 import tempfile
 from dataclasses import dataclass
 from datetime import datetime
@@ -14,6 +13,14 @@ from optuna.exceptions import OptunaError
 from optuna.storages import RDBStorage
 from optuna.trial import FrozenTrial
 
+from ecg_visualization.config.settings import (
+    OPTUNA_DB_DRIVER,
+    OPTUNA_DB_HOST,
+    OPTUNA_DB_NAME,
+    OPTUNA_DB_PASSWORD,
+    OPTUNA_DB_PORT,
+    OPTUNA_DB_USER,
+)
 from ecg_visualization.utils.timed_sequence import TimedSequence
 
 if TYPE_CHECKING:
@@ -52,30 +59,10 @@ def create_artifact_store(base_dir: str | Path) -> FileSystemArtifactStore:
     return FileSystemArtifactStore(base_path=str(base_path))
 
 
-def build_storage_name(
-    *,
-    driver_env: str = "OPTUNA_DB_DRIVER",
-    user_env: str = "OPTUNA_DB_USER",
-    password_env: str = "OPTUNA_DB_PASSWORD",
-    host_env: str = "OPTUNA_DB_HOST",
-    port_env: str = "OPTUNA_DB_PORT",
-    database_env: str = "OPTUNA_DB_NAME",
-    default_driver: str = "mysql+pymysql",
-    default_user: str = "root",
-    default_password: str = "foo",
-    default_host: str = "localhost",
-    default_port: str = "3306",
-    default_database: str = "optuna",
-) -> str:
-    """Construct an Optuna storage URL using environment variables with defaults."""
+def build_storage_name() -> str:
+    """Construct an Optuna storage URL from configured settings."""
 
-    driver = os.getenv(driver_env, default_driver)
-    user = os.getenv(user_env, default_user)
-    password = os.getenv(password_env, default_password)
-    host = os.getenv(host_env, default_host)
-    port = os.getenv(port_env, default_port)
-    database = os.getenv(database_env, default_database)
-    return f"{driver}://{user}:{password}@{host}:{port}/{database}"
+    return f"{OPTUNA_DB_DRIVER}://{OPTUNA_DB_USER}:{OPTUNA_DB_PASSWORD}@{OPTUNA_DB_HOST}:{OPTUNA_DB_PORT}/{OPTUNA_DB_NAME}"
 
 
 def get_study_identifiers(study: optuna.Study) -> tuple[str, str]:

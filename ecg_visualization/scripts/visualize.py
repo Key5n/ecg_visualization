@@ -4,9 +4,9 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import optuna
-from dotenv import load_dotenv
 from tqdm import tqdm
 
+from ecg_visualization.config.settings import ECG_VISUALIZE_WORKERS
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.logging.tqdm_multiprocessing import (
     queue_logging_context,
@@ -26,9 +26,6 @@ RR_WINDOW_BEATS = 100
 PAGINATION_CONFIG = PaginationConfig()
 ARTIFACT_ROOT = Path("result") / "artifacts"
 VISUALIZATION_ROOT = Path("result") / "visualize"
-
-load_dotenv()
-WORKER_ENV_VAR = "ECG_VISUALIZE_WORKERS"
 LOGGER = logging.getLogger(__name__)
 
 
@@ -85,11 +82,8 @@ def _determine_worker_count(max_workers: int | None) -> int:
     if max_workers is not None:
         return max(1, max_workers)
 
-    env_value = os.getenv(WORKER_ENV_VAR)
-    if env_value and env_value.isdigit():
-        resolved = int(env_value)
-        if resolved > 0:
-            return resolved
+    if ECG_VISUALIZE_WORKERS > 0:
+        return ECG_VISUALIZE_WORKERS
 
     return max(1, os.cpu_count() or 1)
 
