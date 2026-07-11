@@ -13,7 +13,7 @@ MAX_NORMAL_RR_INTERVAL_SEC = 1.0
 NORMAL_SEGMENT_DURATION_SEC = 5 * 60  # 5 minutes
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class ECGEntity:
     """
     Class representing a single ECG record/entity
@@ -37,6 +37,14 @@ class ECGEntity:
     annotation: Annotation
     beats: npt.NDArray[np.int_]
     aux_notes: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if self.beats.size < 2:
+            raise ValueError(
+                f"{self.entity_id} does not contain enough beats to analyze"
+            )
+        self.signals.setflags(write=False)
+        self.beats.setflags(write=False)
 
     def __str__(self) -> str:
         return f"{self.dataset_id}/{self.entity_id}"
@@ -80,11 +88,6 @@ class ECGEntity:
             determine such a segment.
         """
 
-        if self.beats.size < 2:
-            raise ValueError(
-                f"{self.entity_id} does not contain enough beats to analyze"
-            )
-
         beat_times = self.beats / self.sr
         rr_intervals = self.compute_rr_intervals()
 
@@ -120,10 +123,6 @@ class ECGEntity:
         """
         Return consecutive RR intervals (seconds) derived from beat indices.
         """
-        if self.beats.size < 2:
-            raise ValueError(
-                f"{self.entity_id} does not contain enough beats to analyze"
-            )
         beat_times = self.beats / self.sr
         return np.diff(beat_times)
 
