@@ -21,7 +21,6 @@ class ECGDataset:
         dataset_id (str): Identifier for the dataset
         annotation_extention_priority (list[str]): List of annotation file extensions in order of priority
         beat_extention_priority (list[str]): List of beat annotation file extensions in order of priority
-        data_ids (list[str]): List of data record identifiers
         data_entities (list[ECGEntity]): List of ECG entities in the dataset
     """
 
@@ -30,15 +29,14 @@ class ECGDataset:
     dataset_id: ClassVar[str]
     annotation_extention_priority: ClassVar[tuple[str, ...]] = ("atr", "qrs", "ari")
     beat_extention_priority: ClassVar[tuple[str, ...]] = ("atr", "qrs", "ari")
-    data_ids: list[str] = field(init=False)
     data_entities: list[ECGEntity] = field(default_factory=list)
 
     def __post_init__(self):
         record_path = os.path.join(self.dir_path, "RECORDS")
         with open(record_path, "r") as f:
-            self.data_ids = f.read().splitlines()
+            data_ids = f.read().splitlines()
 
-        for data_id in self.data_ids:
+        for data_id in data_ids:
             self.data_entities.append(self._load_entity(data_id))
 
     @classmethod

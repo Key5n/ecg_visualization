@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 import numpy as np
@@ -37,37 +38,34 @@ class ECGEntity:
     beats: npt.NDArray[np.int_]
     aux_notes: tuple[str, ...]
 
-    def __str__(self):
-        return self.entity_id
+    def __str__(self) -> str:
+        return f"{self.dataset_id}/{self.entity_id}"
 
     def get_window_durations(
         self,
         window_size: int,
-    ) -> list[tuple[int, int]]:
+    ) -> Iterator[tuple[int, int]]:
         """
-        Build contiguous windows of RR intervals.
+        Yield contiguous windows of RR intervals.
 
         Args:
             window_size (int): Number of RR intervals per window.
 
         Returns:
-            list[tuple[int, int]]: Sample index windows for the requested size.
-            Returns an empty list when insufficient beats are available.
+            Iterator[tuple[int, int]]: Sample index windows for the requested size.
+            Yields nothing when insufficient beats are available.
         """
 
         if window_size < 2:
             raise ValueError("window_size must be at least 2 beats")
 
         if self.beats.size < window_size + 1:
-            return []
+            return
 
-        windows: list[tuple[int, int]] = []
         for start_idx in range(self.beats.size - window_size):
             start_sample = int(self.beats[start_idx])
             end_sample = int(self.beats[start_idx + window_size])
-            windows.append((start_sample, end_sample))
-
-        return windows
+            yield start_sample, end_sample
 
     def extract_normal_segment(self) -> TimedSequence:
         """
@@ -148,12 +146,8 @@ class ECGEntity:
             of abnormal windows.
         """
 
-        windows = self.get_window_durations(window_size)
-        if not windows:
-            return set()
-
         abnormal_windows: set[tuple[float, float]] = set()
-        for start_sample, end_sample in windows:
+        for start_sample, end_sample in self.get_window_durations(window_size):
             start_time = start_sample / self.sr
             end_time = end_sample / self.sr
             duration = end_time - start_time
@@ -175,7 +169,7 @@ class ECGEntity:
         highest percentile range of durations across all such windows.
         """
 
-        windows = self.get_window_durations(window_size)
+        windows = list(self.get_window_durations(window_size))
         if not windows:
             return set()
 

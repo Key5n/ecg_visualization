@@ -46,13 +46,13 @@ class AFDB(ECGDataset):
     def __post_init__(self):
         record_path = os.path.join(self.dir_path, "RECORDS")
         with open(record_path, "r") as f:
-            self.data_ids = f.read().splitlines()
+            data_ids = f.read().splitlines()
 
-        self.data_ids = list(
-            filter(lambda data_id: data_id not in ["00735", "03665"], self.data_ids)
+        data_ids = list(
+            filter(lambda data_id: data_id not in ["00735", "03665"], data_ids)
         )
 
-        for data_id in self.data_ids:
+        for data_id in data_ids:
             self.data_entities.append(self._load_entity(data_id))
 
 
@@ -79,9 +79,9 @@ class SHDBAF(ECGDataset):
     def __post_init__(self):
         record_path = os.path.join(self.dir_path, "RECORDS.txt")
         with open(record_path, "r") as f:
-            self.data_ids = f.read().splitlines()
+            data_ids = f.read().splitlines()
 
-        for data_id in self.data_ids:
+        for data_id in data_ids:
             try:
                 self.data_entities.append(self._load_entity(data_id))
             except FileNotFoundError:
@@ -128,7 +128,7 @@ class VFDB(ECGDataset):
     sr: ClassVar[int] = 250
 
     def __post_init__(self):
-        self.data_ids = sorted(
+        data_ids = sorted(
             {
                 filename[: -len(".hea")]
                 for filename in os.listdir(self.dir_path)
@@ -136,7 +136,7 @@ class VFDB(ECGDataset):
             }
         )
 
-        for data_id in self.data_ids:
+        for data_id in data_ids:
             self.data_entities.append(self._load_entity(data_id))
 
 
