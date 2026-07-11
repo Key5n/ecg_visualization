@@ -231,7 +231,7 @@ def _score_entity(
     sinus_windows: Iterable[tuple[float, float]],
     window_size: int,
     model_config: dict[str, float | int],
-) -> tuple[TimedSequence, list[tuple[float, float]]]:
+) -> tuple[TimedSequence[np.float64], list[tuple[float, float]]]:
     if window_size < 1:
         raise ValueError("window_size must be positive")
 
@@ -271,9 +271,9 @@ def _score_entity(
     scores = model.predict(test_sequence)
 
     score_times = beat_times[window_size:]
-    score_sequence = TimedSequence.from_time_axis(
+    score_sequence = TimedSequence(
         values=scores,
-        time_axis=score_times,
+        times=score_times,
     )
 
     return score_sequence, normalized_windows
@@ -282,7 +282,7 @@ def _score_entity(
 def _plot_entity_scores(
     *,
     entity: ECGEntity,
-    score_sequence: TimedSequence,
+    score_sequence: TimedSequence[np.float64],
     training_windows: Iterable[tuple[float, float]],
 ) -> plt.Figure:
     ts = np.arange(entity.signals.size, dtype=float) / entity.sr

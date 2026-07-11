@@ -67,7 +67,7 @@ class ECGEntity:
             end_sample = int(self.beats[start_idx + window_size])
             yield start_sample, end_sample
 
-    def extract_normal_segment(self) -> TimedSequence:
+    def extract_normal_segment(self) -> TimedSequence[np.float64]:
         """
         Extract and return the RR intervals that compose a 5-minute normal beat
         segment for this entity.
@@ -106,9 +106,9 @@ class ECGEntity:
                 interval_start_times = beat_times[
                     start_idx : start_idx + rr_segment.size
                 ]
-                return TimedSequence.from_time_axis(
+                return TimedSequence(
                     values=np.asarray(rr_segment, dtype=np.float64),
-                    time_axis=np.asarray(interval_start_times, dtype=np.float64),
+                    times=np.asarray(interval_start_times, dtype=np.float64),
                 )
 
         raise ValueError(

@@ -122,9 +122,9 @@ class Objective:
 
         beat_times = self.entity.beats / self.entity.sr
         score_times = beat_times[self.WINDOW_SIZE :]
-        score_sequence = TimedSequence.from_time_axis(
+        score_sequence = TimedSequence(
             values=scores,
-            time_axis=score_times,
+            times=score_times,
         )
 
         score_artifact = self._store_sequence_artifact(
@@ -145,7 +145,7 @@ class Objective:
         self,
         *,
         name: str,
-        sequence: TimedSequence,
+        sequence: TimedSequence[np.float64],
         trial: optuna.Trial,
     ) -> str:
         with tempfile.TemporaryDirectory() as tmpdir:

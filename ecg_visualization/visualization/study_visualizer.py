@@ -52,11 +52,11 @@ LOGGER = logging.getLogger(__name__)
 
 @dataclass(slots=True)
 class SequenceBundle:
-    signal: TimedSequence
-    scores: TimedSequence
-    annotations: TimedSequence
-    beats: TimedSequence
-    aux_notes: TimedSequence
+    signal: TimedSequence[np.float64]
+    scores: TimedSequence[np.float64]
+    annotations: TimedSequence[np.str_]
+    beats: TimedSequence[np.int_]
+    aux_notes: TimedSequence[np.object_]
 
 
 class StudyVisualizer:
@@ -178,21 +178,21 @@ class StudyVisualizer:
     def _build_sequences(self, vis_record: VisualizationRecord) -> SequenceBundle:
         entity = self.entity
 
-        signal_sequence = TimedSequence.from_time_axis(
+        signal_sequence = TimedSequence(
             values=entity.signals,
-            time_axis=np.arange(entity.signals.size, dtype=float) / entity.sr,
+            times=np.arange(entity.signals.size, dtype=float) / entity.sr,
         )
-        annotation_sequence = TimedSequence.from_time_axis(
-            values=entity.annotation.symbol,
-            time_axis=np.asarray(entity.annotation.sample, dtype=float) / entity.sr,
+        annotation_sequence = TimedSequence(
+            values=np.asarray(entity.annotation.symbol, dtype=str),
+            times=np.asarray(entity.annotation.sample, dtype=float) / entity.sr,
         )
-        aux_note_sequence = TimedSequence.from_time_axis(
+        aux_note_sequence = TimedSequence(
             values=np.asarray(entity.aux_notes, dtype=object),
-            time_axis=np.asarray(entity.annotation.sample, dtype=float) / entity.sr,
+            times=np.asarray(entity.annotation.sample, dtype=float) / entity.sr,
         )
-        beat_sequence = TimedSequence.from_time_axis(
+        beat_sequence = TimedSequence(
             values=np.zeros_like(entity.beats),
-            time_axis=entity.beats / entity.sr,
+            times=entity.beats / entity.sr,
         )
         return SequenceBundle(
             signal=signal_sequence,
@@ -232,7 +232,9 @@ class StudyVisualizer:
         text = text.replace("\x00", "")
         return text.strip()
 
-    def _collect_symbols(self, annotation_sequence: TimedSequence) -> list[str]:
+    def _collect_symbols(
+        self, annotation_sequence: TimedSequence[np.str_]
+    ) -> list[str]:
         if annotation_sequence.values.size == 0:
             return []
         unique_symbols = sorted(set(annotation_sequence.values.tolist()))

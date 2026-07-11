@@ -27,7 +27,7 @@ def _load_sequence_from_artifact(
     artifact_store: FileSystemArtifactStore,
     artifact_id: str | None,
     artifact_label: str,
-) -> TimedSequence:
+) -> TimedSequence[np.float64]:
     if not artifact_id:
         raise ValueError(f"Missing artifact id for {artifact_label}.")
 
@@ -233,7 +233,7 @@ class VisualizationRecord:
     """
 
     record: Record
-    score_sequence: TimedSequence
+    score_sequence: TimedSequence[np.float64]
 
     @classmethod
     def from_trial(
