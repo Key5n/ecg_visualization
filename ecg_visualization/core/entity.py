@@ -5,12 +5,13 @@ import numpy as np
 import numpy.typing as npt
 from wfdb.io import Annotation
 
+from ecg_visualization.config.settings import (
+    MAX_NORMAL_RR_INTERVAL_SEC,
+    MIN_NORMAL_RR_INTERVAL_SEC,
+    NORMAL_SEGMENT_DURATION_SEC,
+)
 from ecg_visualization.utils.timed_sequence import TimedSequence
 from ecg_visualization.utils.utils import merge_overlapping_windows
-
-MIN_NORMAL_RR_INTERVAL_SEC = 0.6
-MAX_NORMAL_RR_INTERVAL_SEC = 1.0
-NORMAL_SEGMENT_DURATION_SEC = 5 * 60  # 5 minutes
 
 
 @dataclass(frozen=True, slots=True)
