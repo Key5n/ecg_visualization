@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Final, Iterable
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,7 +12,7 @@ from tqdm import tqdm
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import CUDB
 from ecg_visualization.logging.config import configure_root_logging
-from ecg_visualization.models.md_rs.md_rs import MDRS
+from ecg_visualization.models.md_rs.md_rs import MDRS, MDRSConfig
 from ecg_visualization.utils.timed_sequence import TimedSequence
 from ecg_visualization.utils.utils import (
     merge_overlapping_windows,
@@ -30,16 +30,16 @@ from ecg_visualization.visualization.styles import (
     apply_default_style,
 )
 
-DEFAULT_MD_RS_CONFIG: dict[str, float | int] = {
-    "N_x": 256,
-    "input_scale": 0.5,
-    "rho": 0.9,
-    "leaking_rate": 0.3,
-    "delta": 1e-3,
-    "trans_length": 10,
-    "N_x_tilde": 128,
-    "seed": 0,
-}
+DEFAULT_MD_RS_CONFIG: Final[MDRSConfig] = MDRSConfig(
+    N_x=256,
+    input_scale=0.5,
+    rho=0.9,
+    leaking_rate=0.3,
+    delta=1e-3,
+    trans_length=10,
+    N_x_tilde=128,
+    seed=0,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -178,7 +178,6 @@ def cudb_anomaly_scores() -> None:
     output_path = OUTPUT_PATH
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    config = DEFAULT_MD_RS_CONFIG.copy()
     apply_default_style()
 
     dataset = CUDB()
@@ -202,7 +201,7 @@ def cudb_anomaly_scores() -> None:
                     entity=entity,
                     sinus_windows=sinus_windows,
                     window_size=WINDOW_SIZE,
-                    model_config=config,
+                    model_config=DEFAULT_MD_RS_CONFIG,
                 )
             except ValueError as exc:
                 LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
@@ -231,7 +230,7 @@ def _score_entity(
     entity: ECGEntity,
     sinus_windows: Iterable[tuple[float, float]],
     window_size: int,
-    model_config: dict[str, float | int],
+    model_config: MDRSConfig,
 ) -> tuple[TimedSequence[np.float64], list[tuple[float, float]]]:
     if window_size < 1:
         raise ValueError("window_size must be positive")
@@ -260,12 +259,7 @@ def _score_entity(
 
     train_sequence, test_sequence = prepare_sequences(train_windows, test_windows)
 
-    tuned_config = {
-        **model_config,
-        "N_u": train_sequence.shape[1],
-    }
-
-    model = MDRS(**tuned_config)
+    model = MDRS(model_config)
     model.train(train_sequence)
     model.reset_states()
 

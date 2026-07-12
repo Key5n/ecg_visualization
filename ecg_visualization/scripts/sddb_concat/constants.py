@@ -2,19 +2,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Final
 
 from ecg_visualization.datasets.physionet import SDDB
+from ecg_visualization.models.md_rs.md_rs import MDRSConfig
 
-DEFAULT_MD_RS_CONFIG: dict[str, float | int] = {
-    "N_x": 256,
-    "input_scale": 1.0,
-    "rho": 0.9,
-    "leaking_rate": 0.9,
-    "delta": 1e-3,
-    "trans_length": 10,
-    "N_x_tilde": 256,
-    "seed": 0,
-}
+DEFAULT_MD_RS_CONFIG: Final[MDRSConfig] = MDRSConfig(
+    N_x=256,
+    input_scale=1.0,
+    rho=0.9,
+    leaking_rate=0.9,
+    delta=1e-3,
+    trans_length=10,
+    N_x_tilde=256,
+    seed=0,
+)
 
 WINDOW_SIZE = 10
 OUTPUT_DIR = Path("result") / "sddb_concat" / "mdrs_scores"

@@ -1,7 +1,8 @@
 import logging
 import tempfile
+from dataclasses import replace
 from pathlib import Path
-from typing import Any, Final
+from typing import Final
 
 import numpy as np
 import optuna
@@ -15,7 +16,7 @@ from ecg_visualization.datasets.physionet import (
 )
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.logging.optuna import configure_optuna_logging
-from ecg_visualization.models.md_rs.md_rs import MDRS
+from ecg_visualization.models.md_rs.md_rs import MDRS, MDRSConfig
 from ecg_visualization.utils.optuna_record import (
     build_storage_name,
     create_artifact_store,
@@ -24,16 +25,16 @@ from ecg_visualization.utils.optuna_record import (
 from ecg_visualization.utils.timed_sequence import TimedSequence
 from ecg_visualization.utils.utils import prepare_sequences, sliding_window_sequences
 
-DEFAULT_MD_RS_CONFIG: Final[dict[str, Any]] = {
-    "N_x": 256,
-    "input_scale": 0.5,
-    "rho": 0.9,
-    "leaking_rate": 0.3,
-    "delta": 1e-3,
-    "trans_length": 10,
-    "N_x_tilde": 128,
-    "seed": 0,
-}
+DEFAULT_MD_RS_CONFIG: Final[MDRSConfig] = MDRSConfig(
+    N_x=256,
+    input_scale=0.5,
+    rho=0.9,
+    leaking_rate=0.3,
+    delta=1e-3,
+    trans_length=10,
+    N_x_tilde=128,
+    seed=0,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ class Objective:
         self,
         entity: ECGEntity,
         artifact_store: FileSystemArtifactStore,
-        MD_RS_CONFIG: dict[str, Any],
+        MD_RS_CONFIG: MDRSConfig,
         WINDOW_SIZE=10,
     ) -> None:
         self.entity = entity
@@ -104,16 +105,14 @@ class Objective:
 
         train_sequence, test_sequence = prepare_sequences(train_windows, test_windows)
 
-        tuned_config = {
-            **self.MD_RS_CONFIG,
-            "input_scale": input_scale,
-            "leaking_rate": leaking_rate,
-            "rho": rho,
-            "delta": delta,
-            "N_u": train_sequence.shape[1],
-        }
-
-        model = MDRS(**tuned_config)
+        model_config = replace(
+            self.MD_RS_CONFIG,
+            input_scale=input_scale,
+            leaking_rate=leaking_rate,
+            rho=rho,
+            delta=delta,
+        )
+        model = MDRS(model_config)
         model.train(train_sequence)
 
         model.reset_states()

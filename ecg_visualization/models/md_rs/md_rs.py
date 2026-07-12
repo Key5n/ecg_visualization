@@ -1,63 +1,79 @@
+from collections.abc import Callable
+from dataclasses import dataclass
+
 import numpy as np
 from numpy.typing import NDArray
 
 from .input import Input
 from .reservoir import Reservoir
 
+ActivationFunc = Callable[[NDArray[np.float64]], NDArray[np.float64]]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MDRSConfig:
+    N_x: int
+    input_scale: float
+    rho: float
+    leaking_rate: float
+    delta: float
+    trans_length: int
+    precision_matrix: NDArray[np.float64] | None = None
+    N_x_tilde: int | None = None
+    threshold: float | None = None
+    density: float = 0.05
+    activation_func: ActivationFunc = np.tanh
+    noise_level: float | None = None
+    update: int = 1
+    lam: float = 1
+    seed: int = 0
+
 
 class MDRS:
     def __init__(
         self,
-        N_u,
-        N_x,
-        input_scale,
-        rho,
-        leaking_rate,
-        delta,
-        trans_length,
-        precision_matrix=None,
-        N_x_tilde=None,
-        threshold=None,
-        density=0.05,
-        activation_func=np.tanh,
-        noise_level=None,
-        update=1,
-        lam=1,
-        seed=0,
+        config: MDRSConfig,
     ):
-        self.seed = seed
-        self.Input = Input(N_u, N_x, input_scale, seed=self.seed)
+        self.seed = config.seed
+        self.Input = None
         self.Reservoir = Reservoir(
-            N_x, density, rho, activation_func, leaking_rate, seed=self.seed
+            config.N_x,
+            config.density,
+            config.rho,
+            config.activation_func,
+            config.leaking_rate,
+            seed=self.seed,
         )
-        self.N_u = N_u
-        self.N_x = N_x
-        self.trans_length = trans_length
-        self.threshold = None if threshold is None else threshold
+        self.N_x = config.N_x
+        self.input_scale = config.input_scale
+        self.trans_length = config.trans_length
+        self.threshold = None if config.threshold is None else config.threshold
         self.precision_matrix = None
-        if noise_level is None:
+        if config.noise_level is None:
             self.noise = None
         else:
             np.random.seed(seed=0)
-            self.noise = np.random.uniform(-noise_level, noise_level, (self.N_x, 1))
-        self.delta = delta
-        self.lam = lam
-        self.update = update
+            self.noise = np.random.uniform(
+                -config.noise_level, config.noise_level, (self.N_x, 1)
+            )
+        self.delta = config.delta
+        self.lam = config.lam
+        self.update = config.update
 
-        if N_x_tilde is None:
-            N_x_tilde = N_x
+        N_x_tilde = config.N_x if config.N_x_tilde is None else config.N_x_tilde
 
         self.N_x_tilde = N_x_tilde
 
-        if precision_matrix is None:
+        if config.precision_matrix is None:
             self.precision_matrix = (1.0 / self.delta) * np.eye(N_x_tilde, N_x_tilde)
         else:
-            self.precision_matrix = precision_matrix
+            self.precision_matrix = config.precision_matrix
 
     def train(self, U):
         """
         U: input data
         """
+        U = self._ensure_input(U)
         covariance_matrix = self.delta * np.eye(self.N_x_tilde)
         train_length = len(U)
 
@@ -94,6 +110,7 @@ class MDRS:
         """
         U: input data
         """
+        U = self._ensure_input(U)
         data_length = len(U)
         mahalanobis_distances = []
 
@@ -131,12 +148,23 @@ class MDRS:
             )
         return next_precision_matrix
 
-    def set_P(self, P):
-        self.precision_matrix = P
-
     def reset_states(self) -> None:
         """Reset reservoir dynamics to forget any previous sequence."""
         self.Reservoir.reset_states()
+
+    def _ensure_input(self, U: NDArray[np.float64]) -> NDArray[np.float64]:
+        U = np.asarray(U, dtype=np.float64).reshape(len(U), -1)
+        input_size = U.shape[1]
+        if self.Input is None:
+            self.Input = Input(input_size, self.N_x, self.input_scale, seed=self.seed)
+            return U
+
+        expected_size = self.Input.Win.shape[1]
+        if expected_size != input_size:
+            raise ValueError(
+                f"Expected input dimension {expected_size}, got {input_size}."
+            )
+        return U
 
     def subsample(
         self,

@@ -84,16 +84,13 @@ def _score_concatenated_sequence(concat: ConcatenatedSequence) -> ScoreResult:
 
     train_sequence, test_sequence = prepare_sequences(train_windows, test_windows)
 
-    config = {
-        **DEFAULT_MD_RS_CONFIG,
-        "N_u": train_sequence.shape[1],
-    }
-    model = MDRS(**config)
+    config = DEFAULT_MD_RS_CONFIG
+    model = MDRS(config)
     model.train(train_sequence)
     model.reset_states()
 
     scores = model.predict(test_sequence)
-    scores[: config["trans_length"]] = np.nan
+    scores[: config.trans_length] = np.nan
     score_times = beat_times[WINDOW_SIZE:]
     return ScoreResult(times_sec=score_times, scores=scores)
 
