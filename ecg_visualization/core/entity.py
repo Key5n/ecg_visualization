@@ -41,9 +41,7 @@ class ECGEntity:
 
     def __post_init__(self) -> None:
         if self.beats.size < 2:
-            raise ValueError(
-                f"{self.entity_id} does not contain enough beats to analyze"
-            )
+            raise ValueError(f"{self} does not contain enough beats to analyze")
         self.signals.setflags(write=False)
         self.beats.setflags(write=False)
 
