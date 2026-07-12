@@ -90,7 +90,7 @@ class ECGEntity:
         """
 
         beat_times = self.beats / self.sr
-        rr_intervals = self.compute_rr_intervals()
+        rr_intervals = self.rr_intervals
 
         start_idx = 0
         for interval_idx, rr_interval in enumerate(rr_intervals):
@@ -120,7 +120,8 @@ class ECGEntity:
             f"({self.dataset_name})"
         )
 
-    def compute_rr_intervals(self) -> npt.NDArray[np.float64]:
+    @property
+    def rr_intervals(self) -> npt.NDArray[np.float64]:
         """
         Return consecutive RR intervals (seconds) derived from beat indices.
         """

@@ -91,7 +91,7 @@ def _select_sinus_segments(
     rr_median_threshold_sec: float,
 ) -> SegmentsInfo | None:
     try:
-        rr_intervals = np.asarray(entity.compute_rr_intervals(), dtype=np.float64)
+        rr_intervals = np.asarray(entity.rr_intervals, dtype=np.float64)
     except ValueError as exc:
         LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
         return None

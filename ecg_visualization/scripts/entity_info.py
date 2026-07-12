@@ -102,7 +102,7 @@ def _print_entity_summary(entity: ECGEntity, record_path: Path) -> None:
 
 def _format_rr_statistics(entity: ECGEntity) -> str:
     try:
-        rr_intervals = entity.compute_rr_intervals()
+        rr_intervals = entity.rr_intervals
     except ValueError as exc:
         return f"Unavailable ({exc})"
 
