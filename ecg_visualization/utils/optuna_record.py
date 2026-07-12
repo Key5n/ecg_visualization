@@ -14,10 +14,10 @@ from optuna.storages import RDBStorage
 from optuna.trial import FrozenTrial
 
 from ecg_visualization.config.settings import (
+    MYSQL_DATABASE,
+    MYSQL_ROOT_PASSWORD,
     OPTUNA_DB_DRIVER,
     OPTUNA_DB_HOST,
-    OPTUNA_DB_NAME,
-    OPTUNA_DB_PASSWORD,
     OPTUNA_DB_PORT,
     OPTUNA_DB_USER,
 )
@@ -62,7 +62,7 @@ def create_artifact_store(base_dir: str | Path) -> FileSystemArtifactStore:
 def build_storage_name() -> str:
     """Construct an Optuna storage URL from configured settings."""
 
-    return f"{OPTUNA_DB_DRIVER}://{OPTUNA_DB_USER}:{OPTUNA_DB_PASSWORD}@{OPTUNA_DB_HOST}:{OPTUNA_DB_PORT}/{OPTUNA_DB_NAME}"
+    return f"{OPTUNA_DB_DRIVER}://{OPTUNA_DB_USER}:{MYSQL_ROOT_PASSWORD}@{OPTUNA_DB_HOST}:{OPTUNA_DB_PORT}/{MYSQL_DATABASE}"
 
 
 def get_study_identifiers(study: optuna.Study) -> tuple[str, str]:
