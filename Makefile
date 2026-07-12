@@ -6,7 +6,7 @@ PYTHON ?= $(UV) run python
 DATASET_STAMP := $(DATASET_ROOT)/.downloaded
 
 .PHONY: setup sync hooks datasets format lint optuna_dashboard scripts \
-	visualize cudb-anomaly-scores entity-info study \
+	visualize visualize-datasets cudb-anomaly-scores entity-info study \
 	sddb-concat-constants sddb-concat-utils \
 	sddb-concat-visualize sddb-concat-score \
 	ltafdb-concat ltafdb-concat-constants ltafdb-concat-utils \
@@ -41,6 +41,7 @@ optuna_dashboard:
 scripts:
 	@printf '%s\n' \
 		'visualize' \
+		'visualize-datasets' \
 		'cudb-anomaly-scores' \
 		'entity-info' \
 		'study' \
@@ -56,6 +57,9 @@ scripts:
 
 visualize:
 	$(PYTHON) -m ecg_visualization.scripts.visualize
+
+visualize-datasets:
+	$(PYTHON) -m ecg_visualization.scripts.visualize_datasets
 
 cudb-anomaly-scores:
 	$(PYTHON) -m ecg_visualization.scripts.cudb_anomaly_scores
