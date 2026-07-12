@@ -1,0 +1,7 @@
+interface:
+  display_name: "Setup Garage"
+  short_description: "Set up Garage object storage"
+  default_prompt: "Use $setup-garage to configure local Garage object storage and S3 credentials."
+
+policy:
+  allow_implicit_invocation: false
