@@ -1,68 +1,39 @@
 from __future__ import annotations
 
-import argparse
 from collections import Counter
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Iterable
 
 import numpy as np
 
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import DATASET_REGISTRY
 
+DEFAULT_DATASET_ID = "cudb"
+DEFAULT_ENTITY_ID = "cu01"
 
-def entity_info(argv: Sequence[str] | None = None) -> None:
+
+def entity_info() -> None:
     """
     Entry point to display a concise summary of a single ECG entity.
     """
 
-    parser = _build_parser()
-    args = parser.parse_args(argv)
-
-    if args.list_datasets:
-        _print_supported_datasets()
-        return
-
-    if not args.dataset_id or not args.entity_id:
-        parser.error(
-            "--dataset-id and --entity-id are required unless --list-datasets is used."
-        )
-
-    dataset_id = args.dataset_id.lower()
+    dataset_id = DEFAULT_DATASET_ID.lower()
     dataset_cls = DATASET_REGISTRY.get(dataset_id)
     if dataset_cls is None:
-        parser.error(
-            f"Unknown dataset id '{args.dataset_id}'. "
-            f"Use --list-datasets to see available options."
+        available_datasets = ", ".join(DATASET_REGISTRY)
+        raise ValueError(
+            f"Unknown dataset id '{DEFAULT_DATASET_ID}'. "
+            f"Available options: {available_datasets}."
         )
 
     try:
-        entity = dataset_cls._load_entity(args.entity_id)
+        entity = dataset_cls._load_entity(DEFAULT_ENTITY_ID)
     except FileNotFoundError as exc:  # pragma: no cover - depends on local data
         raise SystemExit(str(exc)) from exc
 
-    record_path = Path(dataset_cls.dir_path) / args.entity_id
+    record_path = Path(dataset_cls.dir_path) / DEFAULT_ENTITY_ID
     _print_entity_summary(entity, record_path)
-
-
-def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Show basic information for a PhysioNet ECG record."
-    )
-    parser.add_argument(
-        "--dataset-id",
-        help="Dataset identifier (e.g., cudb, mitdb). Use --list-datasets to inspect all options.",
-    )
-    parser.add_argument(
-        "--entity-id",
-        help="Entity/record identifier inside the selected dataset (e.g., 00001).",
-    )
-    parser.add_argument(
-        "--list-datasets",
-        action="store_true",
-        help="List dataset identifiers and exit.",
-    )
-    return parser
 
 
 def _print_supported_datasets() -> None:
