@@ -1,6 +1,6 @@
 ---
 name: setup-garage
-description: Set up Garage object storage for local Docker Compose projects, especially repos with data/object-storage/setup.md, data/object-storage/garage.toml, or an object-storage service. Use when Codex needs to initialize Garage, generate Garage RPC/admin/metrics secrets, assign a node layout, create an S3 bucket/key, grant bucket access, or populate .env with Garage and S3 credential values.
+description: Set up local Garage object storage for Docker Compose projects, including secrets, layout, S3 bucket/key creation, access grants, and .env credentials.
 ---
 
 # Setup Garage
