@@ -8,7 +8,11 @@ DATASET_STAMP := $(DATASET_ROOT)/.downloaded
 .PHONY: setup sync hooks datasets format lint optuna_dashboard scripts \
 	visualize cudb-anomaly-scores entity-info study \
 	sddb-concat-constants sddb-concat-utils \
-	sddb-concat-visualize sddb-concat-score
+	sddb-concat-visualize sddb-concat-score \
+	ltafdb-concat ltafdb-concat-constants ltafdb-concat-utils \
+	ltafdb-concat-visualize ltafdb-concat-score \
+	vfdb-concat vfdb-concat-constants vfdb-concat-utils \
+	vfdb-concat-visualize vfdb-concat-score
 
 setup: sync hooks datasets
 
@@ -40,10 +44,15 @@ scripts:
 		'cudb-anomaly-scores' \
 		'entity-info' \
 		'study' \
-		'sddb-concat-constants' \
-		'sddb-concat-utils' \
+		'sddb-concat' \
 		'sddb-concat-visualize' \
-		'sddb-concat-score'
+		'sddb-concat-score' \
+		'ltafdb-concat' \
+		'ltafdb-concat-visualize' \
+		'ltafdb-concat-score' \
+		'vfdb-concat' \
+		'vfdb-concat-visualize' \
+		'vfdb-concat-score'
 
 visualize:
 	$(PYTHON) -m ecg_visualization.scripts.visualize
@@ -57,14 +66,29 @@ entity-info:
 study:
 	$(PYTHON) -m ecg_visualization.scripts.study
 
-sddb-concat-constants:
-	$(PYTHON) -m ecg_visualization.scripts.sddb_concat.constants
-
-sddb-concat-utils:
-	$(PYTHON) -m ecg_visualization.scripts.sddb_concat.utils
+sddb-concat:
+	$(PYTHON) -m ecg_visualization.scripts.sddb_concat
 
 sddb-concat-visualize:
 	$(PYTHON) -m ecg_visualization.scripts.sddb_concat.visualize
 
 sddb-concat-score:
 	$(PYTHON) -m ecg_visualization.scripts.sddb_concat.score
+
+ltafdb-concat:
+	$(PYTHON) -m ecg_visualization.scripts.ltafdb_concat
+
+ltafdb-concat-visualize:
+	$(PYTHON) -m ecg_visualization.scripts.ltafdb_concat.visualize
+
+ltafdb-concat-score:
+	$(PYTHON) -m ecg_visualization.scripts.ltafdb_concat.score
+
+vfdb-concat:
+	$(PYTHON) -m ecg_visualization.scripts.vfdb_concat
+
+vfdb-concat-visualize:
+	$(PYTHON) -m ecg_visualization.scripts.vfdb_concat.visualize
+
+vfdb-concat-score:
+	$(PYTHON) -m ecg_visualization.scripts.vfdb_concat.score
