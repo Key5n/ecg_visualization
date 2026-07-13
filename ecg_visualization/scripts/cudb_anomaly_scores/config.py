@@ -66,7 +66,7 @@ class CudbAnomalyScoresConfig:
     sinus_durations: tuple[SinusDurationConfig, ...] = _default_sinus_durations()
 
 
-def load_config() -> CudbAnomalyScoresConfig:
+def load_cudb_anomaly_scores_config() -> CudbAnomalyScoresConfig:
     return load_task_config(
         CudbAnomalyScoresConfig(),
     )

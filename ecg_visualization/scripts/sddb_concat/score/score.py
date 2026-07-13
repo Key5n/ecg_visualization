@@ -11,9 +11,6 @@ from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS, MDRSConfig
 from ecg_visualization.scripts.sddb_concat.config import SddbConcatConfig
-from ecg_visualization.scripts.sddb_concat.constants import (
-    SEGMENT_COLORS,
-)
 from ecg_visualization.scripts.sddb_concat.utils import (
     ConcatenatedSequence,
     iter_concatenated_sequences,
@@ -48,7 +45,7 @@ def sddb_concat_scores(config: SddbConcatConfig) -> None:
             LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
             continue
 
-        fig = _plot_concat_scores(entity, concat, score_result)
+        fig = _plot_concat_scores(entity, concat, score_result, config=config)
         output_path = config.score_output_dir / f"{entity.entity_id}.png"
         fig.savefig(output_path, dpi=150)
         plt.close(fig)
@@ -106,6 +103,8 @@ def _plot_concat_scores(
     entity: ECGEntity,
     concat: ConcatenatedSequence,
     score_result: ScoreResult,
+    *,
+    config: SddbConcatConfig,
 ) -> plt.Figure:
     samples = np.asarray(concat.samples, dtype=float)
     sr = float(concat.sampling_rate_hz)
@@ -148,8 +147,18 @@ def _plot_concat_scores(
     score_ax.set_yscale("log")
     score_ax.set_ylim(*score_ylim)
 
-    _highlight_concat_segments(signal_ax, concat, ylim_upper=signal_ylim[1])
-    _highlight_concat_segments(score_ax, concat, ylim_upper=score_ylim[1])
+    _highlight_concat_segments(
+        signal_ax,
+        concat,
+        ylim_upper=signal_ylim[1],
+        segment_colors=config.segment_colors,
+    )
+    _highlight_concat_segments(
+        score_ax,
+        concat,
+        ylim_upper=score_ylim[1],
+        segment_colors=config.segment_colors,
+    )
 
     signal_ax.set_title(f"ID: {entity.entity_id}")
     fig.tight_layout()
@@ -163,6 +172,7 @@ def _highlight_segments(
     window_start: float,
     window_end: float,
     ylim_upper: float,
+    segment_colors: dict[str, str],
 ) -> None:
     for name, start_sec, end_sec in segments:
         if end_sec <= window_start or start_sec >= window_end:
@@ -170,7 +180,7 @@ def _highlight_segments(
 
         highlight_start = max(start_sec, window_start)
         highlight_end = min(end_sec, window_end)
-        color = SEGMENT_COLORS.get(name, "#adb5bd")
+        color = segment_colors.get(name, "#adb5bd")
         ax.axvspan(highlight_start, highlight_end, color=color, alpha=0.15)
 
         midpoint = (start_sec + end_sec) / 2
@@ -191,6 +201,7 @@ def _highlight_concat_segments(
     concat: ConcatenatedSequence,
     *,
     ylim_upper: float,
+    segment_colors: dict[str, str],
 ) -> None:
     segments: list[tuple[str, float, float]] = []
     running_start = 0
@@ -214,4 +225,5 @@ def _highlight_concat_segments(
         window_start=segments[0][1],
         window_end=segments[-1][2],
         ylim_upper=ylim_upper,
+        segment_colors=segment_colors,
     )

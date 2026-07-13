@@ -12,9 +12,6 @@ from matplotlib.figure import Figure
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.scripts.sddb_concat.config import SddbConcatConfig
-from ecg_visualization.scripts.sddb_concat.constants import (
-    SEGMENT_COLORS,
-)
 from ecg_visualization.scripts.sddb_concat.utils import (
     ConcatenatedSequence,
     iter_concatenated_sequences,
@@ -100,6 +97,7 @@ def _export_concatenated_pdf(
                     entity=entity,
                     concat=concat,
                     signal_ylim=signal_ylim,
+                    config=config,
                 )
             _decorate_page(fig=fig, entity=entity, page_idx=page_idx)
             exporter.add_page(fig, pad_inches=0)
@@ -193,6 +191,7 @@ def _render_signal_row(
     entity: ECGEntity,
     concat: ConcatenatedSequence,
     signal_ylim: tuple[float, float],
+    config: SddbConcatConfig,
 ) -> None:
     window_start, window_end = float(ts[0]), float(ts[-1])
     sr = float(entity.sr)
@@ -243,6 +242,7 @@ def _render_signal_row(
         window_end=window_end,
         ylim_lower=signal_ylim[0],
         ylim_upper=signal_ylim[1],
+        segment_colors=config.segment_colors,
     )
 
 
@@ -279,6 +279,7 @@ def _highlight_segments(
     window_end: float,
     ylim_lower: float,
     ylim_upper: float,
+    segment_colors: dict[str, str],
 ) -> None:
     for name, start_sec, end_sec in segments:
         if end_sec <= window_start or start_sec >= window_end:
@@ -286,7 +287,7 @@ def _highlight_segments(
 
         highlight_start = max(start_sec, window_start)
         highlight_end = min(end_sec, window_end)
-        color = SEGMENT_COLORS.get(name, "#adb5bd")
+        color = segment_colors.get(name, "#adb5bd")
         ax.axvspan(highlight_start, highlight_end, color=color, alpha=0.15)
         ax.axvline(
             highlight_start,
@@ -331,6 +332,7 @@ def _highlight_concat_segments(
     window_end: float,
     ylim_lower: float,
     ylim_upper: float,
+    segment_colors: dict[str, str],
 ) -> None:
     segments: list[tuple[str, float, float]] = []
     for name, window in (
@@ -348,4 +350,5 @@ def _highlight_concat_segments(
         window_end=window_end,
         ylim_lower=ylim_lower,
         ylim_upper=ylim_upper,
+        segment_colors=segment_colors,
     )

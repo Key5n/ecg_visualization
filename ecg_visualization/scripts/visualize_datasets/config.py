@@ -16,7 +16,7 @@ class VisualizeDatasetsConfig:
     signal_ylim_upper: float = 5.0
 
 
-def load_config() -> VisualizeDatasetsConfig:
+def load_visualize_datasets_config() -> VisualizeDatasetsConfig:
     return load_task_config(
         VisualizeDatasetsConfig(),
     )

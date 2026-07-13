@@ -16,7 +16,7 @@ class VisualizeConfig:
     pagination: PaginationConfig = PaginationConfig()
 
 
-def load_config() -> VisualizeConfig:
+def load_visualize_config() -> VisualizeConfig:
     return load_task_config(
         VisualizeConfig(),
     )

@@ -9,8 +9,8 @@ import numpy.typing as npt
 
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import SDDB
-from ecg_visualization.scripts.sddb_concat.config import SddbConcatConfig
-from ecg_visualization.scripts.sddb_concat.constants import (
+from ecg_visualization.scripts.sddb_concat.config import (
+    SddbConcatConfig,
     SegmentsInfo,
     SegmentWindow,
     build_fixed_vf_windows,
@@ -46,6 +46,7 @@ def iter_concatenated_sequences(
         dataset.data_entities,
         rr_median_threshold_sec=config.sinus_rr_median_threshold_sec,
         segment_duration_sec=config.segment_duration_sec,
+        vf_onset_seconds=config.vf_onset_seconds,
     )
     segments_info_by_entity = _build_segments_info_by_entity(sinus_segments)
     for entity in dataset.data_entities:
@@ -78,6 +79,7 @@ def _build_sinus_segments(
     *,
     rr_median_threshold_sec: float,
     segment_duration_sec: float,
+    vf_onset_seconds: dict[str, float],
 ) -> tuple[SegmentsInfo, ...]:
     segments: list[SegmentsInfo] = []
     for entity in entities:
@@ -85,6 +87,7 @@ def _build_sinus_segments(
             entity,
             rr_median_threshold_sec=rr_median_threshold_sec,
             segment_duration_sec=segment_duration_sec,
+            vf_onset_seconds=vf_onset_seconds,
         )
         if segments_info is None:
             continue
@@ -98,6 +101,7 @@ def _select_sinus_segments(
     *,
     rr_median_threshold_sec: float,
     segment_duration_sec: float,
+    vf_onset_seconds: dict[str, float],
 ) -> SegmentsInfo | None:
     try:
         rr_intervals = np.asarray(entity.rr_intervals, dtype=np.float64)
@@ -119,6 +123,7 @@ def _select_sinus_segments(
             entity.entity_id,
             beat_times_sec,
             segment_duration_sec=segment_duration_sec,
+            vf_onset_seconds=vf_onset_seconds,
         )
     except ValueError as exc:
         LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
@@ -142,6 +147,7 @@ def _select_sinus_segments(
             train=train_window,
             test=test_window,
             segment_duration_sec=segment_duration_sec,
+            vf_onset_seconds=vf_onset_seconds,
         )
     except ValueError as exc:
         LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
@@ -153,10 +159,12 @@ def _build_available_rr_mask(
     beat_times_sec: npt.NDArray[np.float64],
     *,
     segment_duration_sec: float,
+    vf_onset_seconds: dict[str, float],
 ) -> npt.NDArray[np.bool_]:
     pre_vf_window, vf_window = build_fixed_vf_windows(
         entity_id,
         segment_duration_sec=segment_duration_sec,
+        vf_onset_seconds=vf_onset_seconds,
     )
     rr_start_times_sec = beat_times_sec[:-1]
     rr_end_times_sec = beat_times_sec[1:]

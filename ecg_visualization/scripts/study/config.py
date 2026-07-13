@@ -20,7 +20,7 @@ class StudyConfig:
     )
 
 
-def load_config() -> StudyConfig:
+def load_study_config() -> StudyConfig:
     return load_task_config(
         StudyConfig(),
     )
