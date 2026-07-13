@@ -1,7 +1,7 @@
-from ecg_visualization.scripts.visualize_datasets.config import (
+from ecg_visualization.tasks.visualize_datasets.config import (
     load_visualize_datasets_config,
 )
-from ecg_visualization.scripts.visualize_datasets.visualize_datasets import (
+from ecg_visualization.tasks.visualize_datasets.visualize_datasets import (
     visualize_datasets,
 )
 

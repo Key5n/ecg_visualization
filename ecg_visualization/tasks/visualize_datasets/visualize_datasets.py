@@ -10,17 +10,17 @@ from tqdm import tqdm
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import _load_data_sources
 from ecg_visualization.logging.config import configure_root_logging
-from ecg_visualization.scripts.visualize_datasets.config import (
+from ecg_visualization.tasks.visualize_datasets.config import (
     VisualizeDatasetsConfig,
 )
-from ecg_visualization.scripts.visualize_datasets.rr_histogram_page import (
+from ecg_visualization.tasks.visualize_datasets.rr_histogram_page import (
     render_rr_interval_histogram_page,
 )
-from ecg_visualization.scripts.visualize_datasets.signal_page import (
+from ecg_visualization.tasks.visualize_datasets.signal_page import (
     decorate_signal_page,
     render_signal_row,
 )
-from ecg_visualization.scripts.visualize_datasets.summary_page import (
+from ecg_visualization.tasks.visualize_datasets.summary_page import (
     render_entity_summary_page,
 )
 from ecg_visualization.visualization.export import pdf_exporter

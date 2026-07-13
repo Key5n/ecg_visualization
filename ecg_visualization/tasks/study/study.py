@@ -13,7 +13,7 @@ from ecg_visualization.datasets.physionet import _load_data_sources
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.logging.optuna import configure_optuna_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS, MDRSConfig
-from ecg_visualization.scripts.study.config import StudyConfig
+from ecg_visualization.tasks.study.config import StudyConfig
 from ecg_visualization.utils.optuna_record import (
     build_storage_name,
     create_artifact_store,

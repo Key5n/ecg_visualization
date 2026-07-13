@@ -11,8 +11,8 @@ from matplotlib.figure import Figure
 
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.logging.config import configure_root_logging
-from ecg_visualization.scripts.sddb_concat.config import SddbConcatConfig
-from ecg_visualization.scripts.sddb_concat.utils import (
+from ecg_visualization.tasks.sddb_concat.config import SddbConcatConfig
+from ecg_visualization.tasks.sddb_concat.utils import (
     ConcatenatedSequence,
     iter_concatenated_sequences,
 )

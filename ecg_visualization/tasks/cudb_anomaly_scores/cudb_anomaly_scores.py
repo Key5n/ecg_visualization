@@ -12,7 +12,7 @@ from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import CUDB
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS, MDRSConfig
-from ecg_visualization.scripts.cudb_anomaly_scores.config import (
+from ecg_visualization.tasks.cudb_anomaly_scores.config import (
     CudbAnomalyScoresConfig,
     SinusDurationConfig,
 )

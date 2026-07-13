@@ -7,7 +7,7 @@ import numpy as np
 from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import LTAFDB, SDDB, VFDB
-from ecg_visualization.scripts.sddb_concat.config import (
+from ecg_visualization.tasks.sddb_concat.config import (
     SegmentWindow,
     build_fixed_vf_windows,
 )

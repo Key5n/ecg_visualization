@@ -6,7 +6,7 @@ PYTHON ?= $(UV) run python
 DATASET_STAMP := $(DATASET_ROOT)/.downloaded
 SDDB_CONCAT_CONFIG ?= sddb
 
-.PHONY: setup sync hooks datasets format lint optuna_dashboard scripts \
+.PHONY: setup sync hooks datasets format lint optuna_dashboard tasks \
 	visualize visualize-datasets cudb-anomaly-scores study \
 	sddb-concat sddb-concat-visualize sddb-concat-score
 
@@ -34,7 +34,7 @@ optuna_dashboard:
 	@storage_url="$$( $(PYTHON) -c 'from peincfedmdrs.utils.optuna import build_storage_name; print(build_storage_name())')"; \
 	$(UV) run optuna-dashboard "$$storage_url" --host 0.0.0.0
 
-scripts:
+tasks:
 	@printf '%s\n' \
 		'visualize' \
 		'visualize-datasets' \
@@ -45,22 +45,22 @@ scripts:
 		'sddb-concat-score'
 
 visualize:
-	$(PYTHON) -m ecg_visualization.scripts.visualize
+	$(PYTHON) -m ecg_visualization.tasks.visualize
 
 visualize-datasets:
-	$(PYTHON) -m ecg_visualization.scripts.visualize_datasets $(if $(dataset_ids),dataset_ids=$(dataset_ids),)
+	$(PYTHON) -m ecg_visualization.tasks.visualize_datasets $(if $(dataset_ids),dataset_ids=$(dataset_ids),)
 
 cudb-anomaly-scores:
-	$(PYTHON) -m ecg_visualization.scripts.cudb_anomaly_scores
+	$(PYTHON) -m ecg_visualization.tasks.cudb_anomaly_scores
 
 study:
-	$(PYTHON) -m ecg_visualization.scripts.study
+	$(PYTHON) -m ecg_visualization.tasks.study
 
 sddb-concat:
-	$(PYTHON) -m ecg_visualization.scripts.sddb_concat config_name=$(SDDB_CONCAT_CONFIG)
+	$(PYTHON) -m ecg_visualization.tasks.sddb_concat config_name=$(SDDB_CONCAT_CONFIG)
 
 sddb-concat-visualize:
-	$(PYTHON) -m ecg_visualization.scripts.sddb_concat.visualize config_name=$(SDDB_CONCAT_CONFIG)
+	$(PYTHON) -m ecg_visualization.tasks.sddb_concat.visualize config_name=$(SDDB_CONCAT_CONFIG)
 
 sddb-concat-score:
-	$(PYTHON) -m ecg_visualization.scripts.sddb_concat.score config_name=$(SDDB_CONCAT_CONFIG)
+	$(PYTHON) -m ecg_visualization.tasks.sddb_concat.score config_name=$(SDDB_CONCAT_CONFIG)

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from ecg_visualization.scripts.config import load_task_config
+from ecg_visualization.tasks.config import load_task_config
 from ecg_visualization.visualization.layouts import PaginationConfig
 
 
