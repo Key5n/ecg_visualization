@@ -48,7 +48,7 @@ visualize:
 	$(PYTHON) -m ecg_visualization.scripts.visualize
 
 visualize-datasets:
-	$(PYTHON) -m ecg_visualization.scripts.visualize_datasets
+	$(PYTHON) -m ecg_visualization.scripts.visualize_datasets $(if $(dataset_ids),dataset_ids=$(dataset_ids),)
 
 cudb-anomaly-scores:
 	$(PYTHON) -m ecg_visualization.scripts.cudb_anomaly_scores

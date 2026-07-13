@@ -43,12 +43,16 @@ def iter_concatenated_sequences(
 ) -> Iterable[tuple[ECGEntity, ConcatenatedSequence]]:
     for dataset in _load_data_sources((config.dataset_id,)):
         for entity in dataset.data_entities:
-            segments_info = _select_sinus_segments(
-                dataset,
-                entity,
-                segment_duration_sec=config.segment_duration_sec,
-                sinus_rr_median_threshold_sec=config.sinus_rr_median_threshold_sec,
-            )
+            try:
+                segments_info = _select_sinus_segments(
+                    dataset,
+                    entity,
+                    segment_duration_sec=config.segment_duration_sec,
+                    sinus_rr_median_threshold_sec=config.sinus_rr_median_threshold_sec,
+                )
+            except ValueError as exc:
+                LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
+                continue
 
             concat = _build_concatenated_sequence(
                 entity,

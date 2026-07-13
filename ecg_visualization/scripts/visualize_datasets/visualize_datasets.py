@@ -8,7 +8,7 @@ import numpy as np
 from tqdm import tqdm
 
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.datasets.physionet import DATASET_CLASSES, DATASET_REGISTRY
+from ecg_visualization.datasets.physionet import _load_data_sources
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.scripts.visualize_datasets.config import (
     VisualizeDatasetsConfig,
@@ -40,32 +40,20 @@ def visualize_datasets(config: VisualizeDatasetsConfig) -> None:
     apply_default_style()
 
     config.output_dir.mkdir(parents=True, exist_ok=True)
-    dataset_classes = DATASET_CLASSES
-    if config.dataset_ids:
-        dataset_classes = ()
-        for dataset_id in config.dataset_ids:
-            dataset_cls = DATASET_REGISTRY.get(dataset_id.lower())
-            if dataset_cls is None:
-                available_datasets = ", ".join(DATASET_REGISTRY)
-                raise ValueError(
-                    f"Unknown dataset id '{dataset_id}'. "
-                    f"Available options: {available_datasets}."
-                )
-            dataset_classes = (*dataset_classes, dataset_cls)
+    datasets = _load_data_sources(config.dataset_ids)
     pagination_config = config.pagination
 
     total_processed = 0
-    for dataset_cls in dataset_classes:
-        dataset = dataset_cls()
-        dataset_output_dir = config.output_dir / dataset_cls.dataset_id
+    for dataset in datasets:
+        dataset_output_dir = config.output_dir / dataset.dataset_id
         dataset_output_dir.mkdir(parents=True, exist_ok=True)
 
         LOGGER.info(
             "Visualizing dataset %s (%d entities)",
-            dataset_cls.dataset_id,
+            dataset.dataset_id,
             len(dataset.data_entities),
         )
-        for entity in tqdm(dataset.data_entities, desc=dataset_cls.dataset_id):
+        for entity in tqdm(dataset.data_entities, desc=dataset.dataset_id):
             output_path = dataset_output_dir / f"{entity.entity_id}.pdf"
             _export_entity_pdf(
                 entity,
