@@ -16,7 +16,7 @@ from ecg_visualization.scripts.ltafdb_concat.constants import (
     SegmentWindow,
     build_segments_info,
 )
-from ecg_visualization.signal_processing.rpeak_detection import detect_rpeaks
+from ecg_visualization.utils.signal_processing.rpeak_detection import detect_rpeaks
 
 LOGGER = logging.getLogger(__name__)
 

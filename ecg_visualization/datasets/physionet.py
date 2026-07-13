@@ -8,7 +8,7 @@ import wfdb
 from ecg_visualization.config.settings import DATASET_ROOT
 from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.signal_processing.rpeak_detection import detect_rpeaks
+from ecg_visualization.utils.signal_processing.rpeak_detection import detect_rpeaks
 
 physionet_root_dir = os.path.join(DATASET_ROOT, "physionet.org", "files")
 

@@ -17,7 +17,7 @@ from ecg_visualization.scripts.sddb_concat.constants import (
     build_fixed_vf_windows,
     build_segments_info,
 )
-from ecg_visualization.signal_processing.rpeak_detection import detect_rpeaks
+from ecg_visualization.utils.signal_processing.rpeak_detection import detect_rpeaks
 from ecg_visualization.utils.utils import find_true_runs
 
 LOGGER = logging.getLogger(__name__)
