@@ -7,15 +7,15 @@ from typing import ClassVar, Iterable
 import numpy as np
 import numpy.typing as npt
 
+from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.datasets.physionet import SDDB
+from ecg_visualization.datasets.physionet import _load_data_sources
 from ecg_visualization.scripts.sddb_concat.config import (
     SddbConcatConfig,
     SegmentsInfo,
     SegmentWindow,
-    build_fixed_vf_windows,
-    build_segments_info,
 )
+from ecg_visualization.scripts.sddb_concat.event_windows import resolve_event_windows
 from ecg_visualization.utils.signal_processing.rpeak_detection import detect_rpeaks
 from ecg_visualization.utils.utils import find_true_runs
 
@@ -41,28 +41,23 @@ class ConcatenatedSequence:
 def iter_concatenated_sequences(
     config: SddbConcatConfig,
 ) -> Iterable[tuple[ECGEntity, ConcatenatedSequence]]:
-    dataset = SDDB()
-    sinus_segments = _build_sinus_segments(
-        dataset.data_entities,
-        rr_median_threshold_sec=config.sinus_rr_median_threshold_sec,
-        segment_duration_sec=config.segment_duration_sec,
-        vf_onset_seconds=config.vf_onset_seconds,
-    )
-    segments_info_by_entity = _build_segments_info_by_entity(sinus_segments)
-    for entity in dataset.data_entities:
-        segments_info = segments_info_by_entity.get(entity.entity_id)
-        if segments_info is None:
-            LOGGER.info("Skipping %s: no sinus segments configured.", entity.entity_id)
-            continue
+    for dataset in _load_data_sources((config.dataset_id,)):
+        for entity in dataset.data_entities:
+            segments_info = _select_sinus_segments(
+                dataset,
+                entity,
+                segment_duration_sec=config.segment_duration_sec,
+                sinus_rr_median_threshold_sec=config.sinus_rr_median_threshold_sec,
+            )
 
-        concat = _build_concatenated_sequence(
-            entity,
-            segments_info,
-            max_reasonable_rr_interval_sec=config.max_reasonable_rr_interval_sec,
-        )
-        if concat is None:
-            continue
-        yield entity, concat
+            concat = _build_concatenated_sequence(
+                entity,
+                segments_info,
+                max_reasonable_rr_interval_sec=config.max_reasonable_rr_interval_sec,
+            )
+            if concat is None:
+                continue
+            yield entity, concat
 
 
 def _segment_windows(segments_info: SegmentsInfo) -> list[tuple[str, SegmentWindow]]:
@@ -75,97 +70,77 @@ def _segment_windows(segments_info: SegmentsInfo) -> list[tuple[str, SegmentWind
 
 
 def _build_sinus_segments(
+    dataset: ECGDataset,
     entities: Iterable[ECGEntity],
     *,
-    rr_median_threshold_sec: float,
     segment_duration_sec: float,
-    vf_onset_seconds: dict[str, float],
+    sinus_rr_median_threshold_sec: float,
 ) -> tuple[SegmentsInfo, ...]:
     segments: list[SegmentsInfo] = []
     for entity in entities:
         segments_info = _select_sinus_segments(
+            dataset,
             entity,
-            rr_median_threshold_sec=rr_median_threshold_sec,
             segment_duration_sec=segment_duration_sec,
-            vf_onset_seconds=vf_onset_seconds,
+            sinus_rr_median_threshold_sec=sinus_rr_median_threshold_sec,
         )
-        if segments_info is None:
-            continue
         segments.append(segments_info)
 
     return tuple(segments)
 
 
 def _select_sinus_segments(
+    dataset: ECGDataset,
     entity: ECGEntity,
     *,
-    rr_median_threshold_sec: float,
     segment_duration_sec: float,
-    vf_onset_seconds: dict[str, float],
-) -> SegmentsInfo | None:
-    try:
-        rr_intervals = np.asarray(entity.rr_intervals, dtype=np.float64)
-    except ValueError as exc:
-        LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
-        return None
+    sinus_rr_median_threshold_sec: float,
+) -> SegmentsInfo:
+    rr_intervals = entity.rr_intervals
 
     if rr_intervals.size < 2:
-        LOGGER.warning("Skipping %s: not enough RR intervals.", entity.entity_id)
-        return None
+        raise ValueError(f"{entity.entity_id} does not contain enough RR intervals")
 
     beat_times_sec = np.asarray(entity.beats, dtype=np.float64) / float(entity.sr)
     median_rr_interval_sec = float(np.median(rr_intervals))
     near_median_mask = (
-        np.abs(rr_intervals - median_rr_interval_sec) <= rr_median_threshold_sec
+        np.abs(rr_intervals - median_rr_interval_sec) <= sinus_rr_median_threshold_sec
     )
-    try:
-        available_rr_mask = _build_available_rr_mask(
-            entity.entity_id,
-            beat_times_sec,
-            segment_duration_sec=segment_duration_sec,
-            vf_onset_seconds=vf_onset_seconds,
-        )
-    except ValueError as exc:
-        LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
-        return None
+    pre_vf_window, vf_window = resolve_event_windows(
+        dataset,
+        entity,
+        segment_duration_sec=segment_duration_sec,
+    )
+    available_rr_mask = _build_available_rr_mask(
+        beat_times_sec,
+        pre_vf_window=pre_vf_window,
+        vf_window=vf_window,
+    )
 
     candidate_runs = find_true_runs(near_median_mask & available_rr_mask)
     if len(candidate_runs) < 2:
-        LOGGER.warning(
-            "Skipping %s: expected 2 sinus runs, found %d.",
-            entity.entity_id,
-            len(candidate_runs),
+        raise ValueError(
+            f"{entity.entity_id} expected 2 sinus runs, found {len(candidate_runs)}"
         )
-        return None
 
     candidate_runs.sort(key=lambda run: (-(run[1] - run[0]), run[0]))
     train_window = _rr_run_to_segment_window(beat_times_sec, candidate_runs[0])
     test_window = _rr_run_to_segment_window(beat_times_sec, candidate_runs[1])
-    try:
-        return build_segments_info(
-            entity.entity_id,
-            train=train_window,
-            test=test_window,
-            segment_duration_sec=segment_duration_sec,
-            vf_onset_seconds=vf_onset_seconds,
-        )
-    except ValueError as exc:
-        LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
-        return None
+    return SegmentsInfo(
+        entity_id=entity.entity_id,
+        train=train_window,
+        test=test_window,
+        pre_vf=pre_vf_window,
+        vf=vf_window,
+    )
 
 
 def _build_available_rr_mask(
-    entity_id: str,
     beat_times_sec: npt.NDArray[np.float64],
     *,
-    segment_duration_sec: float,
-    vf_onset_seconds: dict[str, float],
+    pre_vf_window: SegmentWindow,
+    vf_window: SegmentWindow,
 ) -> npt.NDArray[np.bool_]:
-    pre_vf_window, vf_window = build_fixed_vf_windows(
-        entity_id,
-        segment_duration_sec=segment_duration_sec,
-        vf_onset_seconds=vf_onset_seconds,
-    )
     rr_start_times_sec = beat_times_sec[:-1]
     rr_end_times_sec = beat_times_sec[1:]
     overlaps_pre_vf = (rr_start_times_sec < pre_vf_window.end_sec) & (
@@ -337,12 +312,6 @@ def _build_concatenated_sequence(
         sampling_rate_hz=sr,
         segments_info=segments_info,
     )
-
-
-def _build_segments_info_by_entity(
-    segments: Iterable[SegmentsInfo],
-) -> dict[str, SegmentsInfo]:
-    return {segment.entity_id: segment for segment in segments}
 
 
 def _validate_segment_window(

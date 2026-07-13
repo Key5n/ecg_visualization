@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable, cast
 
-from ecg_visualization.datasets.physionet import SDDB
+from omegaconf import DictConfig, ListConfig, OmegaConf
+
 from ecg_visualization.models.md_rs.md_rs import MDRSConfig
-from ecg_visualization.scripts.config import load_task_config
 from ecg_visualization.visualization.layouts import PaginationConfig
 
 
@@ -33,15 +34,13 @@ class RRHistogramConfig:
 
 @dataclass(frozen=True, slots=True)
 class SddbConcatConfig:
+    dataset_id: str = "sddb"
     score_output_dir: Path = Path("result") / "sddb_concat" / "mdrs_scores"
     visualize_output_dir: Path = Path("result") / "sddb_concat" / "visualize"
     window_size: int = 10
     segment_duration_sec: float = 10 * 60
     max_reasonable_rr_interval_sec: float = 3.0
     sinus_rr_median_threshold_sec: float = 0.1
-    vf_onset_seconds: dict[str, float] = field(
-        default_factory=lambda: dict(SDDB.vf_onset_seconds)
-    )
     segment_colors: dict[str, str] = field(
         default_factory=lambda: {
             "sinus_train": "#2a9d8f",
@@ -64,6 +63,34 @@ class SddbConcatConfig:
     )
     pagination: PaginationConfig = PaginationConfig(seconds_per_row=10, rows_per_page=6)
     rr_histogram: RRHistogramConfig = RRHistogramConfig()
+
+
+def ltafdb_sddb_concat_config() -> SddbConcatConfig:
+    return SddbConcatConfig(
+        dataset_id="ltafdb",
+        sinus_rr_median_threshold_sec=0.05,
+    )
+
+
+def sddb_sddb_concat_config() -> SddbConcatConfig:
+    return SddbConcatConfig(
+        dataset_id="sddb",
+        sinus_rr_median_threshold_sec=0.1,
+    )
+
+
+def vfdb_sddb_concat_config() -> SddbConcatConfig:
+    return SddbConcatConfig(
+        dataset_id="vfdb",
+        sinus_rr_median_threshold_sec=0.08,
+    )
+
+
+SDDB_CONCAT_CONFIGS: dict[str, Callable[[], SddbConcatConfig]] = {
+    "ltafdb": ltafdb_sddb_concat_config,
+    "sddb": sddb_sddb_concat_config,
+    "vfdb": vfdb_sddb_concat_config,
+}
 
 
 def build_fixed_vf_windows(
@@ -111,6 +138,25 @@ def build_segments_info(
 
 
 def load_sddb_concat_config() -> SddbConcatConfig:
-    return load_task_config(
-        SddbConcatConfig(),
-    )
+    cli_config = OmegaConf.from_cli()
+    config_name = str(cli_config.pop("config_name", "sddb")).lower()
+    config_factory = SDDB_CONCAT_CONFIGS.get(config_name)
+    if config_factory is None:
+        available_configs = ", ".join(SDDB_CONCAT_CONFIGS)
+        raise ValueError(
+            f"Unknown sddb_concat config '{config_name}'. "
+            f"Available options: {available_configs}."
+        )
+
+    structured = OmegaConf.structured(config_factory(), flags={"allow_objects": True})
+    _set_readonly_recursive(structured, False)
+    merged = OmegaConf.merge(structured, cli_config)
+    return cast(SddbConcatConfig, OmegaConf.to_object(merged))
+
+
+def _set_readonly_recursive(config: DictConfig | ListConfig, readonly: bool) -> None:
+    OmegaConf.set_readonly(config, readonly)
+    values = config.values() if isinstance(config, DictConfig) else config
+    for value in values:
+        if isinstance(value, DictConfig | ListConfig):
+            _set_readonly_recursive(value, readonly)
