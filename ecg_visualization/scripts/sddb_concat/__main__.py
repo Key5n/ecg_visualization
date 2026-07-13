@@ -1,8 +1,10 @@
+from ecg_visualization.scripts.sddb_concat.config import load_config
 from ecg_visualization.scripts.sddb_concat.score.score import sddb_concat_scores
 from ecg_visualization.scripts.sddb_concat.visualize.visualize import (
     sddb_concat_visualize,
 )
 
 if __name__ == "__main__":
-    sddb_concat_scores()
-    sddb_concat_visualize()
+    config = load_config()
+    sddb_concat_scores(config)
+    sddb_concat_visualize(config)

@@ -9,12 +9,10 @@ from matplotlib.axes import Axes
 
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.logging.config import configure_root_logging
-from ecg_visualization.models.md_rs.md_rs import MDRS
+from ecg_visualization.models.md_rs.md_rs import MDRS, MDRSConfig
+from ecg_visualization.scripts.sddb_concat.config import SddbConcatConfig
 from ecg_visualization.scripts.sddb_concat.constants import (
-    DEFAULT_MD_RS_CONFIG,
-    OUTPUT_DIR,
     SEGMENT_COLORS,
-    WINDOW_SIZE,
 )
 from ecg_visualization.scripts.sddb_concat.utils import (
     ConcatenatedSequence,
@@ -32,21 +30,26 @@ class ScoreResult:
     scores: np.ndarray
 
 
-def sddb_concat_scores() -> None:
+def sddb_concat_scores(config: SddbConcatConfig) -> None:
     configure_root_logging()
     apply_default_style()
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    config.score_output_dir.mkdir(parents=True, exist_ok=True)
+    model_config = config.model
 
     processed = 0
-    for entity, concat in iter_concatenated_sequences():
+    for entity, concat in iter_concatenated_sequences(config):
         try:
-            score_result = _score_concatenated_sequence(concat)
+            score_result = _score_concatenated_sequence(
+                concat,
+                window_size=config.window_size,
+                model_config=model_config,
+            )
         except ValueError as exc:
             LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
             continue
 
         fig = _plot_concat_scores(entity, concat, score_result)
-        output_path = OUTPUT_DIR / f"{entity.entity_id}.png"
+        output_path = config.score_output_dir / f"{entity.entity_id}.png"
         fig.savefig(output_path, dpi=150)
         plt.close(fig)
         LOGGER.info("Saved MD-RS scores to %s", output_path)
@@ -55,13 +58,18 @@ def sddb_concat_scores() -> None:
     LOGGER.info(
         "Finished scoring. processed=%d output_dir=%s",
         processed,
-        OUTPUT_DIR,
+        config.score_output_dir,
     )
 
 
-def _score_concatenated_sequence(concat: ConcatenatedSequence) -> ScoreResult:
+def _score_concatenated_sequence(
+    concat: ConcatenatedSequence,
+    *,
+    window_size: int,
+    model_config: MDRSConfig,
+) -> ScoreResult:
     beat_samples = np.asarray(concat.beats, dtype=np.int_)
-    if beat_samples.size < WINDOW_SIZE + 1:
+    if beat_samples.size < window_size + 1:
         raise ValueError("sequence does not contain enough beats")
 
     train_segment_samples = int(
@@ -71,7 +79,7 @@ def _score_concatenated_sequence(concat: ConcatenatedSequence) -> ScoreResult:
         )
     )
     train_beats = beat_samples[beat_samples < train_segment_samples]
-    if train_beats.size < WINDOW_SIZE + 1:
+    if train_beats.size < window_size + 1:
         raise ValueError("sinus_train segment does not contain enough beats")
 
     beat_times = beat_samples.astype(np.float64) / concat.sampling_rate_hz
@@ -79,19 +87,18 @@ def _score_concatenated_sequence(concat: ConcatenatedSequence) -> ScoreResult:
     rr_intervals = np.diff(beat_times)
     train_rr_intervals = np.diff(train_beat_times)
 
-    train_windows = sliding_window_sequences(train_rr_intervals, WINDOW_SIZE)
-    test_windows = sliding_window_sequences(rr_intervals, WINDOW_SIZE)
+    train_windows = sliding_window_sequences(train_rr_intervals, window_size)
+    test_windows = sliding_window_sequences(rr_intervals, window_size)
 
     train_sequence, test_sequence = prepare_sequences(train_windows, test_windows)
 
-    config = DEFAULT_MD_RS_CONFIG
-    model = MDRS(config)
+    model = MDRS(model_config)
     model.train(train_sequence)
     model.reset_states()
 
     scores = model.predict(test_sequence)
-    scores[: config.trans_length] = np.nan
-    score_times = beat_times[WINDOW_SIZE:]
+    scores[: model_config.trans_length] = np.nan
+    score_times = beat_times[window_size:]
     return ScoreResult(times_sec=score_times, scores=scores)
 
 

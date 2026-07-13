@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Final, Iterable
+from typing import Iterable
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,6 +12,10 @@ from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import CUDB
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS, MDRSConfig
+from ecg_visualization.scripts.cudb_anomaly_scores.config import (
+    CudbAnomalyScoresConfig,
+    SinusDurationConfig,
+)
 from ecg_visualization.utils.timed_sequence import TimedSequence
 from ecg_visualization.utils.utils import (
     merge_overlapping_windows,
@@ -30,17 +33,6 @@ from ecg_visualization.visualization.styles import (
     apply_default_style,
 )
 
-DEFAULT_MD_RS_CONFIG: Final[MDRSConfig] = MDRSConfig(
-    N_x=256,
-    input_scale=0.5,
-    rho=0.9,
-    leaking_rate=0.3,
-    delta=1e-3,
-    trans_length=10,
-    N_x_tilde=128,
-    seed=0,
-)
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -56,126 +48,10 @@ class SinusDuration:
     windows: tuple[SinusWindow, ...]
 
 
-# Define sinus windows per entity here (seconds).
-# Example:
-# SINUS_DURATIONS = (
-#     SinusDuration(
-#         entity_id="00001",
-#         windows=(SinusWindow(120.0, 420.0), SinusWindow(900.0, 1200.0)),
-#     ),
-#     SinusDuration(
-#         entity_id="00002",
-#         windows=(SinusWindow(60.0, 540.0),),
-#     ),
-# )
-SINUS_DURATIONS: tuple[SinusDuration, ...] = (
-    SinusDuration(
-        entity_id="cu01",
-        windows=(SinusWindow(0.0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu06",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu07",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu10",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu11",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu12",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu13",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu14",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu15",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu16",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu17",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu18",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu19",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu20",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu22",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu23",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu24",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu25",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu26",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu27",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu29",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu32",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu33",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-    SinusDuration(
-        entity_id="cu34",
-        windows=(SinusWindow(0, 60.0),),
-    ),
-)
-
-
-OUTPUT_PATH = Path("result/cudb/anomaly_scores.pdf")
-WINDOW_SIZE = 10
-
-
-def cudb_anomaly_scores() -> None:
+def cudb_anomaly_scores(config: CudbAnomalyScoresConfig) -> None:
     configure_root_logging()
 
-    output_path = OUTPUT_PATH
+    output_path = config.output_path
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     apply_default_style()
@@ -184,7 +60,8 @@ def cudb_anomaly_scores() -> None:
     processed = 0
     skipped = 0
 
-    sinus_windows_by_entity = _build_sinus_windows_by_entity(SINUS_DURATIONS)
+    sinus_windows_by_entity = _build_sinus_windows_by_entity(config.sinus_durations)
+    model_config = config.model
 
     with pdf_exporter(str(output_path)) as exporter:
         for entity in tqdm(dataset.data_entities, desc="CUDB"):
@@ -200,8 +77,8 @@ def cudb_anomaly_scores() -> None:
                 score_sequence, used_windows = _score_entity(
                     entity=entity,
                     sinus_windows=sinus_windows,
-                    window_size=WINDOW_SIZE,
-                    model_config=DEFAULT_MD_RS_CONFIG,
+                    window_size=config.window_size,
+                    model_config=model_config,
                 )
             except ValueError as exc:
                 LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
@@ -354,7 +231,7 @@ def _normalize_windows(
 
 
 def _build_sinus_windows_by_entity(
-    durations: Iterable[SinusDuration],
+    durations: Iterable[SinusDuration | SinusDurationConfig],
 ) -> dict[str, list[tuple[float, float]]]:
     windows_by_entity: dict[str, list[tuple[float, float]]] = {}
     for duration in durations:

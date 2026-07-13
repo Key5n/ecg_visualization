@@ -48,19 +48,23 @@ class SegmentsInfo:
     vf: SegmentWindow
 
 
-def build_fixed_vf_windows(entity_id: str) -> tuple[SegmentWindow, SegmentWindow]:
+def build_fixed_vf_windows(
+    entity_id: str,
+    *,
+    segment_duration_sec: float = SEGMENT_DURATION_SEC,
+) -> tuple[SegmentWindow, SegmentWindow]:
     vf_onset_sec = VF_ONSET_SECONDS.get(entity_id)
     if vf_onset_sec is None:
         raise ValueError(f"VF onset is not configured for entity '{entity_id}'.")
 
     return (
         SegmentWindow(
-            vf_onset_sec - SEGMENT_DURATION_SEC,
+            vf_onset_sec - segment_duration_sec,
             vf_onset_sec,
         ),
         SegmentWindow(
             vf_onset_sec,
-            vf_onset_sec + SEGMENT_DURATION_SEC,
+            vf_onset_sec + segment_duration_sec,
         ),
     )
 
@@ -69,8 +73,13 @@ def build_segments_info(
     entity_id: str,
     train: SegmentWindow,
     test: SegmentWindow,
+    *,
+    segment_duration_sec: float = SEGMENT_DURATION_SEC,
 ) -> SegmentsInfo:
-    pre_vf, vf = build_fixed_vf_windows(entity_id)
+    pre_vf, vf = build_fixed_vf_windows(
+        entity_id,
+        segment_duration_sec=segment_duration_sec,
+    )
     return SegmentsInfo(
         entity_id=entity_id,
         train=train,

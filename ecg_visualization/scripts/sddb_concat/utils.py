@@ -9,9 +9,8 @@ import numpy.typing as npt
 
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import SDDB
+from ecg_visualization.scripts.sddb_concat.config import SddbConcatConfig
 from ecg_visualization.scripts.sddb_concat.constants import (
-    MAX_REASONABLE_RR_INTERVAL_SEC,
-    SINUS_RR_MEDIAN_THRESHOLD_SEC,
     SegmentsInfo,
     SegmentWindow,
     build_fixed_vf_windows,
@@ -39,11 +38,14 @@ class ConcatenatedSequence:
     )
 
 
-def iter_concatenated_sequences() -> Iterable[tuple[ECGEntity, ConcatenatedSequence]]:
+def iter_concatenated_sequences(
+    config: SddbConcatConfig,
+) -> Iterable[tuple[ECGEntity, ConcatenatedSequence]]:
     dataset = SDDB()
     sinus_segments = _build_sinus_segments(
         dataset.data_entities,
-        rr_median_threshold_sec=SINUS_RR_MEDIAN_THRESHOLD_SEC,
+        rr_median_threshold_sec=config.sinus_rr_median_threshold_sec,
+        segment_duration_sec=config.segment_duration_sec,
     )
     segments_info_by_entity = _build_segments_info_by_entity(sinus_segments)
     for entity in dataset.data_entities:
@@ -52,7 +54,11 @@ def iter_concatenated_sequences() -> Iterable[tuple[ECGEntity, ConcatenatedSeque
             LOGGER.info("Skipping %s: no sinus segments configured.", entity.entity_id)
             continue
 
-        concat = _build_concatenated_sequence(entity, segments_info)
+        concat = _build_concatenated_sequence(
+            entity,
+            segments_info,
+            max_reasonable_rr_interval_sec=config.max_reasonable_rr_interval_sec,
+        )
         if concat is None:
             continue
         yield entity, concat
@@ -71,12 +77,14 @@ def _build_sinus_segments(
     entities: Iterable[ECGEntity],
     *,
     rr_median_threshold_sec: float,
+    segment_duration_sec: float,
 ) -> tuple[SegmentsInfo, ...]:
     segments: list[SegmentsInfo] = []
     for entity in entities:
         segments_info = _select_sinus_segments(
             entity,
             rr_median_threshold_sec=rr_median_threshold_sec,
+            segment_duration_sec=segment_duration_sec,
         )
         if segments_info is None:
             continue
@@ -89,6 +97,7 @@ def _select_sinus_segments(
     entity: ECGEntity,
     *,
     rr_median_threshold_sec: float,
+    segment_duration_sec: float,
 ) -> SegmentsInfo | None:
     try:
         rr_intervals = np.asarray(entity.rr_intervals, dtype=np.float64)
@@ -106,7 +115,11 @@ def _select_sinus_segments(
         np.abs(rr_intervals - median_rr_interval_sec) <= rr_median_threshold_sec
     )
     try:
-        available_rr_mask = _build_available_rr_mask(entity.entity_id, beat_times_sec)
+        available_rr_mask = _build_available_rr_mask(
+            entity.entity_id,
+            beat_times_sec,
+            segment_duration_sec=segment_duration_sec,
+        )
     except ValueError as exc:
         LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
         return None
@@ -128,6 +141,7 @@ def _select_sinus_segments(
             entity.entity_id,
             train=train_window,
             test=test_window,
+            segment_duration_sec=segment_duration_sec,
         )
     except ValueError as exc:
         LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
@@ -137,8 +151,13 @@ def _select_sinus_segments(
 def _build_available_rr_mask(
     entity_id: str,
     beat_times_sec: npt.NDArray[np.float64],
+    *,
+    segment_duration_sec: float,
 ) -> npt.NDArray[np.bool_]:
-    pre_vf_window, vf_window = build_fixed_vf_windows(entity_id)
+    pre_vf_window, vf_window = build_fixed_vf_windows(
+        entity_id,
+        segment_duration_sec=segment_duration_sec,
+    )
     rr_start_times_sec = beat_times_sec[:-1]
     rr_end_times_sec = beat_times_sec[1:]
     overlaps_pre_vf = (rr_start_times_sec < pre_vf_window.end_sec) & (
@@ -161,8 +180,12 @@ def _rr_run_to_segment_window(
     )
 
 
-def _minimum_required_beats(segment_duration_sec: float) -> int:
-    return max(2, int(np.ceil(segment_duration_sec / MAX_REASONABLE_RR_INTERVAL_SEC)))
+def _minimum_required_beats(
+    segment_duration_sec: float,
+    *,
+    max_reasonable_rr_interval_sec: float,
+) -> int:
+    return max(2, int(np.ceil(segment_duration_sec / max_reasonable_rr_interval_sec)))
 
 
 def _resolve_segment_beats(
@@ -170,9 +193,14 @@ def _resolve_segment_beats(
     name: str,
     segment_samples: npt.NDArray[np.float64],
     segment_beats: npt.NDArray[np.int_],
+    *,
+    max_reasonable_rr_interval_sec: float,
 ) -> npt.NDArray[np.int_]:
     segment_duration_sec = float(segment_samples.size) / float(entity.sr)
-    minimum_required_beats = _minimum_required_beats(segment_duration_sec)
+    minimum_required_beats = _minimum_required_beats(
+        segment_duration_sec,
+        max_reasonable_rr_interval_sec=max_reasonable_rr_interval_sec,
+    )
     if segment_beats.size >= minimum_required_beats:
         return np.asarray(segment_beats, dtype=np.int_)
 
@@ -202,6 +230,8 @@ def _resolve_segment_beats(
 def _build_concatenated_sequence(
     entity: ECGEntity,
     segments_info: SegmentsInfo,
+    *,
+    max_reasonable_rr_interval_sec: float,
 ) -> ConcatenatedSequence | None:
     signal = entity.signals
     sr = float(entity.sr)
@@ -262,6 +292,7 @@ def _build_concatenated_sequence(
             name,
             segment_samples,
             np.asarray(annotated_segment_beats - start_sample, dtype=np.int_),
+            max_reasonable_rr_interval_sec=max_reasonable_rr_interval_sec,
         )
         segment_length = end_sample - start_sample
         concatenated_beats.append(

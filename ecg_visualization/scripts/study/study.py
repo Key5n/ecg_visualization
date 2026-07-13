@@ -2,21 +2,18 @@ import logging
 import tempfile
 from dataclasses import replace
 from pathlib import Path
-from typing import Final
 
 import numpy as np
 import optuna
 from optuna.artifacts import FileSystemArtifactStore, upload_artifact
 from tqdm import tqdm
 
-from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.datasets.physionet import (
-    SDDB,
-)
+from ecg_visualization.datasets.physionet import _load_data_sources
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.logging.optuna import configure_optuna_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS, MDRSConfig
+from ecg_visualization.scripts.study.config import StudyConfig
 from ecg_visualization.utils.optuna_record import (
     build_storage_name,
     create_artifact_store,
@@ -25,37 +22,17 @@ from ecg_visualization.utils.optuna_record import (
 from ecg_visualization.utils.timed_sequence import TimedSequence
 from ecg_visualization.utils.utils import prepare_sequences, sliding_window_sequences
 
-DEFAULT_MD_RS_CONFIG: Final[MDRSConfig] = MDRSConfig(
-    N_x=256,
-    input_scale=0.5,
-    rho=0.9,
-    leaking_rate=0.3,
-    delta=1e-3,
-    trans_length=10,
-    N_x_tilde=128,
-    seed=0,
-)
-
 LOGGER = logging.getLogger(__name__)
 
 
-def study_all_entities():
+def study_all_entities(config: StudyConfig):
     configure_root_logging()
     configure_optuna_logging()
 
-    data_sources: list[ECGDataset] = [
-        # CUDB(),
-        # AFPDB(),
-        # MITDB(),
-        # AFDB(),
-        # LTAFDB(),
-        # SHDBAF(),
-        SDDB(),
-        # VFDB()
-    ]
-    artifact_root = Path("result") / "artifacts"
-    artifact_store = create_artifact_store(artifact_root)
+    data_sources = _load_data_sources(config.dataset_ids)
+    artifact_store = create_artifact_store(config.artifact_root)
     storage_name = build_storage_name()
+    model_config = config.model
 
     for data_source in tqdm(data_sources):
         for entity in tqdm(data_source.data_entities):
@@ -64,9 +41,10 @@ def study_all_entities():
                 Objective(
                     entity=entity,
                     artifact_store=artifact_store,
-                    MD_RS_CONFIG=DEFAULT_MD_RS_CONFIG,
+                    MD_RS_CONFIG=model_config,
+                    WINDOW_SIZE=config.window_size,
                 ),
-                n_trials=1,
+                n_trials=config.n_trials,
             )
 
 

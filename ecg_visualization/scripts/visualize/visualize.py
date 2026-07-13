@@ -1,7 +1,6 @@
 import logging
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from pathlib import Path
 
 import optuna
 from tqdm import tqdm
@@ -12,34 +11,30 @@ from ecg_visualization.logging.tqdm_multiprocessing import (
     queue_logging_context,
     worker_logging_initializer,
 )
+from ecg_visualization.scripts.visualize.config import VisualizeConfig
 from ecg_visualization.utils.optuna_record import (
     build_storage_name,
     create_artifact_store,
     get_study_identifiers,
     load_studies,
 )
-from ecg_visualization.visualization.layouts import PaginationConfig
 from ecg_visualization.visualization.study_visualizer import StudyVisualizer
 from ecg_visualization.visualization.styles import apply_default_style
 
-RR_WINDOW_BEATS = 100
-PAGINATION_CONFIG = PaginationConfig()
-ARTIFACT_ROOT = Path("result") / "artifacts"
-VISUALIZATION_ROOT = Path("result") / "visualize"
 LOGGER = logging.getLogger(__name__)
 
 
-def visualize_all_studies(max_workers: int | None = None):
+def visualize_all_studies(config: VisualizeConfig):
     configure_root_logging()
     storage_name = build_storage_name()
     studies = load_studies(storage_name)
     if not studies:
         return
 
-    worker_count = _determine_worker_count(max_workers)
+    worker_count = _determine_worker_count(config.max_workers)
     if worker_count == 1:
         for study in tqdm(studies, desc="visualizations"):
-            visualize_study(study)
+            visualize_study(study, config)
         return
 
     with queue_logging_context() as log_queue:
@@ -48,7 +43,9 @@ def visualize_all_studies(max_workers: int | None = None):
             initializer=worker_logging_initializer,
             initargs=(log_queue,),
         ) as executor:
-            futures = [executor.submit(_run_visualization, study) for study in studies]
+            futures = [
+                executor.submit(_run_visualization, study, config) for study in studies
+            ]
             for future in tqdm(
                 as_completed(futures),
                 total=len(futures),
@@ -61,17 +58,17 @@ def visualize_all_studies(max_workers: int | None = None):
                     )
 
 
-def visualize_study(study: optuna.Study):
+def visualize_study(study: optuna.Study, config: VisualizeConfig):
     apply_default_style()
 
-    artifact_store = create_artifact_store(ARTIFACT_ROOT)
+    artifact_store = create_artifact_store(config.artifact_root)
 
     visualizer = StudyVisualizer(
         study=study,
         artifact_store=artifact_store,
-        pagination_config=PAGINATION_CONFIG,
-        visualization_root=VISUALIZATION_ROOT,
-        rr_window_beats=RR_WINDOW_BEATS,
+        pagination_config=config.pagination,
+        visualization_root=config.visualization_root,
+        rr_window_beats=config.rr_window_beats,
     )
     output_path = visualizer.visualize()
     if output_path:
@@ -88,10 +85,13 @@ def _determine_worker_count(max_workers: int | None) -> int:
     return max(1, os.cpu_count() or 1)
 
 
-def _run_visualization(study: optuna.Study) -> tuple[str, str, Exception | None]:
+def _run_visualization(
+    study: optuna.Study,
+    config: VisualizeConfig,
+) -> tuple[str, str, Exception | None]:
     dataset_id, entity_id = get_study_identifiers(study)
     try:
-        visualize_study(study)
+        visualize_study(study, config)
         return dataset_id, entity_id, None
     except Exception as exc:  # pragma: no cover - worker error propagation
         return dataset_id, entity_id, exc

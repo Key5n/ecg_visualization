@@ -11,10 +11,9 @@ from matplotlib.figure import Figure
 
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.logging.config import configure_root_logging
+from ecg_visualization.scripts.sddb_concat.config import SddbConcatConfig
 from ecg_visualization.scripts.sddb_concat.constants import (
     SEGMENT_COLORS,
-    SINUS_RR_MEDIAN_THRESHOLD_SEC,
-    VISUALIZE_OUTPUT_DIR,
 )
 from ecg_visualization.scripts.sddb_concat.utils import (
     ConcatenatedSequence,
@@ -37,15 +36,6 @@ from ecg_visualization.visualization.styles import apply_default_style
 
 LOGGER = logging.getLogger(__name__)
 
-PAGINATION_CONFIG = PaginationConfig(seconds_per_row=10, rows_per_page=6)
-RR_HISTOGRAM_XMIN_SEC = 0.0
-RR_HISTOGRAM_XMAX_SEC = 2.0
-RR_HISTOGRAM_BIN_WIDTH_SEC = 0.025
-RR_HISTOGRAM_BINS = np.arange(
-    RR_HISTOGRAM_XMIN_SEC,
-    RR_HISTOGRAM_XMAX_SEC + RR_HISTOGRAM_BIN_WIDTH_SEC,
-    RR_HISTOGRAM_BIN_WIDTH_SEC,
-)
 SEGMENT_LABELS = {
     "sinus_train": "train",
     "pre_vf": "pre-vf",
@@ -54,22 +44,29 @@ SEGMENT_LABELS = {
 }
 
 
-def sddb_concat_visualize() -> None:
+def sddb_concat_visualize(config: SddbConcatConfig) -> None:
     configure_root_logging()
     apply_default_style()
-    VISUALIZE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    config.visualize_output_dir.mkdir(parents=True, exist_ok=True)
+    pagination_config = config.pagination
 
     processed = 0
-    for entity, concat in iter_concatenated_sequences():
-        output_path = VISUALIZE_OUTPUT_DIR / f"{entity.entity_id}.pdf"
-        _export_concatenated_pdf(entity, concat, output_path=output_path)
+    for entity, concat in iter_concatenated_sequences(config):
+        output_path = config.visualize_output_dir / f"{entity.entity_id}.pdf"
+        _export_concatenated_pdf(
+            entity,
+            concat,
+            output_path=output_path,
+            pagination_config=pagination_config,
+            config=config,
+        )
         LOGGER.info("Saved concatenated signal PDF to %s", output_path)
         processed += 1
 
     LOGGER.info(
         "Finished ecg_visualization.visualization. processed=%d output_dir=%s",
         processed,
-        VISUALIZE_OUTPUT_DIR,
+        config.visualize_output_dir,
     )
 
 
@@ -78,11 +75,13 @@ def _export_concatenated_pdf(
     concat: ConcatenatedSequence,
     *,
     output_path: Path,
+    pagination_config: PaginationConfig,
+    config: SddbConcatConfig,
 ) -> None:
     ts_paged = paginate_signals(
         entity.signals.size,
         int(entity.sr),
-        PAGINATION_CONFIG,
+        pagination_config,
     )
     signal_ylim = compute_ylim(
         entity.signals,
@@ -91,9 +90,9 @@ def _export_concatenated_pdf(
     )
 
     with pdf_exporter(str(output_path)) as exporter:
-        _render_rr_interval_histogram_page(entity, concat, exporter)
+        _render_rr_interval_histogram_page(entity, concat, exporter, config=config)
         for page_idx, ts_row in enumerate(ts_paged):
-            fig, axs = create_page_layout(PAGINATION_CONFIG.rows_per_page)
+            fig, axs = create_page_layout(pagination_config.rows_per_page)
             for ts, ax in zip(ts_row, np.atleast_1d(axs), strict=True):
                 _render_signal_row(
                     ax=ax,
@@ -111,21 +110,28 @@ def _render_rr_interval_histogram_page(
     entity: ECGEntity,
     concat: ConcatenatedSequence,
     exporter: PdfExporter,
+    *,
+    config: SddbConcatConfig,
 ) -> None:
     rr_intervals = np.diff(np.asarray(entity.beats, dtype=np.float64))
     rr_intervals_sec = rr_intervals / float(entity.sr)
+    histogram_bins = np.arange(
+        config.rr_histogram.xmin_sec,
+        config.rr_histogram.xmax_sec + config.rr_histogram.bin_width_sec,
+        config.rr_histogram.bin_width_sec,
+    )
 
     fig, ax = plt.subplots(figsize=(8, 4))
     if rr_intervals_sec.size > 0:
         rr_intervals_in_range = rr_intervals_sec[
-            (rr_intervals_sec >= RR_HISTOGRAM_XMIN_SEC)
-            & (rr_intervals_sec <= RR_HISTOGRAM_XMAX_SEC)
+            (rr_intervals_sec >= config.rr_histogram.xmin_sec)
+            & (rr_intervals_sec <= config.rr_histogram.xmax_sec)
         ]
         if rr_intervals_in_range.size > 0:
             plot_histogram(
                 ax,
                 rr_intervals_in_range,
-                bins=RR_HISTOGRAM_BINS,
+                bins=histogram_bins,
                 title=f"{entity.dataset_name} / {entity.entity_id} RR intervals",
                 xlabel="R-peak interval (sec)",
                 ylabel="Count",
@@ -134,10 +140,10 @@ def _render_rr_interval_histogram_page(
             ax.set_title(f"{entity.dataset_name} / {entity.entity_id} RR intervals")
             ax.set_xlabel("R-peak interval (sec)")
             ax.set_ylabel("Count")
-        ax.set_xlim(RR_HISTOGRAM_XMIN_SEC, RR_HISTOGRAM_XMAX_SEC)
+        ax.set_xlim(config.rr_histogram.xmin_sec, config.rr_histogram.xmax_sec)
         median_rr_interval = float(np.median(rr_intervals_sec))
-        sinus_lower = median_rr_interval - SINUS_RR_MEDIAN_THRESHOLD_SEC
-        sinus_upper = median_rr_interval + SINUS_RR_MEDIAN_THRESHOLD_SEC
+        sinus_lower = median_rr_interval - config.sinus_rr_median_threshold_sec
+        sinus_upper = median_rr_interval + config.sinus_rr_median_threshold_sec
         ax.axvspan(
             sinus_lower,
             sinus_upper,

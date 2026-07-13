@@ -12,14 +12,14 @@ ActivationFunc = Callable[[NDArray[np.float64]], NDArray[np.float64]]
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class MDRSConfig:
-    N_x: int
-    input_scale: float
-    rho: float
-    leaking_rate: float
-    delta: float
-    trans_length: int
+    N_x: int = 256
+    input_scale: float = 1.0
+    rho: float = 0.9
+    leaking_rate: float = 0.9
+    delta: float = 1e-3
+    trans_length: int = 10
     precision_matrix: NDArray[np.float64] | None = None
-    N_x_tilde: int | None = None
+    N_x_tilde: int | None = 256
     threshold: float | None = None
     density: float = 0.05
     activation_func: ActivationFunc = np.tanh

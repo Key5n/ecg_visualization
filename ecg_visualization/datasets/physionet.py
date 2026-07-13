@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import ClassVar, Type
+from typing import ClassVar, Sequence, Type
 
 import numpy as np
 import wfdb
@@ -185,3 +185,18 @@ DATASET_CLASSES: tuple[Type[ECGDataset], ...] = (
 DATASET_REGISTRY: dict[str, Type[ECGDataset]] = {
     dataset_cls.dataset_id: dataset_cls for dataset_cls in DATASET_CLASSES
 }
+
+
+def _load_data_sources(dataset_ids: Sequence[str]) -> list[ECGDataset]:
+    data_sources: list[ECGDataset] = []
+    for dataset_id in dataset_ids:
+        normalized_id = dataset_id.lower()
+        dataset_cls = DATASET_REGISTRY.get(normalized_id)
+        if dataset_cls is None:
+            available_datasets = ", ".join(DATASET_REGISTRY)
+            raise ValueError(
+                f"Unknown dataset id '{dataset_id}'. "
+                f"Available options: {available_datasets}."
+            )
+        data_sources.append(dataset_cls())
+    return data_sources

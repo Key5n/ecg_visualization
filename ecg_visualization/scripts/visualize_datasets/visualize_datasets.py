@@ -8,8 +8,11 @@ import numpy as np
 from tqdm import tqdm
 
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.datasets.physionet import DATASET_CLASSES
+from ecg_visualization.datasets.physionet import DATASET_CLASSES, DATASET_REGISTRY
 from ecg_visualization.logging.config import configure_root_logging
+from ecg_visualization.scripts.visualize_datasets.config import (
+    VisualizeDatasetsConfig,
+)
 from ecg_visualization.scripts.visualize_datasets.rr_histogram_page import (
     render_rr_interval_histogram_page,
 )
@@ -31,20 +34,30 @@ from ecg_visualization.visualization.styles import apply_default_style
 
 LOGGER = logging.getLogger(__name__)
 
-DEFAULT_OUTPUT_DIR = Path("result") / "visualize-datasets"
-PAGINATION_CONFIG = PaginationConfig(seconds_per_row=10, rows_per_page=6)
 
-
-def visualize_datasets() -> None:
+def visualize_datasets(config: VisualizeDatasetsConfig) -> None:
     configure_root_logging()
     apply_default_style()
 
-    DEFAULT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    config.output_dir.mkdir(parents=True, exist_ok=True)
+    dataset_classes = DATASET_CLASSES
+    if config.dataset_ids:
+        dataset_classes = ()
+        for dataset_id in config.dataset_ids:
+            dataset_cls = DATASET_REGISTRY.get(dataset_id.lower())
+            if dataset_cls is None:
+                available_datasets = ", ".join(DATASET_REGISTRY)
+                raise ValueError(
+                    f"Unknown dataset id '{dataset_id}'. "
+                    f"Available options: {available_datasets}."
+                )
+            dataset_classes = (*dataset_classes, dataset_cls)
+    pagination_config = config.pagination
 
     total_processed = 0
-    for dataset_cls in DATASET_CLASSES:
+    for dataset_cls in dataset_classes:
         dataset = dataset_cls()
-        dataset_output_dir = DEFAULT_OUTPUT_DIR / dataset_cls.dataset_id
+        dataset_output_dir = config.output_dir / dataset_cls.dataset_id
         dataset_output_dir.mkdir(parents=True, exist_ok=True)
 
         LOGGER.info(
@@ -54,13 +67,21 @@ def visualize_datasets() -> None:
         )
         for entity in tqdm(dataset.data_entities, desc=dataset_cls.dataset_id):
             output_path = dataset_output_dir / f"{entity.entity_id}.pdf"
-            _export_entity_pdf(entity, output_path=output_path)
+            _export_entity_pdf(
+                entity,
+                output_path=output_path,
+                pagination_config=pagination_config,
+                signal_ylim_bounds=(
+                    config.signal_ylim_lower,
+                    config.signal_ylim_upper,
+                ),
+            )
             total_processed += 1
 
     LOGGER.info(
         "Finished dataset visualization. processed=%d output_dir=%s",
         total_processed,
-        DEFAULT_OUTPUT_DIR,
+        config.output_dir,
     )
 
 
@@ -68,23 +89,25 @@ def _export_entity_pdf(
     entity: ECGEntity,
     *,
     output_path: Path,
+    pagination_config: PaginationConfig,
+    signal_ylim_bounds: tuple[float, float],
 ) -> None:
     ts_paged = paginate_signals(
         entity.signals.size,
         int(entity.sr),
-        PAGINATION_CONFIG,
+        pagination_config,
     )
     signal_ylim = compute_ylim(
         entity.signals,
-        lower_bound=-5.0,
-        upper_bound=5.0,
+        lower_bound=signal_ylim_bounds[0],
+        upper_bound=signal_ylim_bounds[1],
     )
 
     with pdf_exporter(str(output_path)) as exporter:
         render_entity_summary_page(entity, exporter)
         render_rr_interval_histogram_page(entity, exporter)
         for page_idx, ts_row in enumerate(ts_paged):
-            fig, axs = create_page_layout(PAGINATION_CONFIG.rows_per_page)
+            fig, axs = create_page_layout(pagination_config.rows_per_page)
             for ts, ax in zip(ts_row, np.atleast_1d(axs), strict=True):
                 render_signal_row(
                     ax=ax,
