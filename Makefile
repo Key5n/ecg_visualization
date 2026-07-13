@@ -10,9 +10,7 @@ DATASET_STAMP := $(DATASET_ROOT)/.downloaded
 	sddb-concat-constants sddb-concat-utils \
 	sddb-concat-visualize sddb-concat-score \
 	ltafdb-concat ltafdb-concat-constants ltafdb-concat-utils \
-	ltafdb-concat-visualize ltafdb-concat-score \
-	vfdb-concat vfdb-concat-constants vfdb-concat-utils \
-	vfdb-concat-visualize vfdb-concat-score
+	ltafdb-concat-visualize ltafdb-concat-score
 
 setup: sync hooks datasets
 
@@ -47,13 +45,10 @@ scripts:
 		'study' \
 		'sddb-concat' \
 		'sddb-concat-visualize' \
-		'sddb-concat-score' \
-		'ltafdb-concat' \
-		'ltafdb-concat-visualize' \
-		'ltafdb-concat-score' \
-		'vfdb-concat' \
-		'vfdb-concat-visualize' \
-		'vfdb-concat-score'
+			'sddb-concat-score' \
+			'ltafdb-concat' \
+			'ltafdb-concat-visualize' \
+			'ltafdb-concat-score'
 
 visualize:
 	$(PYTHON) -m ecg_visualization.scripts.visualize
@@ -87,12 +82,3 @@ ltafdb-concat-visualize:
 
 ltafdb-concat-score:
 	$(PYTHON) -m ecg_visualization.scripts.ltafdb_concat.score
-
-vfdb-concat:
-	$(PYTHON) -m ecg_visualization.scripts.vfdb_concat
-
-vfdb-concat-visualize:
-	$(PYTHON) -m ecg_visualization.scripts.vfdb_concat.visualize
-
-vfdb-concat-score:
-	$(PYTHON) -m ecg_visualization.scripts.vfdb_concat.score
