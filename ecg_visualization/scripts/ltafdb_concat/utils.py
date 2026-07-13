@@ -6,7 +6,6 @@ from typing import ClassVar, Iterable
 
 import numpy as np
 import numpy.typing as npt
-from biosppy.signals.ecg import ecg as biosppy_ecg
 
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import LTAFDB
@@ -17,6 +16,7 @@ from ecg_visualization.scripts.ltafdb_concat.constants import (
     SegmentWindow,
     build_segments_info,
 )
+from ecg_visualization.signal_processing.rpeak_detection import detect_rpeaks
 
 LOGGER = logging.getLogger(__name__)
 
@@ -253,7 +253,7 @@ def _resolve_segment_beats(
     if segment_beats.size >= minimum_required_beats:
         return np.asarray(segment_beats, dtype=np.int_)
 
-    detected_beats = _detect_rpeaks(segment_samples, entity.sr)
+    detected_beats = detect_rpeaks(segment_samples, entity.sr)
     if detected_beats.size >= max(2, segment_beats.size):
         LOGGER.info(
             "Using detected R-peaks for %s:%s (annotated=%d detected=%d min_required=%d).",
@@ -274,27 +274,6 @@ def _resolve_segment_beats(
         minimum_required_beats,
     )
     return np.asarray(segment_beats, dtype=np.int_)
-
-
-def _detect_rpeaks(
-    signal: npt.NDArray[np.float64],
-    sampling_rate_hz: int,
-) -> npt.NDArray[np.int_]:
-    samples = np.asarray(signal, dtype=np.float64)
-    if samples.size < 3:
-        return np.array([], dtype=np.int_)
-
-    try:
-        result = biosppy_ecg(
-            signal=samples,
-            sampling_rate=float(sampling_rate_hz),
-            show=False,
-        )
-    except Exception as exc:
-        LOGGER.warning("biosppy R-peak detection failed: %s", exc)
-        return np.array([], dtype=np.int_)
-
-    return np.asarray(result["rpeaks"], dtype=np.int_)
 
 
 def _build_concatenated_sequence(

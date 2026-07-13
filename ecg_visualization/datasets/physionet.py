@@ -2,8 +2,13 @@ import os
 from dataclasses import dataclass
 from typing import ClassVar, Type
 
+import numpy as np
+import wfdb
+
 from ecg_visualization.config.settings import DATASET_ROOT
 from ecg_visualization.core.dataset import ECGDataset
+from ecg_visualization.core.entity import ECGEntity
+from ecg_visualization.signal_processing.rpeak_detection import detect_rpeaks
 
 physionet_root_dir = os.path.join(DATASET_ROOT, "physionet.org", "files")
 
@@ -138,6 +143,31 @@ class VFDB(ECGDataset):
 
         for data_id in data_ids:
             self.data_entities.append(self._load_entity(data_id))
+
+    @classmethod
+    def _load_entity(cls, data_id: str) -> ECGEntity:
+        data_path = os.path.join(cls.dir_path, data_id)
+        signals, _ = wfdb.rdsamp(
+            data_path,
+            channels=[0],
+        )
+        squeezed = np.squeeze(signals)
+
+        annotation = cls._read_annotation(data_path)
+        record = wfdb.rdheader(data_path)
+        sr = record.fs
+        beats = detect_rpeaks(squeezed, sr)
+
+        return ECGEntity(
+            entity_id=data_id,
+            dataset_name=cls.name,
+            dataset_id=cls.dataset_id,
+            sr=sr,
+            signals=squeezed,
+            annotation=annotation,
+            beats=beats,
+            aux_notes=tuple(annotation.aux_note),
+        )
 
 
 DATASET_CLASSES: tuple[Type[ECGDataset], ...] = (
