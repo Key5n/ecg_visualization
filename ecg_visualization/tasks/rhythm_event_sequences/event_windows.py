@@ -7,9 +7,15 @@ import numpy as np
 from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import LTAFDB, SDDB, VFDB
-from ecg_visualization.tasks.sddb_concat.config import (
+from ecg_visualization.tasks.rhythm_event_sequences.config import (
     SegmentWindow,
     build_fixed_vf_windows,
+)
+
+VFDB_RHYTHM_LABEL_PRIORITIES = (
+    frozenset({"VF", "VFIB"}),
+    frozenset({"VT"}),
+    frozenset({"VFL"}),
 )
 
 
@@ -64,9 +70,9 @@ def _resolve_vfdb_event_windows(
     *,
     segment_duration_sec: float,
 ) -> tuple[SegmentWindow, SegmentWindow]:
-    event_window = _find_first_rhythm_event_window(
+    event_window = _find_first_rhythm_event_window_by_priority(
         entity,
-        target_labels={"VF", "VFIB"},
+        target_label_priorities=VFDB_RHYTHM_LABEL_PRIORITIES,
         segment_duration_sec=segment_duration_sec,
     )
     return _build_pre_event_windows(
@@ -89,6 +95,33 @@ def _build_pre_event_windows(
     )
 
 
+def _find_first_rhythm_event_window_by_priority(
+    entity: ECGEntity,
+    *,
+    target_label_priorities: tuple[frozenset[str], ...],
+    segment_duration_sec: float,
+) -> SegmentWindow:
+    rhythm_events = _iter_rhythm_events(entity)
+    total_duration_sec = float(entity.signals.size) / float(entity.sr)
+    for target_labels in target_label_priorities:
+        event_window = _find_first_rhythm_event_window_in_events(
+            rhythm_events,
+            target_labels=target_labels,
+            total_duration_sec=total_duration_sec,
+            segment_duration_sec=segment_duration_sec,
+        )
+        if event_window is not None:
+            return event_window
+
+    label_groups = [
+        "/".join(sorted(target_labels)) for target_labels in target_label_priorities
+    ]
+    labels = _format_label_groups(label_groups)
+    raise ValueError(
+        f"no {labels} rhythm episode of at least {segment_duration_sec:.1f}s found"
+    )
+
+
 def _find_first_rhythm_event_window(
     entity: ECGEntity,
     *,
@@ -97,6 +130,28 @@ def _find_first_rhythm_event_window(
 ) -> SegmentWindow:
     rhythm_events = _iter_rhythm_events(entity)
     total_duration_sec = float(entity.signals.size) / float(entity.sr)
+    event_window = _find_first_rhythm_event_window_in_events(
+        rhythm_events,
+        target_labels=target_labels,
+        total_duration_sec=total_duration_sec,
+        segment_duration_sec=segment_duration_sec,
+    )
+    if event_window is not None:
+        return event_window
+
+    labels = ", ".join(sorted(target_labels))
+    raise ValueError(
+        f"no {labels} rhythm episode of at least {segment_duration_sec:.1f}s found"
+    )
+
+
+def _find_first_rhythm_event_window_in_events(
+    rhythm_events: list[tuple[float, str]],
+    *,
+    target_labels: set[str] | frozenset[str],
+    total_duration_sec: float,
+    segment_duration_sec: float,
+) -> SegmentWindow | None:
     for idx, (start_sec, label) in enumerate(rhythm_events):
         if label not in target_labels:
             continue
@@ -113,10 +168,13 @@ def _find_first_rhythm_event_window(
             end_sec=start_sec + segment_duration_sec,
         )
 
-    labels = ", ".join(sorted(target_labels))
-    raise ValueError(
-        f"no {labels} rhythm episode of at least {segment_duration_sec:.1f}s found"
-    )
+    return None
+
+
+def _format_label_groups(label_groups: list[str]) -> str:
+    if len(label_groups) == 1:
+        return label_groups[0]
+    return f"{', '.join(label_groups[:-1])}, or {label_groups[-1]}"
 
 
 def _iter_rhythm_events(entity: ECGEntity) -> list[tuple[float, str]]:

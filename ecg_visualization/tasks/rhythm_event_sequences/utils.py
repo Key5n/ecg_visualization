@@ -10,12 +10,14 @@ import numpy.typing as npt
 from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import _load_data_sources
-from ecg_visualization.tasks.sddb_concat.config import (
-    SddbConcatConfig,
+from ecg_visualization.tasks.rhythm_event_sequences.config import (
+    RhythmEventSequencesConfig,
     SegmentsInfo,
     SegmentWindow,
 )
-from ecg_visualization.tasks.sddb_concat.event_windows import resolve_event_windows
+from ecg_visualization.tasks.rhythm_event_sequences.event_windows import (
+    resolve_event_windows,
+)
 from ecg_visualization.utils.signal_processing.rpeak_detection import detect_rpeaks
 from ecg_visualization.utils.utils import find_true_runs
 
@@ -39,7 +41,7 @@ class ConcatenatedSequence:
 
 
 def iter_concatenated_sequences(
-    config: SddbConcatConfig,
+    config: RhythmEventSequencesConfig,
 ) -> Iterable[tuple[ECGEntity, ConcatenatedSequence]]:
     for dataset in _load_data_sources((config.dataset_id,)):
         for entity in dataset.data_entities:

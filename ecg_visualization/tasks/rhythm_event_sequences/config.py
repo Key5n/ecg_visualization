@@ -33,10 +33,14 @@ class RRHistogramConfig:
 
 
 @dataclass(frozen=True, slots=True)
-class SddbConcatConfig:
+class RhythmEventSequencesConfig:
     dataset_id: str = "sddb"
-    score_output_dir: Path = Path("result") / "sddb_concat" / "mdrs_scores"
-    visualize_output_dir: Path = Path("result") / "sddb_concat" / "visualize"
+    score_output_dir: Path = (
+        Path("result") / "rhythm_event_sequences" / "sddb" / "mdrs_scores"
+    )
+    visualize_output_dir: Path = (
+        Path("result") / "rhythm_event_sequences" / "sddb" / "visualize"
+    )
     window_size: int = 10
     segment_duration_sec: float = 10 * 60
     max_reasonable_rr_interval_sec: float = 3.0
@@ -65,31 +69,55 @@ class SddbConcatConfig:
     rr_histogram: RRHistogramConfig = RRHistogramConfig()
 
 
-def ltafdb_sddb_concat_config() -> SddbConcatConfig:
-    return SddbConcatConfig(
+def ltafdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
+    return RhythmEventSequencesConfig(
         dataset_id="ltafdb",
-        sinus_rr_median_threshold_sec=0.05,
+        visualize_output_dir=Path("result")
+        / "rhythm_event_sequences"
+        / "ltafdb"
+        / "visualize",
+        score_output_dir=Path("result")
+        / "rhythm_event_sequences"
+        / "ltafdb"
+        / "mdrs_scores",
+        segment_duration_sec=60,
     )
 
 
-def sddb_sddb_concat_config() -> SddbConcatConfig:
-    return SddbConcatConfig(
+def sddb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
+    return RhythmEventSequencesConfig(
         dataset_id="sddb",
-        sinus_rr_median_threshold_sec=0.1,
+        visualize_output_dir=Path("result")
+        / "rhythm_event_sequences"
+        / "sddb"
+        / "visualize",
+        score_output_dir=Path("result")
+        / "rhythm_event_sequences"
+        / "sddb"
+        / "mdrs_scores",
+        segment_duration_sec=30,
     )
 
 
-def vfdb_sddb_concat_config() -> SddbConcatConfig:
-    return SddbConcatConfig(
+def vfdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
+    return RhythmEventSequencesConfig(
         dataset_id="vfdb",
-        sinus_rr_median_threshold_sec=0.08,
+        visualize_output_dir=Path("result")
+        / "rhythm_event_sequences"
+        / "vfdb"
+        / "visualize",
+        score_output_dir=Path("result")
+        / "rhythm_event_sequences"
+        / "vfdb"
+        / "mdrs_scores",
+        segment_duration_sec=10,
     )
 
 
-SDDB_CONCAT_CONFIGS: dict[str, Callable[[], SddbConcatConfig]] = {
-    "ltafdb": ltafdb_sddb_concat_config,
-    "sddb": sddb_sddb_concat_config,
-    "vfdb": vfdb_sddb_concat_config,
+RHYTHM_EVENT_SEQUENCES_CONFIGS: dict[str, Callable[[], RhythmEventSequencesConfig]] = {
+    "ltafdb": ltafdb_rhythm_event_sequences_config,
+    "sddb": sddb_rhythm_event_sequences_config,
+    "vfdb": vfdb_rhythm_event_sequences_config,
 }
 
 
@@ -137,21 +165,21 @@ def build_segments_info(
     )
 
 
-def load_sddb_concat_config() -> SddbConcatConfig:
+def load_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     cli_config = OmegaConf.from_cli()
     config_name = str(cli_config.pop("config_name", "sddb")).lower()
-    config_factory = SDDB_CONCAT_CONFIGS.get(config_name)
+    config_factory = RHYTHM_EVENT_SEQUENCES_CONFIGS.get(config_name)
     if config_factory is None:
-        available_configs = ", ".join(SDDB_CONCAT_CONFIGS)
+        available_configs = ", ".join(RHYTHM_EVENT_SEQUENCES_CONFIGS)
         raise ValueError(
-            f"Unknown sddb_concat config '{config_name}'. "
+            f"Unknown rhythm_event_sequences config '{config_name}'. "
             f"Available options: {available_configs}."
         )
 
     structured = OmegaConf.structured(config_factory(), flags={"allow_objects": True})
     _set_readonly_recursive(structured, False)
     merged = OmegaConf.merge(structured, cli_config)
-    return cast(SddbConcatConfig, OmegaConf.to_object(merged))
+    return cast(RhythmEventSequencesConfig, OmegaConf.to_object(merged))
 
 
 def _set_readonly_recursive(config: DictConfig | ListConfig, readonly: bool) -> None:

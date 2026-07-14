@@ -11,8 +11,10 @@ from matplotlib.figure import Figure
 
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.logging.config import configure_root_logging
-from ecg_visualization.tasks.sddb_concat.config import SddbConcatConfig
-from ecg_visualization.tasks.sddb_concat.utils import (
+from ecg_visualization.tasks.rhythm_event_sequences.config import (
+    RhythmEventSequencesConfig,
+)
+from ecg_visualization.tasks.rhythm_event_sequences.utils import (
     ConcatenatedSequence,
     iter_concatenated_sequences,
 )
@@ -41,7 +43,7 @@ SEGMENT_LABELS = {
 }
 
 
-def sddb_concat_visualize(config: SddbConcatConfig) -> None:
+def rhythm_event_sequence_visualize(config: RhythmEventSequencesConfig) -> None:
     configure_root_logging()
     apply_default_style()
     config.visualize_output_dir.mkdir(parents=True, exist_ok=True)
@@ -73,7 +75,7 @@ def _export_concatenated_pdf(
     *,
     output_path: Path,
     pagination_config: PaginationConfig,
-    config: SddbConcatConfig,
+    config: RhythmEventSequencesConfig,
 ) -> None:
     ts_paged = paginate_signals(
         entity.signals.size,
@@ -109,7 +111,7 @@ def _render_rr_interval_histogram_page(
     concat: ConcatenatedSequence,
     exporter: PdfExporter,
     *,
-    config: SddbConcatConfig,
+    config: RhythmEventSequencesConfig,
 ) -> None:
     rr_intervals = np.diff(np.asarray(entity.beats, dtype=np.float64))
     rr_intervals_sec = rr_intervals / float(entity.sr)
@@ -191,7 +193,7 @@ def _render_signal_row(
     entity: ECGEntity,
     concat: ConcatenatedSequence,
     signal_ylim: tuple[float, float],
-    config: SddbConcatConfig,
+    config: RhythmEventSequencesConfig,
 ) -> None:
     window_start, window_end = float(ts[0]), float(ts[-1])
     sr = float(entity.sr)

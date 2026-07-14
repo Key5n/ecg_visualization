@@ -10,8 +10,10 @@ from matplotlib.axes import Axes
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS, MDRSConfig
-from ecg_visualization.tasks.sddb_concat.config import SddbConcatConfig
-from ecg_visualization.tasks.sddb_concat.utils import (
+from ecg_visualization.tasks.rhythm_event_sequences.config import (
+    RhythmEventSequencesConfig,
+)
+from ecg_visualization.tasks.rhythm_event_sequences.utils import (
     ConcatenatedSequence,
     iter_concatenated_sequences,
 )
@@ -27,7 +29,7 @@ class ScoreResult:
     scores: np.ndarray
 
 
-def sddb_concat_scores(config: SddbConcatConfig) -> None:
+def rhythm_event_sequence_scores(config: RhythmEventSequencesConfig) -> None:
     configure_root_logging()
     apply_default_style()
     config.score_output_dir.mkdir(parents=True, exist_ok=True)
@@ -104,7 +106,7 @@ def _plot_concat_scores(
     concat: ConcatenatedSequence,
     score_result: ScoreResult,
     *,
-    config: SddbConcatConfig,
+    config: RhythmEventSequencesConfig,
 ) -> plt.Figure:
     samples = np.asarray(concat.samples, dtype=float)
     sr = float(concat.sampling_rate_hz)
