@@ -29,6 +29,7 @@ class ECGDataset:
     dataset_id: ClassVar[str]
     annotation_extention_priority: ClassVar[tuple[str, ...]] = ("atr", "qrs", "ari")
     beat_extention_priority: ClassVar[tuple[str, ...]] = ("atr", "qrs", "ari")
+    entity_cls: ClassVar[type[ECGEntity]] = ECGEntity
     data_entities: list[ECGEntity] = field(default_factory=list)
 
     def __post_init__(self):
@@ -89,7 +90,7 @@ class ECGDataset:
 
         record = wfdb.rdheader(data_path)
         sr = record.fs
-        return ECGEntity(
+        return cls.entity_cls(
             entity_id=data_id,
             dataset_name=cls.name,
             dataset_id=cls.dataset_id,

@@ -13,6 +13,11 @@ from ecg_visualization.utils.signal_processing.rpeak_detection import detect_rpe
 physionet_root_dir = os.path.join(DATASET_ROOT, "physionet.org", "files")
 
 
+@dataclass(frozen=True, slots=True)
+class CUDBEntity(ECGEntity):
+    pass
+
+
 # https://physionet.org/content/cudb/1.0.0/
 @dataclass(slots=True)
 class CUDB(ECGDataset):
@@ -20,6 +25,12 @@ class CUDB(ECGDataset):
     name: ClassVar[str] = "Tachyarrythmia"
     dataset_id: ClassVar[str] = "cudb"
     sr: ClassVar[int] = 250
+    entity_cls: ClassVar[type[ECGEntity]] = CUDBEntity
+
+
+@dataclass(frozen=True, slots=True)
+class AFPDBEntity(ECGEntity):
+    pass
 
 
 # https://physionet.org/content/afpdb/1.0.0/
@@ -29,6 +40,12 @@ class AFPDB(ECGDataset):
     name: ClassVar[str] = "PAF Prediction Challenge Database"
     dataset_id: ClassVar[str] = "afpdb"
     sr: ClassVar[int] = 128
+    entity_cls: ClassVar[type[ECGEntity]] = AFPDBEntity
+
+
+@dataclass(frozen=True, slots=True)
+class MITDBEntity(ECGEntity):
+    pass
 
 
 # https://physionet.org/content/mitdb/1.0.0/
@@ -38,6 +55,12 @@ class MITDB(ECGDataset):
     name: ClassVar[str] = "MIT-BIH Arrhythmia Database"
     dataset_id: ClassVar[str] = "mitdb"
     sr: ClassVar[int] = 360
+    entity_cls: ClassVar[type[ECGEntity]] = MITDBEntity
+
+
+@dataclass(frozen=True, slots=True)
+class AFDBEntity(ECGEntity):
+    pass
 
 
 # https://physionet.org/content/afdb/1.0.0/
@@ -47,6 +70,7 @@ class AFDB(ECGDataset):
     name: ClassVar[str] = "MIT-BIH Atrial Fibrillation Database"
     dataset_id: ClassVar[str] = "afdb"
     sr: ClassVar[int] = 250
+    entity_cls: ClassVar[type[ECGEntity]] = AFDBEntity
 
     def __post_init__(self):
         record_path = os.path.join(self.dir_path, "RECORDS")
@@ -61,6 +85,11 @@ class AFDB(ECGDataset):
             self.data_entities.append(self._load_entity(data_id))
 
 
+@dataclass(frozen=True, slots=True)
+class LTAFDBEntity(ECGEntity):
+    pass
+
+
 # https://physionet.org/content/ltafdb/1.0.0/
 @dataclass(slots=True)
 class LTAFDB(ECGDataset):
@@ -68,6 +97,12 @@ class LTAFDB(ECGDataset):
     name: ClassVar[str] = "Long Term AF Database"
     dataset_id: ClassVar[str] = "ltafdb"
     sr: ClassVar[int] = 128
+    entity_cls: ClassVar[type[ECGEntity]] = LTAFDBEntity
+
+
+@dataclass(frozen=True, slots=True)
+class SHDBAFEntity(ECGEntity):
+    pass
 
 
 # https://physionet.org/content/shdb-af/1.0.1/
@@ -80,6 +115,7 @@ class SHDBAF(ECGDataset):
     dataset_id: ClassVar[str] = "shdb-af"
     sr: ClassVar[int] = 200
     beat_extention_priority: ClassVar[tuple[str, ...]] = ("qrs",)
+    entity_cls: ClassVar[type[ECGEntity]] = SHDBAFEntity
 
     def __post_init__(self):
         record_path = os.path.join(self.dir_path, "RECORDS.txt")
@@ -93,6 +129,11 @@ class SHDBAF(ECGDataset):
                 continue
 
 
+@dataclass(frozen=True, slots=True)
+class SDDBEntity(ECGEntity):
+    pass
+
+
 # https://physionet.org/content/sddb/1.0.0/
 @dataclass(slots=True)
 class SDDB(ECGDataset):
@@ -100,6 +141,7 @@ class SDDB(ECGDataset):
     name: ClassVar[str] = "Sudden Cardiac Death Holter Database"
     dataset_id: ClassVar[str] = "sddb"
     sr: ClassVar[int] = 250
+    entity_cls: ClassVar[type[ECGEntity]] = SDDBEntity
     vf_onset_seconds: ClassVar[dict[str, int]] = {
         "30": 28473,
         "31": 49344,
@@ -124,6 +166,11 @@ class SDDB(ECGDataset):
     }
 
 
+@dataclass(frozen=True, slots=True)
+class VFDBEntity(ECGEntity):
+    pass
+
+
 # https://physionet.org/content/vfdb/1.0.0/
 @dataclass(slots=True)
 class VFDB(ECGDataset):
@@ -131,6 +178,7 @@ class VFDB(ECGDataset):
     name: ClassVar[str] = "MIT-BIH Malignant Ventricular Ectopy Database"
     dataset_id: ClassVar[str] = "vfdb"
     sr: ClassVar[int] = 250
+    entity_cls: ClassVar[type[ECGEntity]] = VFDBEntity
 
     def __post_init__(self):
         data_ids = sorted(
@@ -158,7 +206,7 @@ class VFDB(ECGDataset):
         sr = record.fs
         beats = detect_rpeaks(squeezed, sr)
 
-        return ECGEntity(
+        return cls.entity_cls(
             entity_id=data_id,
             dataset_name=cls.name,
             dataset_id=cls.dataset_id,
