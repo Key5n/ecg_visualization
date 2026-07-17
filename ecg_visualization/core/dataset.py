@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from dataclasses import dataclass, field
 from typing import ClassVar
@@ -5,8 +7,8 @@ from typing import ClassVar
 import numpy as np
 import numpy.typing as npt
 import wfdb
-from wfdb.io import Annotation
 
+from ecg_visualization.core.annotations import read_annotation, read_normal_beats
 from ecg_visualization.core.entity import ECGEntity
 
 
@@ -41,38 +43,6 @@ class ECGDataset:
             self.data_entities.append(self._load_entity(data_id))
 
     @classmethod
-    def _read_annotation(cls, data_path: str) -> Annotation:
-        for ext in cls.annotation_extention_priority:
-            annotation_file = f"{data_path}.{ext}"
-            if os.path.isfile(annotation_file):
-                annotation = wfdb.rdann(data_path, ext)
-                return annotation
-
-    @classmethod
-    def _read_normal_beats(cls, data_path: str) -> npt.NDArray[np.int_]:
-        for ext in cls.beat_extention_priority:
-            annotation_file = f"{data_path}.{ext}"
-            if os.path.isfile(annotation_file):
-                annotation = cls._read_annotation(data_path)
-                if ext == "atr":
-                    beats = np.array(
-                        [
-                            sample
-                            for sample, symbol in zip(
-                                annotation.sample, annotation.symbol
-                            )
-                            if symbol == "N"
-                        ],
-                        dtype=np.int_,
-                    )
-
-                    return beats
-
-                return np.asarray(annotation.sample, dtype=np.int_)
-
-        raise FileNotFoundError(f"No annotation file found for {data_path}")
-
-    @classmethod
     def _load_entity(cls, data_id: str) -> ECGEntity:
         """
         Load a single entity without instantiating the dataset and populating all
@@ -85,8 +55,8 @@ class ECGDataset:
         )
         squeezed = np.squeeze(signals)
 
-        annotation = cls._read_annotation(data_path)
-        beats = cls._read_normal_beats(data_path)
+        annotation = read_annotation(cls, data_path)
+        beats = read_normal_beats(cls, data_path)
 
         record = wfdb.rdheader(data_path)
         sr = record.fs

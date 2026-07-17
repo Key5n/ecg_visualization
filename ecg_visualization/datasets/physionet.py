@@ -6,6 +6,7 @@ import numpy as np
 import wfdb
 
 from ecg_visualization.config.settings import DATASET_ROOT
+from ecg_visualization.core.annotations import read_annotation
 from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.utils.signal_processing.rpeak_detection import detect_rpeaks
@@ -201,7 +202,7 @@ class VFDB(ECGDataset):
         )
         squeezed = np.squeeze(signals)
 
-        annotation = cls._read_annotation(data_path)
+        annotation = read_annotation(cls, data_path)
         record = wfdb.rdheader(data_path)
         sr = record.fs
         beats = detect_rpeaks(squeezed, sr)
