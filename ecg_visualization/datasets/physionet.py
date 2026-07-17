@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import ClassVar, Sequence, Type
+from typing import ClassVar, Self, Sequence, Type
 
 import numpy as np
 import wfdb
@@ -20,7 +20,7 @@ class CUDBEntity(ECGEntity):
 
 
 # https://physionet.org/content/cudb/1.0.0/
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class CUDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "cudb", "1.0.0")
     name: ClassVar[str] = "Tachyarrythmia"
@@ -35,7 +35,7 @@ class AFPDBEntity(ECGEntity):
 
 
 # https://physionet.org/content/afpdb/1.0.0/
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class AFPDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "afpdb", "1.0.0")
     name: ClassVar[str] = "PAF Prediction Challenge Database"
@@ -50,7 +50,7 @@ class MITDBEntity(ECGEntity):
 
 
 # https://physionet.org/content/mitdb/1.0.0/
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class MITDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "mitdb", "1.0.0")
     name: ClassVar[str] = "MIT-BIH Arrhythmia Database"
@@ -65,7 +65,7 @@ class AFDBEntity(ECGEntity):
 
 
 # https://physionet.org/content/afdb/1.0.0/
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class AFDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "afdb", "1.0.0")
     name: ClassVar[str] = "MIT-BIH Atrial Fibrillation Database"
@@ -73,17 +73,13 @@ class AFDB(ECGDataset):
     sr: ClassVar[int] = 250
     entity_cls: ClassVar[type[ECGEntity]] = AFDBEntity
 
-    def __post_init__(self):
-        record_path = os.path.join(self.dir_path, "RECORDS")
+    @classmethod
+    def _read_data_ids(cls) -> list[str]:
+        record_path = os.path.join(cls.dir_path, "RECORDS")
         with open(record_path, "r") as f:
             data_ids = f.read().splitlines()
 
-        data_ids = list(
-            filter(lambda data_id: data_id not in ["00735", "03665"], data_ids)
-        )
-
-        for data_id in data_ids:
-            self.data_entities.append(self._load_entity(data_id))
+        return list(filter(lambda data_id: data_id not in ["00735", "03665"], data_ids))
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,7 +88,7 @@ class LTAFDBEntity(ECGEntity):
 
 
 # https://physionet.org/content/ltafdb/1.0.0/
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class LTAFDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "ltafdb", "1.0.0")
     name: ClassVar[str] = "Long Term AF Database"
@@ -107,7 +103,7 @@ class SHDBAFEntity(ECGEntity):
 
 
 # https://physionet.org/content/shdb-af/1.0.1/
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class SHDBAF(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "shdb-af", "1.0.1")
     name: ClassVar[str] = (
@@ -118,16 +114,22 @@ class SHDBAF(ECGDataset):
     beat_extention_priority: ClassVar[tuple[str, ...]] = ("qrs",)
     entity_cls: ClassVar[type[ECGEntity]] = SHDBAFEntity
 
-    def __post_init__(self):
-        record_path = os.path.join(self.dir_path, "RECORDS.txt")
+    @classmethod
+    def _read_data_ids(cls) -> list[str]:
+        record_path = os.path.join(cls.dir_path, "RECORDS.txt")
         with open(record_path, "r") as f:
-            data_ids = f.read().splitlines()
+            return f.read().splitlines()
 
-        for data_id in data_ids:
+    @classmethod
+    def load(cls) -> Self:
+        data_entities: list[ECGEntity] = []
+        for data_id in cls._read_data_ids():
             try:
-                self.data_entities.append(self._load_entity(data_id))
+                data_entities.append(cls._load_entity(data_id))
             except FileNotFoundError:
                 continue
+
+        return cls(data_entities=tuple(data_entities))
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,7 +138,7 @@ class SDDBEntity(ECGEntity):
 
 
 # https://physionet.org/content/sddb/1.0.0/
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class SDDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "sddb", "1.0.0")
     name: ClassVar[str] = "Sudden Cardiac Death Holter Database"
@@ -173,7 +175,7 @@ class VFDBEntity(ECGEntity):
 
 
 # https://physionet.org/content/vfdb/1.0.0/
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class VFDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "vfdb", "1.0.0")
     name: ClassVar[str] = "MIT-BIH Malignant Ventricular Ectopy Database"
@@ -181,17 +183,15 @@ class VFDB(ECGDataset):
     sr: ClassVar[int] = 250
     entity_cls: ClassVar[type[ECGEntity]] = VFDBEntity
 
-    def __post_init__(self):
-        data_ids = sorted(
+    @classmethod
+    def _read_data_ids(cls) -> list[str]:
+        return sorted(
             {
                 filename[: -len(".hea")]
-                for filename in os.listdir(self.dir_path)
+                for filename in os.listdir(cls.dir_path)
                 if filename.endswith(".hea")
             }
         )
-
-        for data_id in data_ids:
-            self.data_entities.append(self._load_entity(data_id))
 
     @classmethod
     def _load_entity(cls, data_id: str) -> ECGEntity:
@@ -247,5 +247,5 @@ def _load_data_sources(dataset_ids: Sequence[str]) -> list[ECGDataset]:
                 f"Unknown dataset id '{dataset_id}'. "
                 f"Available options: {available_datasets}."
             )
-        data_sources.append(dataset_cls())
+        data_sources.append(dataset_cls.load())
     return data_sources

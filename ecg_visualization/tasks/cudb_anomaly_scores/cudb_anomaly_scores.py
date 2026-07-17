@@ -56,7 +56,7 @@ def cudb_anomaly_scores(config: CudbAnomalyScoresConfig) -> None:
 
     apply_default_style()
 
-    dataset = CUDB()
+    dataset = CUDB.load()
     processed = 0
     skipped = 0
 

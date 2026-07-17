@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
-from typing import ClassVar
+from dataclasses import dataclass
+from typing import ClassVar, Self
 
 import numpy as np
 import numpy.typing as npt
@@ -12,7 +12,7 @@ from ecg_visualization.core.annotations import read_annotation, read_normal_beat
 from ecg_visualization.core.entity import ECGEntity
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class ECGDataset:
     """
     Base class for ECG datasets
@@ -23,7 +23,7 @@ class ECGDataset:
         dataset_id (str): Identifier for the dataset
         annotation_extention_priority (list[str]): List of annotation file extensions in order of priority
         beat_extention_priority (list[str]): List of beat annotation file extensions in order of priority
-        data_entities (list[ECGEntity]): List of ECG entities in the dataset
+        data_entities (tuple[ECGEntity, ...]): Entities in the dataset
     """
 
     dir_path: ClassVar[str]
@@ -32,15 +32,21 @@ class ECGDataset:
     annotation_extention_priority: ClassVar[tuple[str, ...]] = ("atr", "qrs", "ari")
     beat_extention_priority: ClassVar[tuple[str, ...]] = ("atr", "qrs", "ari")
     entity_cls: ClassVar[type[ECGEntity]] = ECGEntity
-    data_entities: list[ECGEntity] = field(default_factory=list)
+    data_entities: tuple[ECGEntity, ...] = ()
 
-    def __post_init__(self):
-        record_path = os.path.join(self.dir_path, "RECORDS")
+    @classmethod
+    def load(cls) -> Self:
+        return cls(
+            data_entities=tuple(
+                cls._load_entity(data_id) for data_id in cls._read_data_ids()
+            )
+        )
+
+    @classmethod
+    def _read_data_ids(cls) -> list[str]:
+        record_path = os.path.join(cls.dir_path, "RECORDS")
         with open(record_path, "r") as f:
-            data_ids = f.read().splitlines()
-
-        for data_id in data_ids:
-            self.data_entities.append(self._load_entity(data_id))
+            return f.read().splitlines()
 
     @classmethod
     def _load_entity(cls, data_id: str) -> ECGEntity:
