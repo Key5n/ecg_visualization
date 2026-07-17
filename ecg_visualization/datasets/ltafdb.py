@@ -1,0 +1,118 @@
+import os
+from dataclasses import dataclass
+from typing import ClassVar
+
+from ecg_visualization.core.dataset import ECGDataset
+from ecg_visualization.core.entity import ECGEntity
+from ecg_visualization.datasets.utils import (
+    load_entities,
+    physionet_root_dir,
+)
+
+LTAFDB_ENTITY_IDS: tuple[str, ...] = (
+    "00",
+    "01",
+    "03",
+    "05",
+    "06",
+    "07",
+    "08",
+    "10",
+    "100",
+    "101",
+    "102",
+    "103",
+    "104",
+    "105",
+    "11",
+    "110",
+    "111",
+    "112",
+    "113",
+    "114",
+    "115",
+    "116",
+    "117",
+    "118",
+    "119",
+    "12",
+    "120",
+    "121",
+    "122",
+    "13",
+    "15",
+    "16",
+    "17",
+    "18",
+    "19",
+    "20",
+    "200",
+    "201",
+    "202",
+    "203",
+    "204",
+    "205",
+    "206",
+    "207",
+    "208",
+    "21",
+    "22",
+    "23",
+    "24",
+    "25",
+    "26",
+    "28",
+    "30",
+    "32",
+    "33",
+    "34",
+    "35",
+    "37",
+    "38",
+    "39",
+    "42",
+    "43",
+    "44",
+    "45",
+    "47",
+    "48",
+    "49",
+    "51",
+    "53",
+    "54",
+    "55",
+    "56",
+    "58",
+    "60",
+    "62",
+    "64",
+    "65",
+    "68",
+    "69",
+    "70",
+    "71",
+    "72",
+    "74",
+    "75",
+)
+
+
+@dataclass(frozen=True, slots=True)
+class LTAFDBEntity(ECGEntity):
+    dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "ltafdb", "1.0.0")
+    source_name: ClassVar[str] = "Long Term AF Database"
+    source_dataset_id: ClassVar[str] = "ltafdb"
+
+
+# https://physionet.org/content/ltafdb/1.0.0/
+@dataclass(frozen=True, slots=True)
+class LTAFDB(ECGDataset):
+    dir_path: ClassVar[str] = LTAFDBEntity.dir_path
+    name: ClassVar[str] = LTAFDBEntity.source_name
+    dataset_id: ClassVar[str] = LTAFDBEntity.source_dataset_id
+    sr: ClassVar[int] = 128
+    entity_cls: ClassVar[type[ECGEntity]] = LTAFDBEntity
+    data_entities: ClassVar[tuple[LTAFDBEntity, ...]] = load_entities(
+        LTAFDBEntity,
+        LTAFDB_ENTITY_IDS,
+    )

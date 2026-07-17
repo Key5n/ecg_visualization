@@ -136,7 +136,7 @@ class StudyVisualizer:
             raise ValueError(
                 f"Unknown dataset id '{dataset_id}' for study {study.study_name}"
             )
-        return dataset_cls._load_entity(entity_id)
+        return dataset_cls.entity_cls.load(id=entity_id)
 
     def _select_trial(self, study: Study) -> FrozenTrial | None:
         if not study.trials:

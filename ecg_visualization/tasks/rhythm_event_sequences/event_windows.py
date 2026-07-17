@@ -6,7 +6,9 @@ import numpy as np
 
 from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.datasets.physionet import LTAFDB, SDDB, VFDB
+from ecg_visualization.datasets.ltafdb import LTAFDB
+from ecg_visualization.datasets.sddb import SDDB
+from ecg_visualization.datasets.vfdb import VFDB
 from ecg_visualization.tasks.rhythm_event_sequences.config import (
     SegmentWindow,
     build_fixed_vf_windows,

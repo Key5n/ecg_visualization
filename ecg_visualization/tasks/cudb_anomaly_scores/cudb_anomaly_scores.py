@@ -9,7 +9,7 @@ import numpy as np
 from tqdm import tqdm
 
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.datasets.physionet import CUDB
+from ecg_visualization.datasets.cudb import CUDB
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS, MDRSConfig
 from ecg_visualization.tasks.cudb_anomaly_scores.config import (
@@ -56,7 +56,7 @@ def cudb_anomaly_scores(config: CudbAnomalyScoresConfig) -> None:
 
     apply_default_style()
 
-    dataset = CUDB.load()
+    dataset = CUDB()
     processed = 0
     skipped = 0
 
