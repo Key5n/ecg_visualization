@@ -4,9 +4,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, cast
 
-from omegaconf import DictConfig, ListConfig, OmegaConf
+from omegaconf import OmegaConf
 
 from ecg_visualization.models.md_rs.md_rs import MDRSConfig
+from ecg_visualization.tasks.config import _set_readonly_recursive
 from ecg_visualization.visualization.layouts import PaginationConfig
 
 
@@ -35,12 +36,7 @@ class RRHistogramConfig:
 @dataclass(frozen=True, slots=True)
 class RhythmEventSequencesConfig:
     dataset_id: str = "sddb"
-    score_output_dir: Path = (
-        Path("result") / "rhythm_event_sequences" / "sddb" / "mdrs_scores"
-    )
-    visualize_output_dir: Path = (
-        Path("result") / "rhythm_event_sequences" / "sddb" / "visualize"
-    )
+    root_dir: Path = Path("result") / "rhythm_event_sequences"
     window_size: int = 10
     segment_duration_sec: float = 10 * 60
     max_reasonable_rr_interval_sec: float = 3.0
@@ -53,33 +49,22 @@ class RhythmEventSequencesConfig:
             "sinus_test": "#264653",
         }
     )
-    model: MDRSConfig = field(
-        default_factory=lambda: MDRSConfig(
-            N_x=256,
-            input_scale=1.0,
-            rho=0.9,
-            leaking_rate=0.9,
-            delta=1e-3,
-            trans_length=10,
-            N_x_tilde=256,
-            seed=0,
-        )
-    )
-    pagination: PaginationConfig = PaginationConfig(seconds_per_row=10, rows_per_page=6)
+    model: MDRSConfig = MDRSConfig()
+    pagination: PaginationConfig = PaginationConfig()
     rr_histogram: RRHistogramConfig = RRHistogramConfig()
+
+    @property
+    def score_output_dir(self) -> Path:
+        return self.root_dir / self.dataset_id / "mdrs_scores"
+
+    @property
+    def visualize_output_dir(self) -> Path:
+        return self.root_dir / self.dataset_id / "visualize"
 
 
 def ltafdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     return RhythmEventSequencesConfig(
         dataset_id="ltafdb",
-        visualize_output_dir=Path("result")
-        / "rhythm_event_sequences"
-        / "ltafdb"
-        / "visualize",
-        score_output_dir=Path("result")
-        / "rhythm_event_sequences"
-        / "ltafdb"
-        / "mdrs_scores",
         segment_duration_sec=60,
     )
 
@@ -87,14 +72,6 @@ def ltafdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
 def sddb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     return RhythmEventSequencesConfig(
         dataset_id="sddb",
-        visualize_output_dir=Path("result")
-        / "rhythm_event_sequences"
-        / "sddb"
-        / "visualize",
-        score_output_dir=Path("result")
-        / "rhythm_event_sequences"
-        / "sddb"
-        / "mdrs_scores",
         segment_duration_sec=30,
     )
 
@@ -102,14 +79,6 @@ def sddb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
 def vfdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     return RhythmEventSequencesConfig(
         dataset_id="vfdb",
-        visualize_output_dir=Path("result")
-        / "rhythm_event_sequences"
-        / "vfdb"
-        / "visualize",
-        score_output_dir=Path("result")
-        / "rhythm_event_sequences"
-        / "vfdb"
-        / "mdrs_scores",
         segment_duration_sec=10,
     )
 
@@ -143,28 +112,6 @@ def build_fixed_vf_windows(
     )
 
 
-def build_segments_info(
-    entity_id: str,
-    train: SegmentWindow,
-    test: SegmentWindow,
-    *,
-    segment_duration_sec: float,
-    vf_onset_seconds: dict[str, float],
-) -> SegmentsInfo:
-    pre_vf, vf = build_fixed_vf_windows(
-        entity_id,
-        segment_duration_sec=segment_duration_sec,
-        vf_onset_seconds=vf_onset_seconds,
-    )
-    return SegmentsInfo(
-        entity_id=entity_id,
-        train=train,
-        test=test,
-        pre_vf=pre_vf,
-        vf=vf,
-    )
-
-
 def load_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     cli_config = OmegaConf.from_cli()
     config_name = str(cli_config.pop("config_name", "sddb")).lower()
@@ -180,11 +127,3 @@ def load_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     _set_readonly_recursive(structured, False)
     merged = OmegaConf.merge(structured, cli_config)
     return cast(RhythmEventSequencesConfig, OmegaConf.to_object(merged))
-
-
-def _set_readonly_recursive(config: DictConfig | ListConfig, readonly: bool) -> None:
-    OmegaConf.set_readonly(config, readonly)
-    values = config.values() if isinstance(config, DictConfig) else config
-    for value in values:
-        if isinstance(value, DictConfig | ListConfig):
-            _set_readonly_recursive(value, readonly)

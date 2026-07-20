@@ -33,7 +33,6 @@ def rhythm_event_sequence_scores(config: RhythmEventSequencesConfig) -> None:
     configure_root_logging()
     apply_default_style()
     config.score_output_dir.mkdir(parents=True, exist_ok=True)
-    model_config = config.model
 
     processed = 0
     for entity, concat in iter_concatenated_sequences(config):
@@ -41,7 +40,7 @@ def rhythm_event_sequence_scores(config: RhythmEventSequencesConfig) -> None:
             score_result = _score_concatenated_sequence(
                 concat,
                 window_size=config.window_size,
-                model_config=model_config,
+                model_config=config.model,
             )
         except ValueError as exc:
             LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)

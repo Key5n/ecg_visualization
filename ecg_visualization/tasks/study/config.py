@@ -15,11 +15,7 @@ class StudyConfig:
     n_trials: int = 1
     window_size: int = 10
     normal_segment: NormalSegmentConfig = NormalSegmentConfig()
-    model: MDRSConfig = MDRSConfig(
-        input_scale=0.5,
-        leaking_rate=0.3,
-        N_x_tilde=128,
-    )
+    model: MDRSConfig = MDRSConfig()
 
 
 def load_study_config() -> StudyConfig:

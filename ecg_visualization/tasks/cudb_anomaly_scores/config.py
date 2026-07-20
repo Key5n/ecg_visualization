@@ -58,11 +58,7 @@ def _default_sinus_durations() -> tuple[SinusDurationConfig, ...]:
 class CudbAnomalyScoresConfig:
     output_path: Path = Path("result/cudb/anomaly_scores.pdf")
     window_size: int = 10
-    model: MDRSConfig = MDRSConfig(
-        input_scale=0.5,
-        leaking_rate=0.3,
-        N_x_tilde=128,
-    )
+    model: MDRSConfig = MDRSConfig()
     sinus_durations: tuple[SinusDurationConfig, ...] = _default_sinus_durations()
 
 
