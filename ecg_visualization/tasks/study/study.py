@@ -8,7 +8,7 @@ import optuna
 from optuna.artifacts import FileSystemArtifactStore, upload_artifact
 from tqdm import tqdm
 
-from ecg_visualization.core.analysis import extract_normal_segment
+from ecg_visualization.core.analysis import NormalSegmentConfig, extract_normal_segment
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import _load_data_sources
 from ecg_visualization.logging.config import configure_root_logging
@@ -44,6 +44,7 @@ def study_all_entities(config: StudyConfig):
                     artifact_store=artifact_store,
                     MD_RS_CONFIG=model_config,
                     WINDOW_SIZE=config.window_size,
+                    normal_segment_config=config.normal_segment,
                 ),
                 n_trials=config.n_trials,
             )
@@ -56,11 +57,13 @@ class Objective:
         artifact_store: FileSystemArtifactStore,
         MD_RS_CONFIG: MDRSConfig,
         WINDOW_SIZE=10,
+        normal_segment_config: NormalSegmentConfig = NormalSegmentConfig(),
     ) -> None:
         self.entity = entity
         self._artifact_store = artifact_store
         self.MD_RS_CONFIG = MD_RS_CONFIG
         self.WINDOW_SIZE = WINDOW_SIZE
+        self.normal_segment_config = normal_segment_config
 
     def __call__(self, trial: optuna.Trial) -> float:
 
@@ -70,7 +73,10 @@ class Objective:
         delta = trial.suggest_float("delta", 1e-5, 1e-2, log=True)
 
         try:
-            normal_window = extract_normal_segment(self.entity)
+            normal_window = extract_normal_segment(
+                self.entity,
+                self.normal_segment_config,
+            )
         except ValueError:
             LOGGER.warning(
                 f"Skipping {self.entity.entity_id}: no normal segment found."

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from ecg_visualization.core.analysis import NormalSegmentConfig
 from ecg_visualization.tasks.config import load_task_config
 from ecg_visualization.visualization.layouts import PaginationConfig
 
@@ -12,6 +13,7 @@ class VisualizeDatasetsConfig:
     dataset_ids: tuple[str, ...] = ()
     output_dir: Path = Path("result/visualize-datasets")
     pagination: PaginationConfig = PaginationConfig(seconds_per_row=10, rows_per_page=6)
+    normal_segment: NormalSegmentConfig = NormalSegmentConfig()
     signal_ylim_lower: float = -5.0
     signal_ylim_upper: float = 5.0
 

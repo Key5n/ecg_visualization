@@ -6,16 +6,20 @@ from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ecg_visualization.core.analysis import extract_normal_segment
+from ecg_visualization.core.analysis import NormalSegmentConfig, extract_normal_segment
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.visualization.export import PdfExporter
 
 
-def render_entity_summary_page(entity: ECGEntity, exporter: PdfExporter) -> None:
+def render_entity_summary_page(
+    entity: ECGEntity,
+    exporter: PdfExporter,
+    normal_segment_config: NormalSegmentConfig,
+) -> None:
     fig, ax = plt.subplots(figsize=(8.27, 11.69))
     ax.axis("off")
 
-    rows = _entity_summary_rows(entity)
+    rows = _entity_summary_rows(entity, normal_segment_config)
     property_rows = _entity_property_rows(entity)
     title = f"{entity.dataset_name}: {entity.entity_id}"
     ax.text(
@@ -88,7 +92,10 @@ def render_entity_summary_page(entity: ECGEntity, exporter: PdfExporter) -> None
     plt.close(fig)
 
 
-def _entity_summary_rows(entity: ECGEntity) -> list[tuple[str, str]]:
+def _entity_summary_rows(
+    entity: ECGEntity,
+    normal_segment_config: NormalSegmentConfig,
+) -> list[tuple[str, str]]:
     signal_samples = int(entity.signals.size)
     duration_sec = (
         signal_samples / entity.sampling_rate_hz if entity.sampling_rate_hz else 0.0
@@ -108,7 +115,10 @@ def _entity_summary_rows(entity: ECGEntity) -> list[tuple[str, str]]:
         ("Annotation types", annotation_symbols),
         ("Aux notes", _format_aux_note_summary(entity)),
         ("RR intervals", _format_rr_statistics(entity)),
-        ("Normal segment", _format_normal_segment_summary(entity)),
+        (
+            "Normal segment",
+            _format_normal_segment_summary(entity, normal_segment_config),
+        ),
     ]
 
 
@@ -165,9 +175,12 @@ def _format_rr_statistics(entity: ECGEntity) -> str:
     )
 
 
-def _format_normal_segment_summary(entity: ECGEntity) -> str:
+def _format_normal_segment_summary(
+    entity: ECGEntity,
+    normal_segment_config: NormalSegmentConfig,
+) -> str:
     try:
-        normal_segment = extract_normal_segment(entity)
+        normal_segment = extract_normal_segment(entity, normal_segment_config)
     except ValueError as exc:
         return f"Unavailable ({exc})"
 

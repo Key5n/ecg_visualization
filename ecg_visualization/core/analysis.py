@@ -1,19 +1,26 @@
+from dataclasses import dataclass
+
 import numpy as np
 
-from ecg_visualization.config.settings import (
-    MAX_NORMAL_RR_INTERVAL_SEC,
-    MIN_NORMAL_RR_INTERVAL_SEC,
-    NORMAL_SEGMENT_DURATION_SEC,
-)
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.utils.timed_sequence import TimedSequence
 from ecg_visualization.utils.utils import merge_overlapping_windows
 
 
-def extract_normal_segment(entity: ECGEntity) -> TimedSequence[np.float64]:
+@dataclass(frozen=True, slots=True)
+class NormalSegmentConfig:
+    min_rr_interval_sec: float = 0.6
+    max_rr_interval_sec: float = 1.0
+    duration_sec: float = 300.0
+
+
+def extract_normal_segment(
+    entity: ECGEntity,
+    config: NormalSegmentConfig,
+) -> TimedSequence[np.float64]:
     """
-    Extract and return the RR intervals that compose a 5-minute normal beat
-    segment for this entity.
+    Extract and return the RR intervals that compose a configured-duration
+    normal beat segment for this entity.
 
     Returns:
         TimedSequence: Consecutive RR intervals (in seconds) plus their start times.
@@ -29,14 +36,14 @@ def extract_normal_segment(entity: ECGEntity) -> TimedSequence[np.float64]:
     start_idx = 0
     for interval_idx, rr_interval in enumerate(rr_intervals):
         if (
-            rr_interval < MIN_NORMAL_RR_INTERVAL_SEC
-            or rr_interval > MAX_NORMAL_RR_INTERVAL_SEC
+            rr_interval < config.min_rr_interval_sec
+            or rr_interval > config.max_rr_interval_sec
         ):
             start_idx = interval_idx + 1
             continue
 
         current_duration = beat_times[interval_idx + 1] - beat_times[start_idx]
-        if current_duration >= NORMAL_SEGMENT_DURATION_SEC:
+        if current_duration >= config.duration_sec:
             rr_segment = rr_intervals[start_idx : interval_idx + 1]
             if rr_segment.size == 0:
                 break
@@ -48,7 +55,8 @@ def extract_normal_segment(entity: ECGEntity) -> TimedSequence[np.float64]:
             )
 
     raise ValueError(
-        f"No 5-minute normal beat segment found for {entity.entity_id} "
+        f"No {config.duration_sec / 60:g}-minute normal beat segment found "
+        f"for {entity.entity_id} "
         f"({entity.dataset_name})"
     )
 

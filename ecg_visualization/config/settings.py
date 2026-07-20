@@ -27,10 +27,6 @@ def get_float_env(name: str) -> float:
 
 DATASET_ROOT: Path = Path(get_env("DATASET_ROOT"))
 
-MIN_NORMAL_RR_INTERVAL_SEC: float = get_float_env("MIN_NORMAL_RR_INTERVAL_SEC")
-MAX_NORMAL_RR_INTERVAL_SEC: float = get_float_env("MAX_NORMAL_RR_INTERVAL_SEC")
-NORMAL_SEGMENT_DURATION_SEC: float = get_float_env("NORMAL_SEGMENT_DURATION_SEC")
-
 DEFAULT_LOG_LEVEL: int = logging.WARNING
 LOG_LEVEL: str = get_env("LOG_LEVEL")
 
