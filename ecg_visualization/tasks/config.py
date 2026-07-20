@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TypeVar, cast
 
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -15,6 +16,16 @@ def load_task_config(
     cli_config = OmegaConf.from_cli()
     merged = OmegaConf.merge(structured, cli_config)
     return cast(T, OmegaConf.to_object(merged))
+
+
+def save_config_text(
+    config: object,
+    config_path: Path | str,
+) -> Path:
+    config_path = Path(config_path)
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(f"{config!r}\n")
+    return config_path
 
 
 def _set_readonly_recursive(config: DictConfig | ListConfig, readonly: bool) -> None:

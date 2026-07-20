@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Callable, cast
 
@@ -9,6 +10,10 @@ from omegaconf import OmegaConf
 from ecg_visualization.models.md_rs.md_rs import MDRSConfig
 from ecg_visualization.tasks.config import _set_readonly_recursive
 from ecg_visualization.visualization.layouts import PaginationConfig
+
+
+def _generate_run_id() -> str:
+    return datetime.now().strftime("%Y-%m-%d/%H-%M-%S")
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +42,7 @@ class RRHistogramConfig:
 class RhythmEventSequencesConfig:
     dataset_id: str = "sddb"
     root_dir: Path = Path("result") / "rhythm_event_sequences"
+    run_id: str = field(default_factory=_generate_run_id)
     window_size: int = 10
     segment_duration_sec: float = 10 * 60
     max_reasonable_rr_interval_sec: float = 3.0
@@ -54,12 +60,20 @@ class RhythmEventSequencesConfig:
     rr_histogram: RRHistogramConfig = RRHistogramConfig()
 
     @property
+    def run_output_dir(self) -> Path:
+        return self.root_dir / self.dataset_id / "outputs" / Path(self.run_id)
+
+    @property
     def score_output_dir(self) -> Path:
-        return self.root_dir / self.dataset_id / "mdrs_scores"
+        return self.run_output_dir / "mdrs_scores"
 
     @property
     def visualize_output_dir(self) -> Path:
-        return self.root_dir / self.dataset_id / "visualize"
+        return self.run_output_dir / "visualize"
+
+    @property
+    def config_path(self) -> Path:
+        return self.run_output_dir / "config.txt"
 
 
 def ltafdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:

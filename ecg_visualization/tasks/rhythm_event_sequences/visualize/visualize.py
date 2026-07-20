@@ -11,6 +11,7 @@ from matplotlib.figure import Figure
 
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.logging.config import configure_root_logging
+from ecg_visualization.tasks.config import save_config_text
 from ecg_visualization.tasks.rhythm_event_sequences.config import (
     RhythmEventSequencesConfig,
 )
@@ -47,6 +48,7 @@ def rhythm_event_sequence_visualize(config: RhythmEventSequencesConfig) -> None:
     configure_root_logging()
     apply_default_style()
     config.visualize_output_dir.mkdir(parents=True, exist_ok=True)
+    save_config_text(config, config.config_path)
     pagination_config = config.pagination
 
     processed = 0
