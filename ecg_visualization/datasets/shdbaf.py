@@ -4,10 +4,7 @@ from typing import ClassVar
 
 from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.datasets.utils import (
-    load_entities,
-    physionet_root_dir,
-)
+from ecg_visualization.datasets.utils import physionet_root_dir
 
 SHDBAF_ENTITY_IDS: tuple[str, ...] = (
     "001",
@@ -143,26 +140,18 @@ SHDBAF_ENTITY_IDS: tuple[str, ...] = (
 
 @dataclass(frozen=True, slots=True)
 class SHDBAFEntity(ECGEntity):
-    dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "shdb-af", "1.0.1")
-    source_name: ClassVar[str] = (
-        "SHDB-AF: a Japanese Holter ECG database of atrial fibrillation"
-    )
-    source_dataset_id: ClassVar[str] = "shdb-af"
-    beat_extention_priority: ClassVar[tuple[str, ...]] = ("qrs",)
+    pass
 
 
 # https://physionet.org/content/shdb-af/1.0.1/
 @dataclass(frozen=True, slots=True)
 class SHDBAF(ECGDataset):
-    dir_path: ClassVar[str] = SHDBAFEntity.dir_path
-    name: ClassVar[str] = SHDBAFEntity.source_name
-    dataset_id: ClassVar[str] = SHDBAFEntity.source_dataset_id
+    dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "shdb-af", "1.0.1")
+    name: ClassVar[str] = (
+        "SHDB-AF: a Japanese Holter ECG database of atrial fibrillation"
+    )
+    dataset_id: ClassVar[str] = "shdb-af"
     sr: ClassVar[int] = 200
-    beat_extention_priority: ClassVar[tuple[str, ...]] = (
-        SHDBAFEntity.beat_extention_priority
-    )
+    beat_extention_priority: ClassVar[tuple[str, ...]] = ("qrs",)
     entity_cls: ClassVar[type[ECGEntity]] = SHDBAFEntity
-    data_entities: ClassVar[tuple[SHDBAFEntity, ...]] = load_entities(
-        SHDBAFEntity,
-        SHDBAF_ENTITY_IDS,
-    )
+    entity_ids: ClassVar[tuple[str, ...]] = SHDBAF_ENTITY_IDS

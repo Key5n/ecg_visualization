@@ -35,7 +35,7 @@ def study_all_entities(config: StudyConfig):
     model_config = config.model
 
     for data_source in tqdm(data_sources):
-        for entity in tqdm(data_source.data_entities):
+        for entity in tqdm(data_source.get_entities()):
             study = create_study_for_entity(entity=entity, storage_name=storage_name)
             study.optimize(
                 Objective(

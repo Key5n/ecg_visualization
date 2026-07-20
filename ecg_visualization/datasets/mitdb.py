@@ -4,10 +4,7 @@ from typing import ClassVar
 
 from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.datasets.utils import (
-    load_entities,
-    physionet_root_dir,
-)
+from ecg_visualization.datasets.utils import physionet_root_dir
 
 MITDB_ENTITY_IDS: tuple[str, ...] = (
     "100",
@@ -63,20 +60,15 @@ MITDB_ENTITY_IDS: tuple[str, ...] = (
 
 @dataclass(frozen=True, slots=True)
 class MITDBEntity(ECGEntity):
-    dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "mitdb", "1.0.0")
-    source_name: ClassVar[str] = "MIT-BIH Arrhythmia Database"
-    source_dataset_id: ClassVar[str] = "mitdb"
+    pass
 
 
 # https://physionet.org/content/mitdb/1.0.0/
 @dataclass(frozen=True, slots=True)
 class MITDB(ECGDataset):
-    dir_path: ClassVar[str] = MITDBEntity.dir_path
-    name: ClassVar[str] = MITDBEntity.source_name
-    dataset_id: ClassVar[str] = MITDBEntity.source_dataset_id
+    dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "mitdb", "1.0.0")
+    name: ClassVar[str] = "MIT-BIH Arrhythmia Database"
+    dataset_id: ClassVar[str] = "mitdb"
     sr: ClassVar[int] = 360
     entity_cls: ClassVar[type[ECGEntity]] = MITDBEntity
-    data_entities: ClassVar[tuple[MITDBEntity, ...]] = load_entities(
-        MITDBEntity,
-        MITDB_ENTITY_IDS,
-    )
+    entity_ids: ClassVar[tuple[str, ...]] = MITDB_ENTITY_IDS

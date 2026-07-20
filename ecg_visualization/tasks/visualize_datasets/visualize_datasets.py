@@ -51,9 +51,9 @@ def visualize_datasets(config: VisualizeDatasetsConfig) -> None:
         LOGGER.info(
             "Visualizing dataset %s (%d entities)",
             dataset.dataset_id,
-            len(dataset.data_entities),
+            len(dataset.entity_ids),
         )
-        for entity in tqdm(dataset.data_entities, desc=dataset.dataset_id):
+        for entity in tqdm(dataset.get_entities(), desc=dataset.dataset_id):
             output_path = dataset_output_dir / f"{entity.entity_id}.pdf"
             _export_entity_pdf(
                 entity,

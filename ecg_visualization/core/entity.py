@@ -1,11 +1,8 @@
-import os
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import ClassVar, Self
 
 import numpy as np
 import numpy.typing as npt
-import wfdb
 from wfdb.io import Annotation
 
 from ecg_visualization.config.settings import (
@@ -13,7 +10,6 @@ from ecg_visualization.config.settings import (
     MIN_NORMAL_RR_INTERVAL_SEC,
     NORMAL_SEGMENT_DURATION_SEC,
 )
-from ecg_visualization.core.annotations import read_annotation, read_normal_beats
 from ecg_visualization.utils.timed_sequence import TimedSequence
 from ecg_visualization.utils.utils import merge_overlapping_windows
 
@@ -34,12 +30,6 @@ class ECGEntity:
         aux_notes (tuple[str, ...]): Annotation auxiliary notes aligned with annotation.sample for rhythm labels
     """
 
-    dir_path: ClassVar[str]
-    source_name: ClassVar[str]
-    source_dataset_id: ClassVar[str]
-    annotation_extention_priority: ClassVar[tuple[str, ...]] = ("atr", "qrs", "ari")
-    beat_extention_priority: ClassVar[tuple[str, ...]] = ("atr", "qrs", "ari")
-
     entity_id: str
     dataset_name: str
     dataset_id: str
@@ -54,40 +44,6 @@ class ECGEntity:
             raise ValueError(f"{self} does not contain enough beats to analyze")
         self.signals.setflags(write=False)
         self.beats.setflags(write=False)
-
-    @classmethod
-    def load(cls, *, id: str) -> Self:
-        data_path = os.path.join(cls.dir_path, id)
-        signals, _ = wfdb.rdsamp(
-            data_path,
-            channels=[0],
-        )
-        squeezed = np.squeeze(signals)
-
-        record = wfdb.rdheader(data_path)
-        sr = record.fs
-        annotation = read_annotation(cls.annotation_extention_priority, data_path)
-        beats = cls._read_beats(data_path, squeezed, sr)
-
-        return cls(
-            entity_id=id,
-            dataset_name=cls.source_name,
-            dataset_id=cls.source_dataset_id,
-            sr=sr,
-            signals=squeezed,
-            annotation=annotation,
-            beats=beats,
-            aux_notes=tuple(annotation.aux_note),
-        )
-
-    @classmethod
-    def _read_beats(
-        cls,
-        data_path: str,
-        signals: npt.NDArray[np.float64],
-        sr: int,
-    ) -> npt.NDArray[np.int_]:
-        return read_normal_beats(cls.beat_extention_priority, data_path)
 
     def __str__(self) -> str:
         return f"{self.dataset_id}/{self.entity_id}"

@@ -4,10 +4,7 @@ from typing import ClassVar
 
 from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.datasets.utils import (
-    load_entities,
-    physionet_root_dir,
-)
+from ecg_visualization.datasets.utils import physionet_root_dir
 
 AFDB_ENTITY_IDS: tuple[str, ...] = (
     "04015",
@@ -38,20 +35,15 @@ AFDB_ENTITY_IDS: tuple[str, ...] = (
 
 @dataclass(frozen=True, slots=True)
 class AFDBEntity(ECGEntity):
-    dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "afdb", "1.0.0")
-    source_name: ClassVar[str] = "MIT-BIH Atrial Fibrillation Database"
-    source_dataset_id: ClassVar[str] = "afdb"
+    pass
 
 
 # https://physionet.org/content/afdb/1.0.0/
 @dataclass(frozen=True, slots=True)
 class AFDB(ECGDataset):
-    dir_path: ClassVar[str] = AFDBEntity.dir_path
-    name: ClassVar[str] = AFDBEntity.source_name
-    dataset_id: ClassVar[str] = AFDBEntity.source_dataset_id
+    dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "afdb", "1.0.0")
+    name: ClassVar[str] = "MIT-BIH Atrial Fibrillation Database"
+    dataset_id: ClassVar[str] = "afdb"
     sr: ClassVar[int] = 250
     entity_cls: ClassVar[type[ECGEntity]] = AFDBEntity
-    data_entities: ClassVar[tuple[AFDBEntity, ...]] = load_entities(
-        AFDBEntity,
-        AFDB_ENTITY_IDS,
-    )
+    entity_ids: ClassVar[tuple[str, ...]] = AFDB_ENTITY_IDS

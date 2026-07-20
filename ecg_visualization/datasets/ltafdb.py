@@ -4,10 +4,7 @@ from typing import ClassVar
 
 from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.datasets.utils import (
-    load_entities,
-    physionet_root_dir,
-)
+from ecg_visualization.datasets.utils import physionet_root_dir
 
 LTAFDB_ENTITY_IDS: tuple[str, ...] = (
     "00",
@@ -99,20 +96,15 @@ LTAFDB_ENTITY_IDS: tuple[str, ...] = (
 
 @dataclass(frozen=True, slots=True)
 class LTAFDBEntity(ECGEntity):
-    dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "ltafdb", "1.0.0")
-    source_name: ClassVar[str] = "Long Term AF Database"
-    source_dataset_id: ClassVar[str] = "ltafdb"
+    pass
 
 
 # https://physionet.org/content/ltafdb/1.0.0/
 @dataclass(frozen=True, slots=True)
 class LTAFDB(ECGDataset):
-    dir_path: ClassVar[str] = LTAFDBEntity.dir_path
-    name: ClassVar[str] = LTAFDBEntity.source_name
-    dataset_id: ClassVar[str] = LTAFDBEntity.source_dataset_id
+    dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "ltafdb", "1.0.0")
+    name: ClassVar[str] = "Long Term AF Database"
+    dataset_id: ClassVar[str] = "ltafdb"
     sr: ClassVar[int] = 128
     entity_cls: ClassVar[type[ECGEntity]] = LTAFDBEntity
-    data_entities: ClassVar[tuple[LTAFDBEntity, ...]] = load_entities(
-        LTAFDBEntity,
-        LTAFDB_ENTITY_IDS,
-    )
+    entity_ids: ClassVar[tuple[str, ...]] = LTAFDB_ENTITY_IDS

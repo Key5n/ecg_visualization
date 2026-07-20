@@ -4,10 +4,7 @@ from typing import ClassVar
 
 from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.datasets.utils import (
-    load_entities,
-    physionet_root_dir,
-)
+from ecg_visualization.datasets.utils import physionet_root_dir
 
 AFPDB_ENTITY_IDS: tuple[str, ...] = tuple(
     (
@@ -25,20 +22,15 @@ AFPDB_ENTITY_IDS: tuple[str, ...] = tuple(
 
 @dataclass(frozen=True, slots=True)
 class AFPDBEntity(ECGEntity):
-    dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "afpdb", "1.0.0")
-    source_name: ClassVar[str] = "PAF Prediction Challenge Database"
-    source_dataset_id: ClassVar[str] = "afpdb"
+    pass
 
 
 # https://physionet.org/content/afpdb/1.0.0/
 @dataclass(frozen=True, slots=True)
 class AFPDB(ECGDataset):
-    dir_path: ClassVar[str] = AFPDBEntity.dir_path
-    name: ClassVar[str] = AFPDBEntity.source_name
-    dataset_id: ClassVar[str] = AFPDBEntity.source_dataset_id
+    dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "afpdb", "1.0.0")
+    name: ClassVar[str] = "PAF Prediction Challenge Database"
+    dataset_id: ClassVar[str] = "afpdb"
     sr: ClassVar[int] = 128
     entity_cls: ClassVar[type[ECGEntity]] = AFPDBEntity
-    data_entities: ClassVar[tuple[AFPDBEntity, ...]] = load_entities(
-        AFPDBEntity,
-        AFPDB_ENTITY_IDS,
-    )
+    entity_ids: ClassVar[tuple[str, ...]] = AFPDB_ENTITY_IDS

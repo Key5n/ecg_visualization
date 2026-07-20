@@ -64,7 +64,7 @@ def cudb_anomaly_scores(config: CudbAnomalyScoresConfig) -> None:
     model_config = config.model
 
     with pdf_exporter(str(output_path)) as exporter:
-        for entity in tqdm(dataset.data_entities, desc="CUDB"):
+        for entity in tqdm(dataset.get_entities(), desc="CUDB"):
             sinus_windows = sinus_windows_by_entity.get(entity.entity_id)
             if not sinus_windows:
                 LOGGER.warning(

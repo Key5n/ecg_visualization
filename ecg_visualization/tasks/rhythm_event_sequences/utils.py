@@ -44,7 +44,7 @@ def iter_concatenated_sequences(
     config: RhythmEventSequencesConfig,
 ) -> Iterable[tuple[ECGEntity, ConcatenatedSequence]]:
     for dataset in _load_data_sources((config.dataset_id,)):
-        for entity in dataset.data_entities:
+        for entity in dataset.get_entities():
             try:
                 segments_info = _select_sinus_segments(
                     dataset,
