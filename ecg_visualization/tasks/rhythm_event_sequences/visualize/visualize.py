@@ -79,7 +79,7 @@ def _export_concatenated_pdf(
 ) -> None:
     ts_paged = paginate_signals(
         entity.signals.size,
-        int(entity.sr),
+        int(entity.sampling_rate_hz),
         pagination_config,
     )
     signal_ylim = compute_ylim(
@@ -114,7 +114,7 @@ def _render_rr_interval_histogram_page(
     config: RhythmEventSequencesConfig,
 ) -> None:
     rr_intervals = np.diff(np.asarray(entity.beats, dtype=np.float64))
-    rr_intervals_sec = rr_intervals / float(entity.sr)
+    rr_intervals_sec = rr_intervals / float(entity.sampling_rate_hz)
     histogram_bins = np.arange(
         config.rr_histogram.xmin_sec,
         config.rr_histogram.xmax_sec + config.rr_histogram.bin_width_sec,
@@ -196,10 +196,10 @@ def _render_signal_row(
     config: RhythmEventSequencesConfig,
 ) -> None:
     window_start, window_end = float(ts[0]), float(ts[-1])
-    sr = float(entity.sr)
+    sampling_rate_hz = float(entity.sampling_rate_hz)
 
-    start_idx = int(np.floor(window_start * sr))
-    end_idx = min(int(np.floor(window_end * sr)) + 1, entity.signals.size)
+    start_idx = int(np.floor(window_start * sampling_rate_hz))
+    end_idx = min(int(np.floor(window_end * sampling_rate_hz)) + 1, entity.signals.size)
     signal_values = _align_signal_to_window(ts, entity.signals[start_idx:end_idx])
 
     plot_signal(
@@ -211,7 +211,7 @@ def _render_signal_row(
         label="Voltage [mV]",
     )
 
-    beat_times = np.asarray(entity.beats, dtype=np.float64) / sr
+    beat_times = np.asarray(entity.beats, dtype=np.float64) / sampling_rate_hz
     beat_times_in_window = beat_times[
         (beat_times >= window_start) & (beat_times <= window_end)
     ]
@@ -221,7 +221,9 @@ def _render_signal_row(
         ylim_lower=signal_ylim[0],
     )
 
-    symbol_times = np.asarray(entity.annotation.sample, dtype=np.float64) / sr
+    symbol_times = (
+        np.asarray(entity.annotation.sample, dtype=np.float64) / sampling_rate_hz
+    )
     symbol_events = [
         (sample_time, symbol)
         for sample_time, symbol in zip(

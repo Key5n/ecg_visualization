@@ -22,6 +22,6 @@ class CUDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "cudb", "1.0.0")
     name: ClassVar[str] = "Tachyarrythmia"
     dataset_id: ClassVar[str] = "cudb"
-    sr: ClassVar[int] = 250
+    sampling_rate_hz: ClassVar[int] = 250
     entity_cls: ClassVar[type[ECGEntity]] = CUDBEntity
     entity_ids: ClassVar[tuple[str, ...]] = CUDB_ENTITY_IDS

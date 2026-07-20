@@ -112,12 +112,12 @@ def _score_entity(
     if window_size < 1:
         raise ValueError("window_size must be positive")
 
-    signal_duration = entity.signals.size / entity.sr
+    signal_duration = entity.signals.size / entity.sampling_rate_hz
     normalized_windows = _normalize_windows(sinus_windows, signal_duration)
     if not normalized_windows:
         raise ValueError("no valid sinus windows after clipping")
 
-    beat_times = entity.beats / entity.sr
+    beat_times = entity.beats / entity.sampling_rate_hz
     if beat_times.size < window_size + 1:
         raise ValueError("not enough beats to score")
 
@@ -157,7 +157,7 @@ def _plot_entity_scores(
     score_sequence: TimedSequence[np.float64],
     training_windows: Iterable[tuple[float, float]],
 ) -> plt.Figure:
-    ts = np.arange(entity.signals.size, dtype=float) / entity.sr
+    ts = np.arange(entity.signals.size, dtype=float) / entity.sampling_rate_hz
     signal = entity.signals
 
     signal_min = float(np.nanmin(signal))
@@ -197,7 +197,7 @@ def _plot_entity_scores(
         ylim_upper=score_ylim[1],
         label="Anomaly Score",
     )
-    beat_times = entity.beats / entity.sr
+    beat_times = entity.beats / entity.sampling_rate_hz
     if beat_times.size:
         ax.scatter(
             beat_times,

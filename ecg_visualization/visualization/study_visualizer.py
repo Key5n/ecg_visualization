@@ -15,6 +15,7 @@ from optuna.artifacts import FileSystemArtifactStore
 from optuna.study import Study
 from optuna.trial import FrozenTrial
 
+from ecg_visualization.core.analysis import get_extreme_rr_windows
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import DATASET_REGISTRY
 from ecg_visualization.utils.optuna_record import (
@@ -102,7 +103,8 @@ class StudyVisualizer:
             upper_bound=5.0,
         )
         score_ylim = compute_ylim(sequences.scores.values)
-        extreme_windows = self.entity.get_extreme_rr_windows(
+        extreme_windows = get_extreme_rr_windows(
+            self.entity,
             self.rr_window_beats,
             lower_percentile=5.0,
             upper_percentile=95.0,
@@ -178,19 +180,21 @@ class StudyVisualizer:
 
         signal_sequence = TimedSequence(
             values=entity.signals,
-            times=np.arange(entity.signals.size, dtype=float) / entity.sr,
+            times=np.arange(entity.signals.size, dtype=float) / entity.sampling_rate_hz,
         )
         annotation_sequence = TimedSequence(
             values=np.asarray(entity.annotation.symbol, dtype=str),
-            times=np.asarray(entity.annotation.sample, dtype=float) / entity.sr,
+            times=np.asarray(entity.annotation.sample, dtype=float)
+            / entity.sampling_rate_hz,
         )
         aux_note_sequence = TimedSequence(
             values=np.asarray(entity.aux_notes, dtype=object),
-            times=np.asarray(entity.annotation.sample, dtype=float) / entity.sr,
+            times=np.asarray(entity.annotation.sample, dtype=float)
+            / entity.sampling_rate_hz,
         )
         beat_sequence = TimedSequence(
             values=np.zeros_like(entity.beats),
-            times=entity.beats / entity.sr,
+            times=entity.beats / entity.sampling_rate_hz,
         )
         return SequenceBundle(
             signal=signal_sequence,
@@ -220,7 +224,7 @@ class StudyVisualizer:
         total_samples = int(self.entity.signals.size)
         return paginate_signals(
             total_samples,
-            self.entity.sr,
+            self.entity.sampling_rate_hz,
             self.pagination_config,
         )
 
@@ -313,7 +317,7 @@ class StudyVisualizer:
         if beats.size == 0:
             return
 
-        beat_times = beats.astype(np.float64) / self.entity.sr
+        beat_times = beats.astype(np.float64) / self.entity.sampling_rate_hz
         for window_size in window_sizes:
             if beats.size < window_size:
                 continue

@@ -47,7 +47,7 @@ class VFDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "vfdb", "1.0.0")
     name: ClassVar[str] = "MIT-BIH Malignant Ventricular Ectopy Database"
     dataset_id: ClassVar[str] = "vfdb"
-    sr: ClassVar[int] = 250
+    sampling_rate_hz: ClassVar[int] = 250
     entity_cls: ClassVar[type[ECGEntity]] = VFDBEntity
     entity_ids: ClassVar[tuple[str, ...]] = VFDB_ENTITY_IDS
 
@@ -56,6 +56,6 @@ class VFDB(ECGDataset):
         cls,
         data_path: str,
         signals: npt.NDArray[np.float64],
-        sr: int,
+        sampling_rate_hz: int,
     ) -> npt.NDArray[np.int_]:
-        return detect_rpeaks(signals, sr)
+        return detect_rpeaks(signals, sampling_rate_hz)

@@ -151,7 +151,7 @@ class SHDBAF(ECGDataset):
         "SHDB-AF: a Japanese Holter ECG database of atrial fibrillation"
     )
     dataset_id: ClassVar[str] = "shdb-af"
-    sr: ClassVar[int] = 200
+    sampling_rate_hz: ClassVar[int] = 200
     beat_extention: ClassVar[str] = "qrs"
     entity_cls: ClassVar[type[ECGEntity]] = SHDBAFEntity
     entity_ids: ClassVar[tuple[str, ...]] = SHDBAF_ENTITY_IDS

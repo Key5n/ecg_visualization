@@ -8,6 +8,7 @@ import optuna
 from optuna.artifacts import FileSystemArtifactStore, upload_artifact
 from tqdm import tqdm
 
+from ecg_visualization.core.analysis import extract_normal_segment
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import _load_data_sources
 from ecg_visualization.logging.config import configure_root_logging
@@ -69,7 +70,7 @@ class Objective:
         delta = trial.suggest_float("delta", 1e-5, 1e-2, log=True)
 
         try:
-            normal_window = self.entity.extract_normal_segment()
+            normal_window = extract_normal_segment(self.entity)
         except ValueError:
             LOGGER.warning(
                 f"Skipping {self.entity.entity_id}: no normal segment found."
@@ -97,7 +98,7 @@ class Objective:
 
         scores = model.predict(test_sequence)
 
-        beat_times = self.entity.beats / self.entity.sr
+        beat_times = self.entity.beats / self.entity.sampling_rate_hz
         score_times = beat_times[self.WINDOW_SIZE :]
         score_sequence = TimedSequence(
             values=scores,

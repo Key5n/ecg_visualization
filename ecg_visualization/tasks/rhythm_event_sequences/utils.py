@@ -107,7 +107,9 @@ def _select_sinus_segments(
     if rr_intervals.size < 2:
         raise ValueError(f"{entity.entity_id} does not contain enough RR intervals")
 
-    beat_times_sec = np.asarray(entity.beats, dtype=np.float64) / float(entity.sr)
+    beat_times_sec = np.asarray(entity.beats, dtype=np.float64) / float(
+        entity.sampling_rate_hz
+    )
     median_rr_interval_sec = float(np.median(rr_intervals))
     near_median_mask = (
         np.abs(rr_intervals - median_rr_interval_sec) <= sinus_rr_median_threshold_sec
@@ -185,7 +187,7 @@ def _resolve_segment_beats(
     *,
     max_reasonable_rr_interval_sec: float,
 ) -> npt.NDArray[np.int_]:
-    segment_duration_sec = float(segment_samples.size) / float(entity.sr)
+    segment_duration_sec = float(segment_samples.size) / float(entity.sampling_rate_hz)
     minimum_required_beats = _minimum_required_beats(
         segment_duration_sec,
         max_reasonable_rr_interval_sec=max_reasonable_rr_interval_sec,
@@ -193,7 +195,7 @@ def _resolve_segment_beats(
     if segment_beats.size >= minimum_required_beats:
         return np.asarray(segment_beats, dtype=np.int_)
 
-    detected_beats = detect_rpeaks(segment_samples, entity.sr)
+    detected_beats = detect_rpeaks(segment_samples, entity.sampling_rate_hz)
     if detected_beats.size >= max(2, segment_beats.size):
         LOGGER.info(
             "Using detected R-peaks for %s:%s (annotated=%d detected=%d min_required=%d).",
@@ -223,8 +225,8 @@ def _build_concatenated_sequence(
     max_reasonable_rr_interval_sec: float,
 ) -> ConcatenatedSequence | None:
     signal = entity.signals
-    sr = float(entity.sr)
-    total_duration_sec = signal.size / sr
+    sampling_rate_hz = float(entity.sampling_rate_hz)
+    total_duration_sec = signal.size / sampling_rate_hz
 
     if not _validate_segment_window(
         entity,
@@ -261,8 +263,8 @@ def _build_concatenated_sequence(
     concatenated_symbol_values: list[str] = []
     running_offset = 0
     for name, window in _segment_windows(segments_info):
-        start_sample = int(np.round(window.start_sec * sr))
-        end_sample = int(np.round(window.end_sec * sr))
+        start_sample = int(np.round(window.start_sec * sampling_rate_hz))
+        end_sample = int(np.round(window.end_sec * sampling_rate_hz))
         if end_sample > signal.size:
             LOGGER.warning(
                 "Skipping %s: %s segment exceeds record length.",
@@ -315,7 +317,7 @@ def _build_concatenated_sequence(
             else np.array([], dtype=np.int_)
         ),
         symbol_values=tuple(concatenated_symbol_values),
-        sampling_rate_hz=sr,
+        sampling_rate_hz=sampling_rate_hz,
         segments_info=segments_info,
     )
 

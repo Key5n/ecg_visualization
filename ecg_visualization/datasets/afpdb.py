@@ -31,6 +31,6 @@ class AFPDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "afpdb", "1.0.0")
     name: ClassVar[str] = "PAF Prediction Challenge Database"
     dataset_id: ClassVar[str] = "afpdb"
-    sr: ClassVar[int] = 128
+    sampling_rate_hz: ClassVar[int] = 128
     entity_cls: ClassVar[type[ECGEntity]] = AFPDBEntity
     entity_ids: ClassVar[tuple[str, ...]] = AFPDB_ENTITY_IDS

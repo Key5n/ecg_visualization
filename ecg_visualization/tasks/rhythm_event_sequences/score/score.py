@@ -109,8 +109,8 @@ def _plot_concat_scores(
     config: RhythmEventSequencesConfig,
 ) -> plt.Figure:
     samples = np.asarray(concat.samples, dtype=float)
-    sr = float(concat.sampling_rate_hz)
-    ts = np.arange(samples.size, dtype=float) / sr
+    sampling_rate_hz = float(concat.sampling_rate_hz)
+    ts = np.arange(samples.size, dtype=float) / sampling_rate_hz
 
     signal_min = float(np.nanmin(samples))
     signal_max = float(np.nanmax(samples))

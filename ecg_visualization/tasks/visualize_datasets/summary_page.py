@@ -6,6 +6,7 @@ from typing import Any
 import matplotlib.pyplot as plt
 import numpy as np
 
+from ecg_visualization.core.analysis import extract_normal_segment
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.visualization.export import PdfExporter
 
@@ -89,13 +90,15 @@ def render_entity_summary_page(entity: ECGEntity, exporter: PdfExporter) -> None
 
 def _entity_summary_rows(entity: ECGEntity) -> list[tuple[str, str]]:
     signal_samples = int(entity.signals.size)
-    duration_sec = signal_samples / entity.sr if entity.sr else 0.0
+    duration_sec = (
+        signal_samples / entity.sampling_rate_hz if entity.sampling_rate_hz else 0.0
+    )
     annotation_symbols = ", ".join(sorted(set(entity.annotation.symbol))) or "-"
 
     return [
         ("Entity ID", entity.entity_id),
         ("Dataset", f"{entity.dataset_name} ({entity.dataset_id})"),
-        ("Sampling rate", f"{entity.sr} Hz"),
+        ("Sampling rate", f"{entity.sampling_rate_hz} Hz"),
         (
             "Signal length",
             f"{signal_samples:,} samples (~{duration_sec / 60:.2f} min)",
@@ -114,7 +117,7 @@ def _entity_property_rows(entity: ECGEntity) -> list[tuple[str, str]]:
         ("entity_id", entity.entity_id),
         ("dataset_name", entity.dataset_name),
         ("dataset_id", entity.dataset_id),
-        ("sr", f"{entity.sr}"),
+        ("sampling_rate_hz", f"{entity.sampling_rate_hz}"),
         ("signals", _format_property_value(entity.signals)),
         ("annotation", _format_property_value(entity.annotation)),
         ("beats", _format_property_value(entity.beats)),
@@ -164,7 +167,7 @@ def _format_rr_statistics(entity: ECGEntity) -> str:
 
 def _format_normal_segment_summary(entity: ECGEntity) -> str:
     try:
-        normal_segment = entity.extract_normal_segment()
+        normal_segment = extract_normal_segment(entity)
     except ValueError as exc:
         return f"Unavailable ({exc})"
 

@@ -69,6 +69,6 @@ class MITDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "mitdb", "1.0.0")
     name: ClassVar[str] = "MIT-BIH Arrhythmia Database"
     dataset_id: ClassVar[str] = "mitdb"
-    sr: ClassVar[int] = 360
+    sampling_rate_hz: ClassVar[int] = 360
     entity_cls: ClassVar[type[ECGEntity]] = MITDBEntity
     entity_ids: ClassVar[tuple[str, ...]] = MITDB_ENTITY_IDS

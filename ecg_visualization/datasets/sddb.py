@@ -20,7 +20,7 @@ class SDDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "sddb", "1.0.0")
     name: ClassVar[str] = "Sudden Cardiac Death Holter Database"
     dataset_id: ClassVar[str] = "sddb"
-    sr: ClassVar[int] = 250
+    sampling_rate_hz: ClassVar[int] = 250
     entity_cls: ClassVar[type[ECGEntity]] = SDDBEntity
     entity_ids: ClassVar[tuple[str, ...]] = SDDB_ENTITY_IDS
     vf_onset_seconds: ClassVar[dict[str, int]] = {

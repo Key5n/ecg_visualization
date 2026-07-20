@@ -105,6 +105,6 @@ class LTAFDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "ltafdb", "1.0.0")
     name: ClassVar[str] = "Long Term AF Database"
     dataset_id: ClassVar[str] = "ltafdb"
-    sr: ClassVar[int] = 128
+    sampling_rate_hz: ClassVar[int] = 128
     entity_cls: ClassVar[type[ECGEntity]] = LTAFDBEntity
     entity_ids: ClassVar[tuple[str, ...]] = LTAFDB_ENTITY_IDS

@@ -44,6 +44,6 @@ class AFDB(ECGDataset):
     dir_path: ClassVar[str] = os.path.join(physionet_root_dir, "afdb", "1.0.0")
     name: ClassVar[str] = "MIT-BIH Atrial Fibrillation Database"
     dataset_id: ClassVar[str] = "afdb"
-    sr: ClassVar[int] = 250
+    sampling_rate_hz: ClassVar[int] = 250
     entity_cls: ClassVar[type[ECGEntity]] = AFDBEntity
     entity_ids: ClassVar[tuple[str, ...]] = AFDB_ENTITY_IDS
