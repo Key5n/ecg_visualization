@@ -152,6 +152,6 @@ class SHDBAF(ECGDataset):
     )
     dataset_id: ClassVar[str] = "shdb-af"
     sr: ClassVar[int] = 200
-    beat_extention_priority: ClassVar[tuple[str, ...]] = ("qrs",)
+    beat_extention: ClassVar[str] = "qrs"
     entity_cls: ClassVar[type[ECGEntity]] = SHDBAFEntity
     entity_ids: ClassVar[tuple[str, ...]] = SHDBAF_ENTITY_IDS
