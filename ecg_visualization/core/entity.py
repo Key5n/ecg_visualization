@@ -66,8 +66,8 @@ class ECGEntity:
 
         record = wfdb.rdheader(data_path)
         sr = record.fs
-        annotation = read_annotation(cls, data_path)
-        beats = cls._read_beats(data_path, squeezed, annotation, sr)
+        annotation = read_annotation(cls.annotation_extention_priority, data_path)
+        beats = cls._read_beats(data_path, squeezed, sr)
 
         return cls(
             entity_id=id,
@@ -85,10 +85,9 @@ class ECGEntity:
         cls,
         data_path: str,
         signals: npt.NDArray[np.float64],
-        annotation: Annotation,
         sr: int,
     ) -> npt.NDArray[np.int_]:
-        return read_normal_beats(cls, data_path)
+        return read_normal_beats(cls.beat_extention_priority, data_path)
 
     def __str__(self) -> str:
         return f"{self.dataset_id}/{self.entity_id}"

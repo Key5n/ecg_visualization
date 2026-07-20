@@ -4,7 +4,6 @@ from typing import ClassVar
 
 import numpy as np
 import numpy.typing as npt
-from wfdb.io import Annotation
 
 from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
@@ -51,7 +50,6 @@ class VFDBEntity(ECGEntity):
         cls,
         data_path: str,
         signals: npt.NDArray[np.float64],
-        annotation: Annotation,
         sr: int,
     ) -> npt.NDArray[np.int_]:
         return detect_rpeaks(signals, sr)
