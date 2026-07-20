@@ -27,7 +27,7 @@ DATASET_REGISTRY: dict[str, type[ECGDataset]] = {
 }
 
 
-def _load_data_sources(dataset_ids: Sequence[str]) -> list[ECGDataset]:
+def load_data_sources(dataset_ids: Sequence[str]) -> list[ECGDataset]:
     data_sources: list[ECGDataset] = []
     for dataset_id in dataset_ids:
         normalized_id = dataset_id.lower()

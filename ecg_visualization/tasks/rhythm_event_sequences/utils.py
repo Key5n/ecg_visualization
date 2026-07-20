@@ -9,7 +9,7 @@ import numpy.typing as npt
 
 from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.datasets.physionet import _load_data_sources
+from ecg_visualization.datasets.physionet import load_data_sources
 from ecg_visualization.tasks.rhythm_event_sequences.config import (
     RhythmEventSequencesConfig,
     SegmentsInfo,
@@ -43,7 +43,7 @@ class ConcatenatedSequence:
 def iter_concatenated_sequences(
     config: RhythmEventSequencesConfig,
 ) -> Iterable[tuple[ECGEntity, ConcatenatedSequence]]:
-    for dataset in _load_data_sources((config.dataset_id,)):
+    for dataset in load_data_sources((config.dataset_id,)):
         for entity in dataset.get_entities():
             try:
                 segments_info = _select_sinus_segments(

@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from ecg_visualization.core.analysis import NormalSegmentConfig, extract_normal_segment
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.datasets.physionet import _load_data_sources
+from ecg_visualization.datasets.physionet import load_data_sources
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.logging.optuna import configure_optuna_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS, MDRSConfig
@@ -30,7 +30,7 @@ def study_all_entities(config: StudyConfig):
     configure_root_logging()
     configure_optuna_logging()
 
-    data_sources = _load_data_sources(config.dataset_ids)
+    data_sources = load_data_sources(config.dataset_ids)
     artifact_store = create_artifact_store(config.artifact_root)
     storage_name = build_storage_name()
     model_config = config.model

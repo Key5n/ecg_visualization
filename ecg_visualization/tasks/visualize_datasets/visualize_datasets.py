@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from ecg_visualization.core.analysis import NormalSegmentConfig
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.datasets.physionet import _load_data_sources
+from ecg_visualization.datasets.physionet import load_data_sources
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.tasks.visualize_datasets.config import (
     VisualizeDatasetsConfig,
@@ -41,7 +41,7 @@ def visualize_datasets(config: VisualizeDatasetsConfig) -> None:
     apply_default_style()
 
     config.output_dir.mkdir(parents=True, exist_ok=True)
-    datasets = _load_data_sources(config.dataset_ids)
+    datasets = load_data_sources(config.dataset_ids)
     pagination_config = config.pagination
 
     total_processed = 0
