@@ -20,7 +20,7 @@ def create_page_layout(
     return fig, axs
 
 
-@dataclass(frozen=True)
+@dataclass(slots=True)
 class PaginationConfig:
     """Configuration for paging ECG signals into multi-row PDF pages."""
 

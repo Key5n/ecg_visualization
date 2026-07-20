@@ -8,7 +8,7 @@ from ecg_visualization.utils.timed_sequence import TimedSequence
 from ecg_visualization.utils.utils import merge_overlapping_windows
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class NormalSegmentConfig:
     min_rr_interval_sec: float = 0.6
     max_rr_interval_sec: float = 1.0

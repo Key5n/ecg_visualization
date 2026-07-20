@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from ecg_visualization.models.md_rs.md_rs import MDRSConfig
 from ecg_visualization.tasks.config import load_task_config
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class SinusWindowConfig:
     start_sec: float = 0.0
     end_sec: float = 60.0
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class SinusDurationConfig:
     entity_id: str = ""
     windows: tuple[SinusWindowConfig, ...] = ()
@@ -54,12 +54,14 @@ def _default_sinus_durations() -> tuple[SinusDurationConfig, ...]:
     )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class CudbAnomalyScoresConfig:
     output_path: Path = Path("result/cudb/anomaly_scores.pdf")
     window_size: int = 10
-    model: MDRSConfig = MDRSConfig()
-    sinus_durations: tuple[SinusDurationConfig, ...] = _default_sinus_durations()
+    model: MDRSConfig = field(default_factory=MDRSConfig)
+    sinus_durations: tuple[SinusDurationConfig, ...] = field(
+        default_factory=_default_sinus_durations
+    )
 
 
 def load_cudb_anomaly_scores_config() -> CudbAnomalyScoresConfig:

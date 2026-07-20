@@ -10,7 +10,7 @@ from .reservoir import Reservoir
 ActivationFunc = Callable[[NDArray[np.float64]], NDArray[np.float64]]
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
+@dataclass(slots=True, kw_only=True)
 class MDRSConfig:
     N_x: int = 256
     input_scale: float = 1.0

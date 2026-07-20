@@ -8,7 +8,6 @@ from typing import Callable, cast
 from omegaconf import OmegaConf
 
 from ecg_visualization.models.md_rs.md_rs import MDRSConfig
-from ecg_visualization.tasks.config import _set_readonly_recursive
 from ecg_visualization.visualization.layouts import PaginationConfig
 
 
@@ -16,13 +15,13 @@ def _generate_run_id() -> str:
     return datetime.now().strftime("%Y-%m-%d/%H-%M-%S")
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class SegmentWindow:
     start_sec: float
     end_sec: float
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class SegmentsInfo:
     entity_id: str
     train: SegmentWindow
@@ -31,14 +30,14 @@ class SegmentsInfo:
     vf: SegmentWindow
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class RRHistogramConfig:
     xmin_sec: float = 0.0
     xmax_sec: float = 2.0
     bin_width_sec: float = 0.025
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class RhythmEventSequencesConfig:
     dataset_id: str = "sddb"
     root_dir: Path = Path("result") / "rhythm_event_sequences"
@@ -55,9 +54,9 @@ class RhythmEventSequencesConfig:
             "sinus_test": "#264653",
         }
     )
-    model: MDRSConfig = MDRSConfig()
-    pagination: PaginationConfig = PaginationConfig()
-    rr_histogram: RRHistogramConfig = RRHistogramConfig()
+    model: MDRSConfig = field(default_factory=MDRSConfig)
+    pagination: PaginationConfig = field(default_factory=PaginationConfig)
+    rr_histogram: RRHistogramConfig = field(default_factory=RRHistogramConfig)
 
     @property
     def run_output_dir(self) -> Path:
@@ -138,6 +137,5 @@ def load_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
         )
 
     structured = OmegaConf.structured(config_factory(), flags={"allow_objects": True})
-    _set_readonly_recursive(structured, False)
     merged = OmegaConf.merge(structured, cli_config)
     return cast(RhythmEventSequencesConfig, OmegaConf.to_object(merged))
