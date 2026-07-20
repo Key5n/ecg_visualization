@@ -33,7 +33,7 @@ class ECGDataset:
     sampling_rate_hz: ClassVar[int]
     annotation_extention: ClassVar[str] = "atr"
     beat_extention: ClassVar[str] = "atr"
-    entity_cls: ClassVar[type[ECGEntity]] = ECGEntity
+    entity_cls: ClassVar[type[ECGEntity]]
     entity_ids: ClassVar[tuple[str, ...]] = ()
 
     @classmethod
@@ -59,9 +59,6 @@ class ECGDataset:
 
         return cls.entity_cls(
             entity_id=entity_id,
-            dataset_name=cls.name,
-            dataset_id=cls.dataset_id,
-            sampling_rate_hz=record_sampling_rate_hz,
             signals=squeezed,
             annotation=annotation,
             beats=beats,

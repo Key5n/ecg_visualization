@@ -94,11 +94,6 @@ LTAFDB_ENTITY_IDS: tuple[str, ...] = (
 )
 
 
-@dataclass(frozen=True, slots=True)
-class LTAFDBEntity(ECGEntity):
-    pass
-
-
 # https://physionet.org/content/ltafdb/1.0.0/
 @dataclass(frozen=True, slots=True)
 class LTAFDB(ECGDataset):
@@ -106,5 +101,12 @@ class LTAFDB(ECGDataset):
     name: ClassVar[str] = "Long Term AF Database"
     dataset_id: ClassVar[str] = "ltafdb"
     sampling_rate_hz: ClassVar[int] = 128
-    entity_cls: ClassVar[type[ECGEntity]] = LTAFDBEntity
     entity_ids: ClassVar[tuple[str, ...]] = LTAFDB_ENTITY_IDS
+
+
+@dataclass(frozen=True, slots=True)
+class LTAFDBEntity(ECGEntity):
+    dataset: ClassVar[type[LTAFDB]] = LTAFDB
+
+
+LTAFDB.entity_cls = LTAFDBEntity

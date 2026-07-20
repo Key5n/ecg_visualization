@@ -104,7 +104,9 @@ def _find_first_rhythm_event_window_by_priority(
     segment_duration_sec: float,
 ) -> SegmentWindow:
     rhythm_events = _iter_rhythm_events(entity)
-    total_duration_sec = float(entity.signals.size) / float(entity.sampling_rate_hz)
+    total_duration_sec = float(entity.signals.size) / float(
+        entity.dataset.sampling_rate_hz
+    )
     for target_labels in target_label_priorities:
         event_window = _find_first_rhythm_event_window_in_events(
             rhythm_events,
@@ -131,7 +133,9 @@ def _find_first_rhythm_event_window(
     segment_duration_sec: float,
 ) -> SegmentWindow:
     rhythm_events = _iter_rhythm_events(entity)
-    total_duration_sec = float(entity.signals.size) / float(entity.sampling_rate_hz)
+    total_duration_sec = float(entity.signals.size) / float(
+        entity.dataset.sampling_rate_hz
+    )
     event_window = _find_first_rhythm_event_window_in_events(
         rhythm_events,
         target_labels=target_labels,
@@ -186,7 +190,7 @@ def _iter_rhythm_events(entity: ECGEntity) -> list[tuple[float, str]]:
         label = _normalize_rhythm_label(note)
         if label:
             rhythm_events.append(
-                (float(sample) / float(entity.sampling_rate_hz), label)
+                (float(sample) / float(entity.dataset.sampling_rate_hz), label)
             )
 
     return rhythm_events

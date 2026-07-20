@@ -79,7 +79,7 @@ def _export_concatenated_pdf(
 ) -> None:
     ts_paged = paginate_signals(
         entity.signals.size,
-        int(entity.sampling_rate_hz),
+        int(entity.dataset.sampling_rate_hz),
         pagination_config,
     )
     signal_ylim = compute_ylim(
@@ -114,7 +114,7 @@ def _render_rr_interval_histogram_page(
     config: RhythmEventSequencesConfig,
 ) -> None:
     rr_intervals = np.diff(np.asarray(entity.beats, dtype=np.float64))
-    rr_intervals_sec = rr_intervals / float(entity.sampling_rate_hz)
+    rr_intervals_sec = rr_intervals / float(entity.dataset.sampling_rate_hz)
     histogram_bins = np.arange(
         config.rr_histogram.xmin_sec,
         config.rr_histogram.xmax_sec + config.rr_histogram.bin_width_sec,
@@ -132,12 +132,12 @@ def _render_rr_interval_histogram_page(
                 ax,
                 rr_intervals_in_range,
                 bins=histogram_bins,
-                title=f"{entity.dataset_name} / {entity.entity_id} RR intervals",
+                title=f"{entity.dataset.name} / {entity.entity_id} RR intervals",
                 xlabel="R-peak interval (sec)",
                 ylabel="Count",
             )
         else:
-            ax.set_title(f"{entity.dataset_name} / {entity.entity_id} RR intervals")
+            ax.set_title(f"{entity.dataset.name} / {entity.entity_id} RR intervals")
             ax.set_xlabel("R-peak interval (sec)")
             ax.set_ylabel("Count")
         ax.set_xlim(config.rr_histogram.xmin_sec, config.rr_histogram.xmax_sec)
@@ -169,7 +169,7 @@ def _render_rr_interval_histogram_page(
             verticalalignment="top",
         )
     else:
-        ax.set_title(f"{entity.dataset_name} / {entity.entity_id} RR intervals")
+        ax.set_title(f"{entity.dataset.name} / {entity.entity_id} RR intervals")
         ax.set_xlabel("R-peak interval (sec)")
         ax.set_ylabel("Count")
         ax.text(
@@ -196,7 +196,7 @@ def _render_signal_row(
     config: RhythmEventSequencesConfig,
 ) -> None:
     window_start, window_end = float(ts[0]), float(ts[-1])
-    sampling_rate_hz = float(entity.sampling_rate_hz)
+    sampling_rate_hz = float(entity.dataset.sampling_rate_hz)
 
     start_idx = int(np.floor(window_start * sampling_rate_hz))
     end_idx = min(int(np.floor(window_end * sampling_rate_hz)) + 1, entity.signals.size)
@@ -270,7 +270,7 @@ def _decorate_page(
     page_idx: int,
 ) -> None:
     if page_idx == 0:
-        fig.suptitle(f"{entity.dataset_name}: {entity.entity_id}")
+        fig.suptitle(f"{entity.dataset.name}: {entity.entity_id}")
     fig.supxlabel("Time (sec)")
     fig.subplots_adjust(left=0.08, right=0.94, bottom=0.05, top=0.95)
 

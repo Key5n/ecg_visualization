@@ -58,11 +58,6 @@ MITDB_ENTITY_IDS: tuple[str, ...] = (
 )
 
 
-@dataclass(frozen=True, slots=True)
-class MITDBEntity(ECGEntity):
-    pass
-
-
 # https://physionet.org/content/mitdb/1.0.0/
 @dataclass(frozen=True, slots=True)
 class MITDB(ECGDataset):
@@ -70,5 +65,12 @@ class MITDB(ECGDataset):
     name: ClassVar[str] = "MIT-BIH Arrhythmia Database"
     dataset_id: ClassVar[str] = "mitdb"
     sampling_rate_hz: ClassVar[int] = 360
-    entity_cls: ClassVar[type[ECGEntity]] = MITDBEntity
     entity_ids: ClassVar[tuple[str, ...]] = MITDB_ENTITY_IDS
+
+
+@dataclass(frozen=True, slots=True)
+class MITDBEntity(ECGEntity):
+    dataset: ClassVar[type[MITDB]] = MITDB
+
+
+MITDB.entity_cls = MITDBEntity

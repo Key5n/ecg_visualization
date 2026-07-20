@@ -11,11 +11,6 @@ CUDB_ENTITY_IDS: tuple[str, ...] = tuple(
 )
 
 
-@dataclass(frozen=True, slots=True)
-class CUDBEntity(ECGEntity):
-    pass
-
-
 # https://physionet.org/content/cudb/1.0.0/
 @dataclass(frozen=True, slots=True)
 class CUDB(ECGDataset):
@@ -23,5 +18,12 @@ class CUDB(ECGDataset):
     name: ClassVar[str] = "Tachyarrythmia"
     dataset_id: ClassVar[str] = "cudb"
     sampling_rate_hz: ClassVar[int] = 250
-    entity_cls: ClassVar[type[ECGEntity]] = CUDBEntity
     entity_ids: ClassVar[tuple[str, ...]] = CUDB_ENTITY_IDS
+
+
+@dataclass(frozen=True, slots=True)
+class CUDBEntity(ECGEntity):
+    dataset: ClassVar[type[CUDB]] = CUDB
+
+
+CUDB.entity_cls = CUDBEntity

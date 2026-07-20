@@ -85,7 +85,7 @@ def _export_entity_pdf(
 ) -> None:
     ts_paged = paginate_signals(
         entity.signals.size,
-        int(entity.sampling_rate_hz),
+        int(entity.dataset.sampling_rate_hz),
         pagination_config,
     )
     signal_ylim = compute_ylim(

@@ -36,11 +36,6 @@ VFDB_ENTITY_IDS: tuple[str, ...] = (
 )
 
 
-@dataclass(frozen=True, slots=True)
-class VFDBEntity(ECGEntity):
-    pass
-
-
 # https://physionet.org/content/vfdb/1.0.0/
 @dataclass(frozen=True, slots=True)
 class VFDB(ECGDataset):
@@ -48,7 +43,6 @@ class VFDB(ECGDataset):
     name: ClassVar[str] = "MIT-BIH Malignant Ventricular Ectopy Database"
     dataset_id: ClassVar[str] = "vfdb"
     sampling_rate_hz: ClassVar[int] = 250
-    entity_cls: ClassVar[type[ECGEntity]] = VFDBEntity
     entity_ids: ClassVar[tuple[str, ...]] = VFDB_ENTITY_IDS
 
     @classmethod
@@ -59,3 +53,11 @@ class VFDB(ECGDataset):
         sampling_rate_hz: int,
     ) -> npt.NDArray[np.int_]:
         return detect_rpeaks(signals, sampling_rate_hz)
+
+
+@dataclass(frozen=True, slots=True)
+class VFDBEntity(ECGEntity):
+    dataset: ClassVar[type[VFDB]] = VFDB
+
+
+VFDB.entity_cls = VFDBEntity

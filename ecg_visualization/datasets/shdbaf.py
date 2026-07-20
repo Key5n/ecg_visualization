@@ -138,11 +138,6 @@ SHDBAF_ENTITY_IDS: tuple[str, ...] = (
 )
 
 
-@dataclass(frozen=True, slots=True)
-class SHDBAFEntity(ECGEntity):
-    pass
-
-
 # https://physionet.org/content/shdb-af/1.0.1/
 @dataclass(frozen=True, slots=True)
 class SHDBAF(ECGDataset):
@@ -153,5 +148,12 @@ class SHDBAF(ECGDataset):
     dataset_id: ClassVar[str] = "shdb-af"
     sampling_rate_hz: ClassVar[int] = 200
     beat_extention: ClassVar[str] = "qrs"
-    entity_cls: ClassVar[type[ECGEntity]] = SHDBAFEntity
     entity_ids: ClassVar[tuple[str, ...]] = SHDBAF_ENTITY_IDS
+
+
+@dataclass(frozen=True, slots=True)
+class SHDBAFEntity(ECGEntity):
+    dataset: ClassVar[type[SHDBAF]] = SHDBAF
+
+
+SHDBAF.entity_cls = SHDBAFEntity

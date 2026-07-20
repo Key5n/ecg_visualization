@@ -108,7 +108,7 @@ def _select_sinus_segments(
         raise ValueError(f"{entity.entity_id} does not contain enough RR intervals")
 
     beat_times_sec = np.asarray(entity.beats, dtype=np.float64) / float(
-        entity.sampling_rate_hz
+        entity.dataset.sampling_rate_hz
     )
     median_rr_interval_sec = float(np.median(rr_intervals))
     near_median_mask = (
@@ -187,7 +187,9 @@ def _resolve_segment_beats(
     *,
     max_reasonable_rr_interval_sec: float,
 ) -> npt.NDArray[np.int_]:
-    segment_duration_sec = float(segment_samples.size) / float(entity.sampling_rate_hz)
+    segment_duration_sec = float(segment_samples.size) / float(
+        entity.dataset.sampling_rate_hz
+    )
     minimum_required_beats = _minimum_required_beats(
         segment_duration_sec,
         max_reasonable_rr_interval_sec=max_reasonable_rr_interval_sec,
@@ -195,7 +197,7 @@ def _resolve_segment_beats(
     if segment_beats.size >= minimum_required_beats:
         return np.asarray(segment_beats, dtype=np.int_)
 
-    detected_beats = detect_rpeaks(segment_samples, entity.sampling_rate_hz)
+    detected_beats = detect_rpeaks(segment_samples, entity.dataset.sampling_rate_hz)
     if detected_beats.size >= max(2, segment_beats.size):
         LOGGER.info(
             "Using detected R-peaks for %s:%s (annotated=%d detected=%d min_required=%d).",
@@ -225,7 +227,7 @@ def _build_concatenated_sequence(
     max_reasonable_rr_interval_sec: float,
 ) -> ConcatenatedSequence | None:
     signal = entity.signals
-    sampling_rate_hz = float(entity.sampling_rate_hz)
+    sampling_rate_hz = float(entity.dataset.sampling_rate_hz)
     total_duration_sec = signal.size / sampling_rate_hz
 
     if not _validate_segment_window(

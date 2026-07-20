@@ -33,11 +33,6 @@ AFDB_ENTITY_IDS: tuple[str, ...] = (
 )
 
 
-@dataclass(frozen=True, slots=True)
-class AFDBEntity(ECGEntity):
-    pass
-
-
 # https://physionet.org/content/afdb/1.0.0/
 @dataclass(frozen=True, slots=True)
 class AFDB(ECGDataset):
@@ -45,5 +40,12 @@ class AFDB(ECGDataset):
     name: ClassVar[str] = "MIT-BIH Atrial Fibrillation Database"
     dataset_id: ClassVar[str] = "afdb"
     sampling_rate_hz: ClassVar[int] = 250
-    entity_cls: ClassVar[type[ECGEntity]] = AFDBEntity
     entity_ids: ClassVar[tuple[str, ...]] = AFDB_ENTITY_IDS
+
+
+@dataclass(frozen=True, slots=True)
+class AFDBEntity(ECGEntity):
+    dataset: ClassVar[type[AFDB]] = AFDB
+
+
+AFDB.entity_cls = AFDBEntity

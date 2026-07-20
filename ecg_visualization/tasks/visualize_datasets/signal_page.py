@@ -22,7 +22,7 @@ def render_signal_row(
     signal_ylim: tuple[float, float],
 ) -> None:
     window_start, window_end = float(ts[0]), float(ts[-1])
-    sampling_rate_hz = float(entity.sampling_rate_hz)
+    sampling_rate_hz = float(entity.dataset.sampling_rate_hz)
 
     start_idx = int(np.floor(window_start * sampling_rate_hz))
     end_idx = min(int(np.floor(window_end * sampling_rate_hz)) + 1, entity.signals.size)
@@ -101,6 +101,6 @@ def decorate_signal_page(
     page_idx: int,
 ) -> None:
     if page_idx == 0:
-        fig.suptitle(f"{entity.dataset_name}: {entity.entity_id}")
+        fig.suptitle(f"{entity.dataset.name}: {entity.entity_id}")
     fig.supxlabel("Time (sec)")
     fig.subplots_adjust(left=0.08, right=0.94, bottom=0.05, top=0.95)

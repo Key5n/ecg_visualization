@@ -9,11 +9,6 @@ from ecg_visualization.datasets.utils import physionet_root_dir
 SDDB_ENTITY_IDS: tuple[str, ...] = tuple(str(record_id) for record_id in range(30, 53))
 
 
-@dataclass(frozen=True, slots=True)
-class SDDBEntity(ECGEntity):
-    pass
-
-
 # https://physionet.org/content/sddb/1.0.0/
 @dataclass(frozen=True, slots=True)
 class SDDB(ECGDataset):
@@ -21,7 +16,6 @@ class SDDB(ECGDataset):
     name: ClassVar[str] = "Sudden Cardiac Death Holter Database"
     dataset_id: ClassVar[str] = "sddb"
     sampling_rate_hz: ClassVar[int] = 250
-    entity_cls: ClassVar[type[ECGEntity]] = SDDBEntity
     entity_ids: ClassVar[tuple[str, ...]] = SDDB_ENTITY_IDS
     vf_onset_seconds: ClassVar[dict[str, int]] = {
         "30": 28473,
@@ -45,3 +39,11 @@ class SDDB(ECGDataset):
         "51": 82703,
         "52": 9160,
     }
+
+
+@dataclass(frozen=True, slots=True)
+class SDDBEntity(ECGEntity):
+    dataset: ClassVar[type[SDDB]] = SDDB
+
+
+SDDB.entity_cls = SDDBEntity

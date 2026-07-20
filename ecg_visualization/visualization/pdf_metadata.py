@@ -15,9 +15,9 @@ def build_pdf_metadata(
     """Construct a PdfPages-compatible metadata dictionary."""
 
     metadata: dict[str, str] = {
-        "Title": f"{entity.dataset_name} ({entity.entity_id})",
-        "DatasetID": entity.dataset_id,
-        "DatasetName": entity.dataset_name,
+        "Title": f"{entity.dataset.name} ({entity.entity_id})",
+        "DatasetID": entity.dataset.dataset_id,
+        "DatasetName": entity.dataset.name,
         "EntityID": entity.entity_id,
         "TrialNumber": str(record.trial_number),
         "TrialState": record.state.name,

@@ -20,11 +20,6 @@ AFPDB_ENTITY_IDS: tuple[str, ...] = tuple(
 )
 
 
-@dataclass(frozen=True, slots=True)
-class AFPDBEntity(ECGEntity):
-    pass
-
-
 # https://physionet.org/content/afpdb/1.0.0/
 @dataclass(frozen=True, slots=True)
 class AFPDB(ECGDataset):
@@ -32,5 +27,12 @@ class AFPDB(ECGDataset):
     name: ClassVar[str] = "PAF Prediction Challenge Database"
     dataset_id: ClassVar[str] = "afpdb"
     sampling_rate_hz: ClassVar[int] = 128
-    entity_cls: ClassVar[type[ECGEntity]] = AFPDBEntity
     entity_ids: ClassVar[tuple[str, ...]] = AFPDB_ENTITY_IDS
+
+
+@dataclass(frozen=True, slots=True)
+class AFPDBEntity(ECGEntity):
+    dataset: ClassVar[type[AFPDB]] = AFPDB
+
+
+AFPDB.entity_cls = AFPDBEntity

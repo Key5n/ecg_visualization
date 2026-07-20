@@ -102,7 +102,7 @@ class StudyLoader:
     ) -> optuna.Study | None:
         """Load the Optuna study for the provided entity."""
 
-        study_name = f"{entity.dataset_id} {entity.entity_id}"
+        study_name = f"{entity.dataset.dataset_id} {entity.entity_id}"
         return self.load_by_name(study_name)
 
     def load_by_name(
@@ -149,15 +149,15 @@ def create_study_for_entity(
 ) -> optuna.Study:
     """Create (or reuse) an Optuna study for a specific entity."""
 
-    study_name = f"{entity.dataset_id} {entity.entity_id}"
+    study_name = f"{entity.dataset.dataset_id} {entity.entity_id}"
     kwargs.setdefault("load_if_exists", True)
     study = optuna.create_study(
         study_name=study_name,
         storage=storage_name,
         **kwargs,
     )
-    if study.user_attrs.get("dataset_id") != entity.dataset_id:
-        study.set_user_attr("dataset_id", entity.dataset_id)
+    if study.user_attrs.get("dataset_id") != entity.dataset.dataset_id:
+        study.set_user_attr("dataset_id", entity.dataset.dataset_id)
     if study.user_attrs.get("entity_id") != entity.entity_id:
         study.set_user_attr("entity_id", entity.entity_id)
     return study

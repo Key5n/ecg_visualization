@@ -104,7 +104,7 @@ class Objective:
 
         scores = model.predict(test_sequence)
 
-        beat_times = self.entity.beats / self.entity.sampling_rate_hz
+        beat_times = self.entity.beats / self.entity.dataset.sampling_rate_hz
         score_times = beat_times[self.WINDOW_SIZE :]
         score_sequence = TimedSequence(
             values=scores,
@@ -119,7 +119,7 @@ class Objective:
 
         trial.set_user_attr("score_sequence_artifact_id", score_artifact)
         trial.set_user_attr("entity_id", self.entity.entity_id)
-        trial.set_user_attr("dataset_id", self.entity.dataset_id)
+        trial.set_user_attr("dataset_id", self.entity.dataset.dataset_id)
         trial.set_user_attr("normal_window_start_time", float(normal_window.start_time))
         trial.set_user_attr("normal_window_end_time", float(normal_window.end_time))
 

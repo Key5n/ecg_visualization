@@ -180,21 +180,22 @@ class StudyVisualizer:
 
         signal_sequence = TimedSequence(
             values=entity.signals,
-            times=np.arange(entity.signals.size, dtype=float) / entity.sampling_rate_hz,
+            times=np.arange(entity.signals.size, dtype=float)
+            / entity.dataset.sampling_rate_hz,
         )
         annotation_sequence = TimedSequence(
             values=np.asarray(entity.annotation.symbol, dtype=str),
             times=np.asarray(entity.annotation.sample, dtype=float)
-            / entity.sampling_rate_hz,
+            / entity.dataset.sampling_rate_hz,
         )
         aux_note_sequence = TimedSequence(
             values=np.asarray(entity.aux_notes, dtype=object),
             times=np.asarray(entity.annotation.sample, dtype=float)
-            / entity.sampling_rate_hz,
+            / entity.dataset.sampling_rate_hz,
         )
         beat_sequence = TimedSequence(
             values=np.zeros_like(entity.beats),
-            times=entity.beats / entity.sampling_rate_hz,
+            times=entity.beats / entity.dataset.sampling_rate_hz,
         )
         return SequenceBundle(
             signal=signal_sequence,
@@ -224,7 +225,7 @@ class StudyVisualizer:
         total_samples = int(self.entity.signals.size)
         return paginate_signals(
             total_samples,
-            self.entity.sampling_rate_hz,
+            self.entity.dataset.sampling_rate_hz,
             self.pagination_config,
         )
 
@@ -262,7 +263,7 @@ class StudyVisualizer:
         return ", ".join(f"{note} ({counts[note]})" for note in ordered_notes)
 
     def _prepare_output_path(self) -> Path:
-        dataset_dir = self.visualization_root / self.entity.dataset_id
+        dataset_dir = self.visualization_root / self.entity.dataset.dataset_id
         dataset_dir.mkdir(parents=True, exist_ok=True)
         return dataset_dir / f"{self.entity.entity_id}.pdf"
 
@@ -317,7 +318,7 @@ class StudyVisualizer:
         if beats.size == 0:
             return
 
-        beat_times = beats.astype(np.float64) / self.entity.sampling_rate_hz
+        beat_times = beats.astype(np.float64) / self.entity.dataset.sampling_rate_hz
         for window_size in window_sizes:
             if beats.size < window_size:
                 continue
@@ -334,7 +335,7 @@ class StudyVisualizer:
                 durations,
                 bins="auto",
                 title=(
-                    f"{self.entity.dataset_name} / "
+                    f"{self.entity.dataset.name} / "
                     f"{self.entity.entity_id} (k={window_size})"
                 ),
                 xlabel="Time for R-peak window (sec)",
@@ -448,7 +449,7 @@ class StudyVisualizer:
                 for symbol in (self._sanitize_text(token) for token in symbol_list)
                 if symbol
             )
-            dataset_name = self._sanitize_text(self.entity.dataset_name)
+            dataset_name = self._sanitize_text(self.entity.dataset.name)
             entity_id = self._sanitize_text(self.entity.entity_id)
             fig.suptitle(
                 f"{dataset_name}: {entity_id} "

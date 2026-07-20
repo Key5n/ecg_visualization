@@ -59,7 +59,7 @@ def extract_normal_segment(
         determine such a segment.
     """
 
-    beat_times = entity.beats / entity.sampling_rate_hz
+    beat_times = entity.beats / entity.dataset.sampling_rate_hz
     rr_intervals = entity.rr_intervals
 
     start_idx = 0
@@ -86,7 +86,7 @@ def extract_normal_segment(
     raise ValueError(
         f"No {config.duration_sec / 60:g}-minute normal beat segment found "
         f"for {entity.entity_id} "
-        f"({entity.dataset_name})"
+        f"({entity.dataset.name})"
     )
 
 
@@ -112,8 +112,8 @@ def get_abnormal_windows(
 
     abnormal_windows: set[tuple[float, float]] = set()
     for start_sample, end_sample in get_window_durations(entity, window_size):
-        start_time = start_sample / entity.sampling_rate_hz
-        end_time = end_sample / entity.sampling_rate_hz
+        start_time = start_sample / entity.dataset.sampling_rate_hz
+        end_time = end_sample / entity.dataset.sampling_rate_hz
         duration = end_time - start_time
         if duration < min_duration or duration > max_duration:
             abnormal_windows.add((start_time, end_time))
@@ -147,8 +147,8 @@ def get_extreme_rr_windows(
 
     extreme_windows = set(
         (
-            start_sample / entity.sampling_rate_hz,
-            end_sample / entity.sampling_rate_hz,
+            start_sample / entity.dataset.sampling_rate_hz,
+            end_sample / entity.dataset.sampling_rate_hz,
         )
         for start_sample, end_sample in windows
         if (end_sample - start_sample) < lower_bound

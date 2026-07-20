@@ -21,7 +21,7 @@ def render_entity_summary_page(
 
     rows = _entity_summary_rows(entity, normal_segment_config)
     property_rows = _entity_property_rows(entity)
-    title = f"{entity.dataset_name}: {entity.entity_id}"
+    title = f"{entity.dataset.name}: {entity.entity_id}"
     ax.text(
         0.05,
         0.96,
@@ -98,14 +98,16 @@ def _entity_summary_rows(
 ) -> list[tuple[str, str]]:
     signal_samples = int(entity.signals.size)
     duration_sec = (
-        signal_samples / entity.sampling_rate_hz if entity.sampling_rate_hz else 0.0
+        signal_samples / entity.dataset.sampling_rate_hz
+        if entity.dataset.sampling_rate_hz
+        else 0.0
     )
     annotation_symbols = ", ".join(sorted(set(entity.annotation.symbol))) or "-"
 
     return [
         ("Entity ID", entity.entity_id),
-        ("Dataset", f"{entity.dataset_name} ({entity.dataset_id})"),
-        ("Sampling rate", f"{entity.sampling_rate_hz} Hz"),
+        ("Dataset", f"{entity.dataset.name} ({entity.dataset.dataset_id})"),
+        ("Sampling rate", f"{entity.dataset.sampling_rate_hz} Hz"),
         (
             "Signal length",
             f"{signal_samples:,} samples (~{duration_sec / 60:.2f} min)",
@@ -125,9 +127,9 @@ def _entity_summary_rows(
 def _entity_property_rows(entity: ECGEntity) -> list[tuple[str, str]]:
     return [
         ("entity_id", entity.entity_id),
-        ("dataset_name", entity.dataset_name),
-        ("dataset_id", entity.dataset_id),
-        ("sampling_rate_hz", f"{entity.sampling_rate_hz}"),
+        ("dataset_name", entity.dataset.name),
+        ("dataset_id", entity.dataset.dataset_id),
+        ("sampling_rate_hz", f"{entity.dataset.sampling_rate_hz}"),
         ("signals", _format_property_value(entity.signals)),
         ("annotation", _format_property_value(entity.annotation)),
         ("beats", _format_property_value(entity.beats)),

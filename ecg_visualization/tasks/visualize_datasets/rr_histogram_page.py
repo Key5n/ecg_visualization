@@ -34,12 +34,12 @@ def render_rr_interval_histogram_page(
                 ax,
                 rr_intervals_in_range,
                 bins=RR_HISTOGRAM_BINS,
-                title=f"{entity.dataset_name} / {entity.entity_id} RR intervals",
+                title=f"{entity.dataset.name} / {entity.entity_id} RR intervals",
                 xlabel="R-peak interval (sec)",
                 ylabel="Count",
             )
         else:
-            ax.set_title(f"{entity.dataset_name} / {entity.entity_id} RR intervals")
+            ax.set_title(f"{entity.dataset.name} / {entity.entity_id} RR intervals")
             ax.set_xlabel("R-peak interval (sec)")
             ax.set_ylabel("Count")
         ax.set_xlim(RR_HISTOGRAM_XMIN_SEC, RR_HISTOGRAM_XMAX_SEC)
@@ -64,7 +64,7 @@ def render_rr_interval_histogram_page(
             verticalalignment="top",
         )
     else:
-        ax.set_title(f"{entity.dataset_name} / {entity.entity_id} RR intervals")
+        ax.set_title(f"{entity.dataset.name} / {entity.entity_id} RR intervals")
         ax.set_xlabel("R-peak interval (sec)")
         ax.set_ylabel("Count")
         ax.text(
