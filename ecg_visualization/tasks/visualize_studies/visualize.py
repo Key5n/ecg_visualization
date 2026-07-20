@@ -11,7 +11,7 @@ from ecg_visualization.logging.tqdm_multiprocessing import (
     queue_logging_context,
     worker_logging_initializer,
 )
-from ecg_visualization.tasks.visualize.config import VisualizeConfig
+from ecg_visualization.tasks.visualize_studies.config import VisualizeConfig
 from ecg_visualization.utils.optuna_record import (
     build_storage_name,
     create_artifact_store,

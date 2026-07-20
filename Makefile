@@ -7,7 +7,7 @@ DATASET_STAMP := $(DATASET_ROOT)/.downloaded
 RHYTHM_EVENT_SEQUENCES_CONFIG ?= sddb
 
 .PHONY: setup sync hooks datasets format lint optuna_dashboard tasks \
-	visualize visualize-datasets cudb-anomaly-scores study \
+	visualize-studies visualize-datasets cudb-anomaly-scores study \
 	rhythm-event-sequences rhythm-event-sequences-visualize rhythm-event-sequences-score
 
 setup: sync hooks datasets
@@ -36,7 +36,7 @@ optuna_dashboard:
 
 tasks:
 	@printf '%s\n' \
-		'visualize' \
+		'visualize-studies' \
 		'visualize-datasets' \
 		'cudb-anomaly-scores' \
 		'study' \
@@ -44,8 +44,8 @@ tasks:
 		'rhythm-event-sequences-visualize' \
 		'rhythm-event-sequences-score'
 
-visualize:
-	$(PYTHON) -m ecg_visualization.tasks.visualize
+visualize-studies:
+	$(PYTHON) -m ecg_visualization.tasks.visualize_studies
 
 visualize-datasets:
 	$(PYTHON) -m ecg_visualization.tasks.visualize_datasets $(if $(dataset_ids),dataset_ids=$(dataset_ids),)
