@@ -52,16 +52,13 @@ def iter_concatenated_sequences(
                     segment_duration_sec=config.segment_duration_sec,
                     sinus_rr_median_threshold_sec=config.sinus_rr_median_threshold_sec,
                 )
+                concat = _build_concatenated_sequence(
+                    entity,
+                    segments_info,
+                    max_reasonable_rr_interval_sec=config.max_reasonable_rr_interval_sec,
+                )
             except ValueError as exc:
                 LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
-                continue
-
-            concat = _build_concatenated_sequence(
-                entity,
-                segments_info,
-                max_reasonable_rr_interval_sec=config.max_reasonable_rr_interval_sec,
-            )
-            if concat is None:
                 continue
             yield entity, concat
 
@@ -225,39 +222,35 @@ def _build_concatenated_sequence(
     segments_info: SegmentsInfo,
     *,
     max_reasonable_rr_interval_sec: float,
-) -> ConcatenatedSequence | None:
+) -> ConcatenatedSequence:
     signal = entity.signals
     sampling_rate_hz = float(entity.dataset.sampling_rate_hz)
     total_duration_sec = signal.size / sampling_rate_hz
 
-    if not _validate_segment_window(
+    _validate_segment_window(
         entity,
         segments_info.train,
         label="sinus train",
         total_duration_sec=total_duration_sec,
-    ):
-        return None
-    if not _validate_segment_window(
+    )
+    _validate_segment_window(
         entity,
         segments_info.test,
         label="sinus test",
         total_duration_sec=total_duration_sec,
-    ):
-        return None
-    if not _validate_segment_window(
+    )
+    _validate_segment_window(
         entity,
         segments_info.pre_vf,
         label="pre-VF",
         total_duration_sec=total_duration_sec,
-    ):
-        return None
-    if not _validate_segment_window(
+    )
+    _validate_segment_window(
         entity,
         segments_info.vf,
         label="VF",
         total_duration_sec=total_duration_sec,
-    ):
-        return None
+    )
 
     concatenated_samples: list[np.ndarray] = []
     concatenated_beats: list[npt.NDArray[np.int_]] = []
@@ -268,12 +261,9 @@ def _build_concatenated_sequence(
         start_sample = int(np.round(window.start_sec * sampling_rate_hz))
         end_sample = int(np.round(window.end_sec * sampling_rate_hz))
         if end_sample > signal.size:
-            LOGGER.warning(
-                "Skipping %s: %s segment exceeds record length.",
-                entity.entity_id,
-                name,
+            raise ValueError(
+                f"{name} segment exceeds record length for {entity.entity_id}"
             )
-            return None
 
         concatenated_samples.append(signal[start_sample:end_sample])
         annotated_segment_beats = entity.beats[
@@ -330,22 +320,12 @@ def _validate_segment_window(
     *,
     label: str,
     total_duration_sec: float,
-) -> bool:
+) -> None:
     if window.end_sec <= window.start_sec:
-        LOGGER.warning(
-            "Skipping %s: %s window has invalid bounds.",
-            entity.entity_id,
-            label,
-        )
-        return False
+        raise ValueError(f"{label} window has invalid bounds for {entity.entity_id}")
 
     if window.start_sec < 0 or window.end_sec > total_duration_sec:
-        LOGGER.warning(
-            "Skipping %s: %s window exceeds record length (%.1fs).",
-            entity.entity_id,
-            label,
-            total_duration_sec,
+        raise ValueError(
+            f"{label} window exceeds record length for {entity.entity_id} "
+            f"({total_duration_sec:.1f}s)"
         )
-        return False
-
-    return True
