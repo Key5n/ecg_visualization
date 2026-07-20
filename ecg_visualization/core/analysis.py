@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 import numpy as np
@@ -12,6 +13,34 @@ class NormalSegmentConfig:
     min_rr_interval_sec: float = 0.6
     max_rr_interval_sec: float = 1.0
     duration_sec: float = 300.0
+
+
+def get_window_durations(
+    entity: ECGEntity,
+    window_size: int,
+) -> Iterator[tuple[int, int]]:
+    """
+    Yield contiguous windows of RR intervals.
+
+    Args:
+        entity (ECGEntity): ECG entity to analyze.
+        window_size (int): Number of RR intervals per window.
+
+    Returns:
+        Iterator[tuple[int, int]]: Sample index windows for the requested size.
+        Yields nothing when insufficient beats are available.
+    """
+
+    if window_size < 2:
+        raise ValueError("window_size must be at least 2 beats")
+
+    if entity.beats.size < window_size + 1:
+        return
+
+    for start_idx in range(entity.beats.size - window_size):
+        start_sample = int(entity.beats[start_idx])
+        end_sample = int(entity.beats[start_idx + window_size])
+        yield start_sample, end_sample
 
 
 def extract_normal_segment(
@@ -82,7 +111,7 @@ def get_abnormal_windows(
     """
 
     abnormal_windows: set[tuple[float, float]] = set()
-    for start_sample, end_sample in entity.get_window_durations(window_size):
+    for start_sample, end_sample in get_window_durations(entity, window_size):
         start_time = start_sample / entity.sampling_rate_hz
         end_time = end_sample / entity.sampling_rate_hz
         duration = end_time - start_time
@@ -105,7 +134,7 @@ def get_extreme_rr_windows(
     percentile range of durations across all such windows.
     """
 
-    windows = list(entity.get_window_durations(window_size))
+    windows = list(get_window_durations(entity, window_size))
     if not windows:
         return set()
 

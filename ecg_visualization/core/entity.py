@@ -1,4 +1,3 @@
-from collections.abc import Iterator
 from dataclasses import dataclass
 
 import numpy as np
@@ -39,32 +38,6 @@ class ECGEntity:
 
     def __str__(self) -> str:
         return f"{self.dataset_id}/{self.entity_id}"
-
-    def get_window_durations(
-        self,
-        window_size: int,
-    ) -> Iterator[tuple[int, int]]:
-        """
-        Yield contiguous windows of RR intervals.
-
-        Args:
-            window_size (int): Number of RR intervals per window.
-
-        Returns:
-            Iterator[tuple[int, int]]: Sample index windows for the requested size.
-            Yields nothing when insufficient beats are available.
-        """
-
-        if window_size < 2:
-            raise ValueError("window_size must be at least 2 beats")
-
-        if self.beats.size < window_size + 1:
-            return
-
-        for start_idx in range(self.beats.size - window_size):
-            start_sample = int(self.beats[start_idx])
-            end_sample = int(self.beats[start_idx + window_size])
-            yield start_sample, end_sample
 
     @property
     def rr_intervals(self) -> npt.NDArray[np.float64]:

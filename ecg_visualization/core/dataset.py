@@ -9,7 +9,6 @@ import numpy as np
 import numpy.typing as npt
 import wfdb
 
-from ecg_visualization.core.analysis import NormalSegmentConfig, extract_normal_segment
 from ecg_visualization.core.annotations import read_annotation, read_normal_beats
 from ecg_visualization.core.entity import ECGEntity
 
@@ -82,25 +81,6 @@ class ECGDataset:
     def get_entities(cls) -> Iterator[ECGEntity]:
         for entity_id in cls.entity_ids:
             yield cls.get_entity(entity_id=entity_id)
-
-    def extract_normal_segments(
-        self,
-        normal_segment_config: NormalSegmentConfig,
-    ) -> dict[str, npt.NDArray[np.float64]]:
-        """
-        Extract configured-duration normal RR-interval segments for all records.
-
-        Returns:
-            dict[str, np.ndarray]: mapping from record id to the RR-interval
-            sequence representing the normal segment.
-        """
-
-        segments: dict[str, npt.NDArray[np.float64]] = {}
-        for entity in self.get_entities():
-            segment = extract_normal_segment(entity, normal_segment_config)
-            segments[entity.entity_id] = segment
-
-        return segments
 
     def __str__(self):
         return self.name
