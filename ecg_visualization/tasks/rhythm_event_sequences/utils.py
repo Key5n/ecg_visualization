@@ -43,24 +43,24 @@ class ConcatenatedSequence:
 def iter_concatenated_sequences(
     config: RhythmEventSequencesConfig,
 ) -> Iterable[tuple[ECGEntity, ConcatenatedSequence]]:
-    for dataset in load_data_sources((config.dataset_id,)):
-        for entity in dataset.get_entities():
-            try:
-                segments_info = _select_sinus_segments(
-                    dataset,
-                    entity,
-                    segment_duration_sec=config.segment_duration_sec,
-                    sinus_rr_median_threshold_sec=config.sinus_rr_median_threshold_sec,
-                )
-                concat = _build_concatenated_sequence(
-                    entity,
-                    segments_info,
-                    max_reasonable_rr_interval_sec=config.max_reasonable_rr_interval_sec,
-                )
-            except ValueError as exc:
-                LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
-                continue
-            yield entity, concat
+    dataset = load_data_sources((config.dataset_id,))[0]
+    for entity in dataset.get_entities():
+        try:
+            segments_info = _select_sinus_segments(
+                dataset,
+                entity,
+                segment_duration_sec=config.segment_duration_sec,
+                sinus_rr_median_threshold_sec=config.sinus_rr_median_threshold_sec,
+            )
+            concat = _build_concatenated_sequence(
+                entity,
+                segments_info,
+                max_reasonable_rr_interval_sec=config.max_reasonable_rr_interval_sec,
+            )
+        except ValueError as exc:
+            LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
+            continue
+        yield entity, concat
 
 
 def _segment_windows(segments_info: SegmentsInfo) -> list[tuple[str, SegmentWindow]]:
