@@ -4,11 +4,10 @@ from functools import singledispatch
 
 import numpy as np
 
-from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
-from ecg_visualization.datasets.ltafdb import LTAFDB
-from ecg_visualization.datasets.sddb import SDDB
-from ecg_visualization.datasets.vfdb import VFDB
+from ecg_visualization.datasets.ltafdb import LTAFDBEntity
+from ecg_visualization.datasets.sddb import SDDB, SDDBEntity
+from ecg_visualization.datasets.vfdb import VFDBEntity
 from ecg_visualization.tasks.rhythm_event_sequences.config import (
     SegmentWindow,
     build_fixed_vf_windows,
@@ -23,20 +22,19 @@ VFDB_RHYTHM_LABEL_PRIORITIES = (
 
 @singledispatch
 def resolve_event_windows(
-    dataset: ECGDataset,
     entity: ECGEntity,
     *,
     segment_duration_sec: float,
 ) -> tuple[SegmentWindow, SegmentWindow]:
     raise ValueError(
-        f"event window resolution is not configured for dataset '{dataset.dataset_id}'"
+        f"event window resolution is not configured for dataset "
+        f"'{entity.dataset.dataset_id}'"
     )
 
 
 @resolve_event_windows.register
 def _resolve_sddb_event_windows(
-    dataset: SDDB,
-    entity: ECGEntity,
+    entity: SDDBEntity,
     *,
     segment_duration_sec: float,
 ) -> tuple[SegmentWindow, SegmentWindow]:
@@ -49,8 +47,7 @@ def _resolve_sddb_event_windows(
 
 @resolve_event_windows.register
 def _resolve_ltafdb_event_windows(
-    dataset: LTAFDB,
-    entity: ECGEntity,
+    entity: LTAFDBEntity,
     *,
     segment_duration_sec: float,
 ) -> tuple[SegmentWindow, SegmentWindow]:
@@ -67,8 +64,7 @@ def _resolve_ltafdb_event_windows(
 
 @resolve_event_windows.register
 def _resolve_vfdb_event_windows(
-    dataset: VFDB,
-    entity: ECGEntity,
+    entity: VFDBEntity,
     *,
     segment_duration_sec: float,
 ) -> tuple[SegmentWindow, SegmentWindow]:

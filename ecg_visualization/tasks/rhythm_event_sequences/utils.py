@@ -112,7 +112,6 @@ def _select_sinus_segments(
         np.abs(rr_intervals - median_rr_interval_sec) <= sinus_rr_median_threshold_sec
     )
     pre_vf_window, vf_window = resolve_event_windows(
-        dataset,
         entity,
         segment_duration_sec=segment_duration_sec,
     )
