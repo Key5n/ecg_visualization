@@ -52,10 +52,8 @@ class ECGDataset:
                 f"{cls.dataset_id}/{entity_id} has sampling rate {record.fs}, "
                 f"expected {cls.sampling_rate_hz}"
             )
-        record_sampling_rate_hz = int(sampling_rate)
-
         annotation = read_annotation(cls.annotation_extention, data_path)
-        beats = cls._read_beats(data_path, squeezed, record_sampling_rate_hz)
+        beats = cls._read_beats(data_path, squeezed)
 
         return cls.entity_cls(
             entity_id=entity_id,
@@ -70,7 +68,6 @@ class ECGDataset:
         cls,
         data_path: str,
         signals: npt.NDArray[np.float64],
-        sampling_rate_hz: int,
     ) -> npt.NDArray[np.int_]:
         return read_normal_beats(cls.beat_extention, data_path)
 

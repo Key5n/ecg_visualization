@@ -50,9 +50,8 @@ class VFDB(ECGDataset):
         cls,
         data_path: str,
         signals: npt.NDArray[np.float64],
-        sampling_rate_hz: int,
     ) -> npt.NDArray[np.int_]:
-        return detect_rpeaks(signals, sampling_rate_hz)
+        return detect_rpeaks(signals, cls.sampling_rate_hz)
 
 
 @dataclass(frozen=True, slots=True)
