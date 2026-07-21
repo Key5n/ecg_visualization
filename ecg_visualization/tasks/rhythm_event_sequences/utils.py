@@ -106,7 +106,7 @@ def _select_sinus_segments(
     rr_intervals = entity.rr_intervals
 
     if rr_intervals.size < 2:
-        raise ValueError(f"{entity.entity_id} does not contain enough RR intervals")
+        raise ValueError(f"{entity} does not contain enough RR intervals")
 
     beat_times_sec = np.asarray(entity.beats, dtype=np.float64) / float(
         entity.dataset.sampling_rate_hz
@@ -127,14 +127,36 @@ def _select_sinus_segments(
     )
 
     candidate_runs = find_true_runs(near_median_mask & available_rr_mask)
-    if len(candidate_runs) < 2:
-        raise ValueError(
-            f"{entity.entity_id} expected 2 sinus runs, found {len(candidate_runs)}"
-        )
+    before_pre_vf_runs = [
+        run
+        for run in candidate_runs
+        if beat_times_sec[run[1]] <= pre_vf_window.start_sec
+    ]
+    before_pre_vf_runs.sort(key=_sinus_run_sort_key)
+    if not before_pre_vf_runs:
+        raise ValueError(f"{entity.entity_id} has no train sinus before pre-VF")
 
-    candidate_runs.sort(key=lambda run: (-(run[1] - run[0]), run[0]))
-    train_window = _rr_run_to_segment_window(beat_times_sec, candidate_runs[0])
-    test_window = _rr_run_to_segment_window(beat_times_sec, candidate_runs[1])
+    test_after_vf_runs = [
+        run for run in candidate_runs if beat_times_sec[run[0]] >= vf_window.end_sec
+    ]
+    test_after_vf_runs.sort(key=_sinus_run_sort_key)
+    train_run = before_pre_vf_runs[0]
+    if not test_after_vf_runs:
+        LOGGER.warning(
+            "%s has no test sinus after VF; falling back to pre-VF candidate runs",
+            entity.entity_id,
+        )
+        test_runs = before_pre_vf_runs[1:]
+    else:
+        test_runs = test_after_vf_runs
+    if not test_runs:
+        raise ValueError(
+            f"{entity.entity_id} has no non-overlapping test sinus before pre-VF"
+        )
+    test_run = test_runs[0]
+
+    train_window = _rr_run_to_segment_window(beat_times_sec, train_run)
+    test_window = _rr_run_to_segment_window(beat_times_sec, test_run)
     return SegmentsInfo(
         entity_id=entity.entity_id,
         train=train_window,
@@ -142,6 +164,10 @@ def _select_sinus_segments(
         pre_vf=pre_vf_window,
         vf=vf_window,
     )
+
+
+def _sinus_run_sort_key(run: tuple[int, int]) -> tuple[int, int]:
+    return (-(run[1] - run[0]), run[0])
 
 
 def _build_available_rr_mask(
