@@ -43,7 +43,8 @@ class RhythmEventSequencesConfig:
     root_dir: Path = Path("result") / "rhythm_event_sequences"
     run_id: str = field(default_factory=_generate_run_id)
     window_size: int = 10
-    segment_duration_sec: float = 10 * 60
+    pre_vf_duration_sec: float = 10 * 60
+    vf_duration_sec: float = 10 * 60
     max_reasonable_rr_interval_sec: float = 3.0
     sinus_rr_median_threshold_sec: float = 0.1
     segment_colors: dict[str, str] = field(
@@ -78,21 +79,24 @@ class RhythmEventSequencesConfig:
 def ltafdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     return RhythmEventSequencesConfig(
         dataset_id="ltafdb",
-        segment_duration_sec=60,
+        pre_vf_duration_sec=60,
+        vf_duration_sec=60,
     )
 
 
 def sddb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     return RhythmEventSequencesConfig(
         dataset_id="sddb",
-        segment_duration_sec=30,
+        pre_vf_duration_sec=30,
+        vf_duration_sec=30,
     )
 
 
 def vfdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     return RhythmEventSequencesConfig(
         dataset_id="vfdb",
-        segment_duration_sec=10,
+        pre_vf_duration_sec=10,
+        vf_duration_sec=10,
     )
 
 
@@ -106,7 +110,8 @@ RHYTHM_EVENT_SEQUENCES_CONFIGS: dict[str, Callable[[], RhythmEventSequencesConfi
 def build_fixed_vf_windows(
     entity_id: str,
     *,
-    segment_duration_sec: float,
+    pre_vf_duration_sec: float,
+    vf_duration_sec: float,
     vf_onset_seconds: dict[str, float],
 ) -> tuple[SegmentWindow, SegmentWindow]:
     vf_onset_sec = vf_onset_seconds.get(entity_id)
@@ -115,12 +120,12 @@ def build_fixed_vf_windows(
 
     return (
         SegmentWindow(
-            vf_onset_sec - segment_duration_sec,
+            vf_onset_sec - pre_vf_duration_sec,
             vf_onset_sec,
         ),
         SegmentWindow(
             vf_onset_sec,
-            vf_onset_sec + segment_duration_sec,
+            vf_onset_sec + vf_duration_sec,
         ),
     )
 

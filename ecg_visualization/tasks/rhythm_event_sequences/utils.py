@@ -49,7 +49,8 @@ def iter_concatenated_sequences(
             segments_info = _select_sinus_segments(
                 dataset,
                 entity,
-                segment_duration_sec=config.segment_duration_sec,
+                pre_vf_duration_sec=config.pre_vf_duration_sec,
+                vf_duration_sec=config.vf_duration_sec,
                 sinus_rr_median_threshold_sec=config.sinus_rr_median_threshold_sec,
             )
             concat = _build_concatenated_sequence(
@@ -76,7 +77,8 @@ def _build_sinus_segments(
     dataset: ECGDataset,
     entities: Iterable[ECGEntity],
     *,
-    segment_duration_sec: float,
+    pre_vf_duration_sec: float,
+    vf_duration_sec: float,
     sinus_rr_median_threshold_sec: float,
 ) -> tuple[SegmentsInfo, ...]:
     segments: list[SegmentsInfo] = []
@@ -84,7 +86,8 @@ def _build_sinus_segments(
         segments_info = _select_sinus_segments(
             dataset,
             entity,
-            segment_duration_sec=segment_duration_sec,
+            pre_vf_duration_sec=pre_vf_duration_sec,
+            vf_duration_sec=vf_duration_sec,
             sinus_rr_median_threshold_sec=sinus_rr_median_threshold_sec,
         )
         segments.append(segments_info)
@@ -96,7 +99,8 @@ def _select_sinus_segments(
     dataset: ECGDataset,
     entity: ECGEntity,
     *,
-    segment_duration_sec: float,
+    pre_vf_duration_sec: float,
+    vf_duration_sec: float,
     sinus_rr_median_threshold_sec: float,
 ) -> SegmentsInfo:
     rr_intervals = entity.rr_intervals
@@ -113,7 +117,8 @@ def _select_sinus_segments(
     )
     pre_vf_window, vf_window = resolve_event_windows(
         entity,
-        segment_duration_sec=segment_duration_sec,
+        pre_vf_duration_sec=pre_vf_duration_sec,
+        vf_duration_sec=vf_duration_sec,
     )
     available_rr_mask = _build_available_rr_mask(
         beat_times_sec,
