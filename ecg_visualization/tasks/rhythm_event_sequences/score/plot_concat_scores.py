@@ -46,7 +46,7 @@ def _plot_concat_scores(
         2,
         1,
         sharex=True,
-        figsize=(5, 2),
+        figsize=(15, 6),
     )
 
     signal_ax.plot(ts, samples, "-", linewidth=0.8)
