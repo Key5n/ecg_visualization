@@ -25,7 +25,7 @@ def resolve_event_windows(
     entity: ECGEntity,
     *,
     pre_vf_duration_sec: float,
-    vf_duration_sec: float,
+    vf_duration_sec: float | None = None,
 ) -> tuple[SegmentWindow, SegmentWindow]:
     raise ValueError(
         f"event window resolution is not configured for dataset "
@@ -38,8 +38,11 @@ def _resolve_sddb_event_windows(
     entity: SDDBEntity,
     *,
     pre_vf_duration_sec: float,
-    vf_duration_sec: float,
+    vf_duration_sec: float | None = None,
 ) -> tuple[SegmentWindow, SegmentWindow]:
+    if vf_duration_sec is None:
+        raise ValueError("vf_duration_sec is required for SDDB event windows")
+
     return build_fixed_vf_windows(
         entity.entity_id,
         pre_vf_duration_sec=pre_vf_duration_sec,
@@ -53,8 +56,11 @@ def _resolve_ltafdb_event_windows(
     entity: LTAFDBEntity,
     *,
     pre_vf_duration_sec: float,
-    vf_duration_sec: float,
+    vf_duration_sec: float | None = None,
 ) -> tuple[SegmentWindow, SegmentWindow]:
+    if vf_duration_sec is None:
+        raise ValueError("vf_duration_sec is required for LTAFDB event windows")
+
     event_window = _find_first_rhythm_event_window(
         entity,
         target_labels={"AF", "AFIB"},
@@ -71,12 +77,12 @@ def _resolve_vfdb_event_windows(
     entity: VFDBEntity,
     *,
     pre_vf_duration_sec: float,
-    vf_duration_sec: float,
+    vf_duration_sec: float | None = None,
 ) -> tuple[SegmentWindow, SegmentWindow]:
     event_window = _find_first_rhythm_event_window_by_priority(
         entity,
         target_label_priorities=VFDB_RHYTHM_LABEL_PRIORITIES,
-        vf_duration_sec=vf_duration_sec,
+        bridge_noise=True,
     )
     return _build_pre_event_windows(
         event_window,
@@ -102,7 +108,7 @@ def _find_first_rhythm_event_window_by_priority(
     entity: ECGEntity,
     *,
     target_label_priorities: tuple[frozenset[str], ...],
-    vf_duration_sec: float,
+    bridge_noise: bool = False,
 ) -> SegmentWindow:
     rhythm_events = _iter_rhythm_events(entity)
     total_duration_sec = float(entity.signals.size) / float(
@@ -113,7 +119,7 @@ def _find_first_rhythm_event_window_by_priority(
             rhythm_events,
             target_labels=target_labels,
             total_duration_sec=total_duration_sec,
-            vf_duration_sec=vf_duration_sec,
+            bridge_noise=bridge_noise,
         )
         if event_window is not None:
             return event_window
@@ -122,9 +128,7 @@ def _find_first_rhythm_event_window_by_priority(
         "/".join(sorted(target_labels)) for target_labels in target_label_priorities
     ]
     labels = _format_label_groups(label_groups)
-    raise ValueError(
-        f"no {labels} rhythm episode of at least {vf_duration_sec:.1f}s found"
-    )
+    raise ValueError(f"no {labels} rhythm episode found")
 
 
 def _find_first_rhythm_event_window(
@@ -157,18 +161,28 @@ def _find_first_rhythm_event_window_in_events(
     *,
     target_labels: set[str] | frozenset[str],
     total_duration_sec: float,
-    vf_duration_sec: float,
+    vf_duration_sec: float | None = None,
+    bridge_noise: bool = False,
 ) -> SegmentWindow | None:
     for idx, (start_sec, label) in enumerate(rhythm_events):
         if label not in target_labels:
             continue
 
-        end_sec = total_duration_sec
-        if idx + 1 < len(rhythm_events):
-            end_sec = rhythm_events[idx + 1][0]
+        end_sec = _find_episode_end_sec(
+            rhythm_events,
+            start_idx=idx,
+            total_duration_sec=total_duration_sec,
+            bridge_noise=bridge_noise,
+        )
 
-        if end_sec - start_sec < vf_duration_sec:
+        if vf_duration_sec is not None and end_sec - start_sec < vf_duration_sec:
             continue
+
+        if vf_duration_sec is None:
+            return SegmentWindow(
+                start_sec=start_sec,
+                end_sec=end_sec,
+            )
 
         return SegmentWindow(
             start_sec=start_sec,
@@ -176,6 +190,21 @@ def _find_first_rhythm_event_window_in_events(
         )
 
     return None
+
+
+def _find_episode_end_sec(
+    rhythm_events: list[tuple[float, str]],
+    *,
+    start_idx: int,
+    total_duration_sec: float,
+    bridge_noise: bool,
+) -> float:
+    for next_start_sec, next_label in rhythm_events[start_idx + 1 :]:
+        if bridge_noise and next_label == "NOISE":
+            continue
+        return next_start_sec
+
+    return total_duration_sec
 
 
 def _format_label_groups(label_groups: list[str]) -> str:
