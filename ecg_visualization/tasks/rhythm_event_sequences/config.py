@@ -87,7 +87,7 @@ def ltafdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
 def sddb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     return RhythmEventSequencesConfig(
         dataset_id="sddb",
-        pre_vf_duration_sec=30,
+        pre_vf_duration_sec=60,
         vf_duration_sec=30,
     )
 
@@ -95,7 +95,7 @@ def sddb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
 def vfdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     return RhythmEventSequencesConfig(
         dataset_id="vfdb",
-        pre_vf_duration_sec=10,
+        pre_vf_duration_sec=60,
         vf_duration_sec=10,
     )
 
