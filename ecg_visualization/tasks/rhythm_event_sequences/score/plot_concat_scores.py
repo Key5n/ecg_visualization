@@ -33,14 +33,6 @@ def _plot_concat_scores(
     signal_ylim = (signal_min - signal_margin, signal_max + signal_margin)
 
     scores = np.asarray(score_result.scores, dtype=float)
-    positive_scores = scores[scores > 0]
-    score_min = float(np.nanmin(positive_scores)) if positive_scores.size else 1e-6
-    score_max = float(np.nanmax(scores)) if scores.size else 1.0
-    score_margin = min(
-        (score_max - score_min) * 0.1 or score_min * 0.1 or 1e-6,
-        score_min * 0.99,
-    )
-    score_ylim = (score_min - score_margin, score_max + score_margin)
 
     fig, (signal_ax, score_ax) = plt.subplots(
         2,
@@ -62,18 +54,15 @@ def _plot_concat_scores(
     score_ax.set_ylabel("Score")
     score_ax.set_xlabel("Time (sec)")
     score_ax.set_yscale("log")
-    score_ax.set_ylim(*score_ylim)
 
     _highlight_concat_segments(
         signal_ax,
         concat,
-        ylim_upper=signal_ylim[1],
         segment_colors=config.segment_colors,
     )
     _highlight_concat_segments(
         score_ax,
         concat,
-        ylim_upper=score_ylim[1],
         segment_colors=config.segment_colors,
     )
 
@@ -88,9 +77,10 @@ def _highlight_segments(
     *,
     window_start: float,
     window_end: float,
-    ylim_upper: float,
     segment_colors: dict[str, str],
 ) -> None:
+    ylim_upper = ax.get_ylim()[1]
+
     for name, start_sec, end_sec in segments:
         if end_sec <= window_start or start_sec >= window_end:
             continue
@@ -117,7 +107,6 @@ def _highlight_concat_segments(
     ax: Axes,
     concat: ConcatenatedSequence,
     *,
-    ylim_upper: float,
     segment_colors: dict[str, str],
 ) -> None:
     segments: list[tuple[str, float, float]] = []
@@ -141,6 +130,5 @@ def _highlight_concat_segments(
         segments,
         window_start=segments[0][1],
         window_end=segments[-1][2],
-        ylim_upper=ylim_upper,
         segment_colors=segment_colors,
     )

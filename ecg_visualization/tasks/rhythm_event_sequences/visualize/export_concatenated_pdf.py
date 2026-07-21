@@ -210,8 +210,6 @@ def _render_signal_row(
         concat,
         window_start=window_start,
         window_end=window_end,
-        ylim_lower=signal_ylim[0],
-        ylim_upper=signal_ylim[1],
         segment_colors=config.segment_colors,
     )
 
@@ -247,10 +245,10 @@ def _highlight_segments(
     *,
     window_start: float,
     window_end: float,
-    ylim_lower: float,
-    ylim_upper: float,
     segment_colors: dict[str, str],
 ) -> None:
+    ylim_lower, ylim_upper = ax.get_ylim()
+
     for name, start_sec, end_sec in segments:
         if end_sec <= window_start or start_sec >= window_end:
             continue
@@ -300,8 +298,6 @@ def _highlight_concat_segments(
     *,
     window_start: float,
     window_end: float,
-    ylim_lower: float,
-    ylim_upper: float,
     segment_colors: dict[str, str],
 ) -> None:
     segments: list[tuple[str, float, float]] = []
@@ -318,7 +314,5 @@ def _highlight_concat_segments(
         segments,
         window_start=window_start,
         window_end=window_end,
-        ylim_lower=ylim_lower,
-        ylim_upper=ylim_upper,
         segment_colors=segment_colors,
     )
