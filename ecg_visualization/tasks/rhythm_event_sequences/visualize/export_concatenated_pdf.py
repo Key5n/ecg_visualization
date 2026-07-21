@@ -21,6 +21,7 @@ from ecg_visualization.visualization.layouts import (
 )
 from ecg_visualization.visualization.limits import compute_ylim
 from ecg_visualization.visualization.plotters import (
+    plot_aux_notes,
     plot_histogram,
     plot_normal_beats,
     plot_signal,
@@ -203,6 +204,21 @@ def _render_signal_row(
         ax,
         symbol_events,
         ylim_lower=signal_ylim[0],
+    )
+
+    aux_note_events = [
+        (sample_time, note)
+        for sample_time, note in zip(
+            symbol_times,
+            entity.aux_notes,
+            strict=False,
+        )
+        if window_start <= sample_time <= window_end
+    ]
+    plot_aux_notes(
+        ax,
+        aux_note_events,
+        ylim_upper=signal_ylim[1],
     )
 
     _highlight_concat_segments(
