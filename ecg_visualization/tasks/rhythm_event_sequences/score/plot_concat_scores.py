@@ -59,11 +59,13 @@ def _plot_concat_scores(
         signal_ax,
         concat,
         segment_colors=config.segment_colors,
+        segment_labels=config.segment_labels,
     )
     _highlight_concat_segments(
         score_ax,
         concat,
         segment_colors=config.segment_colors,
+        segment_labels=config.segment_labels,
     )
 
     signal_ax.set_title(f"ID: {entity.entity_id}")
@@ -78,6 +80,7 @@ def _highlight_segments(
     window_start: float,
     window_end: float,
     segment_colors: dict[str, str],
+    segment_labels: dict[str, str],
 ) -> None:
     ylim_upper = ax.get_ylim()[1]
 
@@ -95,7 +98,7 @@ def _highlight_segments(
             ax.text(
                 midpoint,
                 ylim_upper,
-                name,
+                segment_labels.get(name, name),
                 fontsize=6,
                 horizontalalignment="center",
                 verticalalignment="bottom",
@@ -108,13 +111,14 @@ def _highlight_concat_segments(
     concat: ConcatenatedSequence,
     *,
     segment_colors: dict[str, str],
+    segment_labels: dict[str, str],
 ) -> None:
     segments: list[tuple[str, float, float]] = []
     running_start = 0
     for name, window in (
         ("sinus_train", concat.segments_info.train),
-        ("pre_vf", concat.segments_info.pre_vf),
-        ("vf", concat.segments_info.vf),
+        ("pre_ar", concat.segments_info.pre_ar),
+        ("ar", concat.segments_info.ar),
         ("sinus_test", concat.segments_info.test),
     ):
         segment_samples = int(
@@ -131,4 +135,5 @@ def _highlight_concat_segments(
         window_start=segments[0][1],
         window_end=segments[-1][2],
         segment_colors=segment_colors,
+        segment_labels=segment_labels,
     )

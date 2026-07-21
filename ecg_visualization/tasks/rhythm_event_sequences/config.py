@@ -26,8 +26,8 @@ class SegmentsInfo:
     entity_id: str
     train: SegmentWindow
     test: SegmentWindow
-    pre_vf: SegmentWindow
-    vf: SegmentWindow
+    pre_ar: SegmentWindow
+    ar: SegmentWindow
 
 
 @dataclass(slots=True)
@@ -43,16 +43,24 @@ class RhythmEventSequencesConfig:
     root_dir: Path = Path("result") / "rhythm_event_sequences"
     run_id: str = field(default_factory=_generate_run_id)
     window_size: int = 10
-    pre_vf_duration_sec: float = 10 * 60
-    vf_duration_sec: float = 10 * 60
+    pre_ar_duration_sec: float = 10 * 60
+    ar_duration_sec: float = 10 * 60
     max_reasonable_rr_interval_sec: float = 3.0
     sinus_rr_median_threshold_sec: float = 0.1
     segment_colors: dict[str, str] = field(
         default_factory=lambda: {
             "sinus_train": "#2a9d8f",
-            "pre_vf": "#f4a261",
-            "vf": "#e63946",
+            "pre_ar": "#f4a261",
+            "ar": "#e63946",
             "sinus_test": "#264653",
+        }
+    )
+    segment_labels: dict[str, str] = field(
+        default_factory=lambda: {
+            "sinus_train": "sinus_train",
+            "pre_ar": "pre_ar",
+            "ar": "ar",
+            "sinus_test": "sinus_test",
         }
     )
     model: MDRSConfig = field(default_factory=MDRSConfig)
@@ -79,24 +87,42 @@ class RhythmEventSequencesConfig:
 def ltafdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     return RhythmEventSequencesConfig(
         dataset_id="ltafdb",
-        pre_vf_duration_sec=60,
-        vf_duration_sec=60,
+        pre_ar_duration_sec=60,
+        ar_duration_sec=60,
+        segment_labels={
+            "sinus_train": "sinus_train",
+            "pre_ar": "pre_af",
+            "ar": "af",
+            "sinus_test": "sinus_test",
+        },
     )
 
 
 def sddb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     return RhythmEventSequencesConfig(
         dataset_id="sddb",
-        pre_vf_duration_sec=60,
-        vf_duration_sec=30,
+        pre_ar_duration_sec=60,
+        ar_duration_sec=30,
+        segment_labels={
+            "sinus_train": "sinus_train",
+            "pre_ar": "pre_vf",
+            "ar": "vf",
+            "sinus_test": "sinus_test",
+        },
     )
 
 
 def vfdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     return RhythmEventSequencesConfig(
         dataset_id="vfdb",
-        pre_vf_duration_sec=60,
-        vf_duration_sec=10,
+        pre_ar_duration_sec=60,
+        ar_duration_sec=10,
+        segment_labels={
+            "sinus_train": "sinus_train",
+            "pre_ar": "pre_vf",
+            "ar": "vf",
+            "sinus_test": "sinus_test",
+        },
     )
 
 
@@ -107,25 +133,25 @@ RHYTHM_EVENT_SEQUENCES_CONFIGS: dict[str, Callable[[], RhythmEventSequencesConfi
 }
 
 
-def build_fixed_vf_windows(
+def build_fixed_ar_windows(
     entity_id: str,
     *,
-    pre_vf_duration_sec: float,
-    vf_duration_sec: float,
-    vf_onset_seconds: dict[str, float],
+    pre_ar_duration_sec: float,
+    ar_duration_sec: float,
+    ar_onset_seconds: dict[str, float],
 ) -> tuple[SegmentWindow, SegmentWindow]:
-    vf_onset_sec = vf_onset_seconds.get(entity_id)
-    if vf_onset_sec is None:
-        raise ValueError(f"VF onset is not configured for entity '{entity_id}'.")
+    ar_onset_sec = ar_onset_seconds.get(entity_id)
+    if ar_onset_sec is None:
+        raise ValueError(f"AR onset is not configured for entity '{entity_id}'.")
 
     return (
         SegmentWindow(
-            vf_onset_sec - pre_vf_duration_sec,
-            vf_onset_sec,
+            ar_onset_sec - pre_ar_duration_sec,
+            ar_onset_sec,
         ),
         SegmentWindow(
-            vf_onset_sec,
-            vf_onset_sec + vf_duration_sec,
+            ar_onset_sec,
+            ar_onset_sec + ar_duration_sec,
         ),
     )
 

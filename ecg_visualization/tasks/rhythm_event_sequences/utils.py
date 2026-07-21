@@ -34,8 +34,8 @@ class ConcatenatedSequence:
     segments_info: SegmentsInfo
     SEGMENT_ORDER: ClassVar[tuple[str, ...]] = (
         "sinus_train",
-        "pre_vf",
-        "vf",
+        "pre_ar",
+        "ar",
         "sinus_test",
     )
 
@@ -49,8 +49,8 @@ def iter_concatenated_sequences(
             segments_info = _select_sinus_segments(
                 dataset,
                 entity,
-                pre_vf_duration_sec=config.pre_vf_duration_sec,
-                vf_duration_sec=config.vf_duration_sec,
+                pre_ar_duration_sec=config.pre_ar_duration_sec,
+                ar_duration_sec=config.ar_duration_sec,
                 sinus_rr_median_threshold_sec=config.sinus_rr_median_threshold_sec,
             )
             concat = _build_concatenated_sequence(
@@ -67,8 +67,8 @@ def iter_concatenated_sequences(
 def _segment_windows(segments_info: SegmentsInfo) -> list[tuple[str, SegmentWindow]]:
     return [
         ("sinus_train", segments_info.train),
-        ("pre_vf", segments_info.pre_vf),
-        ("vf", segments_info.vf),
+        ("pre_ar", segments_info.pre_ar),
+        ("ar", segments_info.ar),
         ("sinus_test", segments_info.test),
     ]
 
@@ -77,8 +77,8 @@ def _build_sinus_segments(
     dataset: ECGDataset,
     entities: Iterable[ECGEntity],
     *,
-    pre_vf_duration_sec: float,
-    vf_duration_sec: float,
+    pre_ar_duration_sec: float,
+    ar_duration_sec: float,
     sinus_rr_median_threshold_sec: float,
 ) -> tuple[SegmentsInfo, ...]:
     segments: list[SegmentsInfo] = []
@@ -86,8 +86,8 @@ def _build_sinus_segments(
         segments_info = _select_sinus_segments(
             dataset,
             entity,
-            pre_vf_duration_sec=pre_vf_duration_sec,
-            vf_duration_sec=vf_duration_sec,
+            pre_ar_duration_sec=pre_ar_duration_sec,
+            ar_duration_sec=ar_duration_sec,
             sinus_rr_median_threshold_sec=sinus_rr_median_threshold_sec,
         )
         segments.append(segments_info)
@@ -99,8 +99,8 @@ def _select_sinus_segments(
     dataset: ECGDataset,
     entity: ECGEntity,
     *,
-    pre_vf_duration_sec: float,
-    vf_duration_sec: float,
+    pre_ar_duration_sec: float,
+    ar_duration_sec: float,
     sinus_rr_median_threshold_sec: float,
 ) -> SegmentsInfo:
     rr_intervals = entity.rr_intervals
@@ -115,43 +115,43 @@ def _select_sinus_segments(
     near_median_mask = (
         np.abs(rr_intervals - median_rr_interval_sec) <= sinus_rr_median_threshold_sec
     )
-    pre_vf_window, vf_window = resolve_event_windows(
+    pre_ar_window, ar_window = resolve_event_windows(
         entity,
-        pre_vf_duration_sec=pre_vf_duration_sec,
-        vf_duration_sec=vf_duration_sec,
+        pre_ar_duration_sec=pre_ar_duration_sec,
+        ar_duration_sec=ar_duration_sec,
     )
     available_rr_mask = _build_available_rr_mask(
         beat_times_sec,
-        pre_vf_window=pre_vf_window,
-        vf_window=vf_window,
+        pre_ar_window=pre_ar_window,
+        ar_window=ar_window,
     )
 
     candidate_runs = find_true_runs(near_median_mask & available_rr_mask)
-    before_pre_vf_runs = [
+    before_pre_ar_runs = [
         run
         for run in candidate_runs
-        if beat_times_sec[run[1]] <= pre_vf_window.start_sec
+        if beat_times_sec[run[1]] <= pre_ar_window.start_sec
     ]
-    before_pre_vf_runs.sort(key=_sinus_run_sort_key)
-    if not before_pre_vf_runs:
-        raise ValueError(f"{entity.entity_id} has no train sinus before pre-VF")
+    before_pre_ar_runs.sort(key=_sinus_run_sort_key)
+    if not before_pre_ar_runs:
+        raise ValueError(f"{entity.entity_id} has no train sinus before pre-AR")
 
-    test_after_vf_runs = [
-        run for run in candidate_runs if beat_times_sec[run[0]] >= vf_window.end_sec
+    test_after_ar_runs = [
+        run for run in candidate_runs if beat_times_sec[run[0]] >= ar_window.end_sec
     ]
-    test_after_vf_runs.sort(key=_sinus_run_sort_key)
-    train_run = before_pre_vf_runs[0]
-    if not test_after_vf_runs:
+    test_after_ar_runs.sort(key=_sinus_run_sort_key)
+    train_run = before_pre_ar_runs[0]
+    if not test_after_ar_runs:
         LOGGER.warning(
-            "%s has no test sinus after VF; falling back to pre-VF candidate runs",
+            "%s has no test sinus after AR; falling back to pre-AR candidate runs",
             entity.entity_id,
         )
-        test_runs = before_pre_vf_runs[1:]
+        test_runs = before_pre_ar_runs[1:]
     else:
-        test_runs = test_after_vf_runs
+        test_runs = test_after_ar_runs
     if not test_runs:
         raise ValueError(
-            f"{entity.entity_id} has no non-overlapping test sinus before pre-VF"
+            f"{entity.entity_id} has no non-overlapping test sinus before pre-AR"
         )
     test_run = test_runs[0]
 
@@ -161,8 +161,8 @@ def _select_sinus_segments(
         entity_id=entity.entity_id,
         train=train_window,
         test=test_window,
-        pre_vf=pre_vf_window,
-        vf=vf_window,
+        pre_ar=pre_ar_window,
+        ar=ar_window,
     )
 
 
@@ -173,18 +173,18 @@ def _sinus_run_sort_key(run: tuple[int, int]) -> tuple[int, int]:
 def _build_available_rr_mask(
     beat_times_sec: npt.NDArray[np.float64],
     *,
-    pre_vf_window: SegmentWindow,
-    vf_window: SegmentWindow,
+    pre_ar_window: SegmentWindow,
+    ar_window: SegmentWindow,
 ) -> npt.NDArray[np.bool_]:
     rr_start_times_sec = beat_times_sec[:-1]
     rr_end_times_sec = beat_times_sec[1:]
-    overlaps_pre_vf = (rr_start_times_sec < pre_vf_window.end_sec) & (
-        rr_end_times_sec > pre_vf_window.start_sec
+    overlaps_pre_ar = (rr_start_times_sec < pre_ar_window.end_sec) & (
+        rr_end_times_sec > pre_ar_window.start_sec
     )
-    overlaps_vf = (rr_start_times_sec < vf_window.end_sec) & (
-        rr_end_times_sec > vf_window.start_sec
+    overlaps_ar = (rr_start_times_sec < ar_window.end_sec) & (
+        rr_end_times_sec > ar_window.start_sec
     )
-    return ~(overlaps_pre_vf | overlaps_vf)
+    return ~(overlaps_pre_ar | overlaps_ar)
 
 
 def _rr_run_to_segment_window(
@@ -271,14 +271,14 @@ def _build_concatenated_sequence(
     )
     _validate_segment_window(
         entity,
-        segments_info.pre_vf,
-        label="pre-VF",
+        segments_info.pre_ar,
+        label="pre-AR",
         total_duration_sec=total_duration_sec,
     )
     _validate_segment_window(
         entity,
-        segments_info.vf,
-        label="VF",
+        segments_info.ar,
+        label="AR",
         total_duration_sec=total_duration_sec,
     )
 

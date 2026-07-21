@@ -28,13 +28,6 @@ from ecg_visualization.visualization.plotters import (
     plot_symbols,
 )
 
-SEGMENT_LABELS = {
-    "sinus_train": "train",
-    "pre_vf": "pre-vf",
-    "vf": "vf",
-    "sinus_test": "test",
-}
-
 
 def _export_concatenated_pdf(
     entity: ECGEntity,
@@ -219,6 +212,7 @@ def _render_signal_row(
         window_start=window_start,
         window_end=window_end,
         segment_colors=config.segment_colors,
+        segment_labels=config.segment_labels,
     )
 
 
@@ -254,6 +248,7 @@ def _highlight_segments(
     window_start: float,
     window_end: float,
     segment_colors: dict[str, str],
+    segment_labels: dict[str, str],
 ) -> None:
     ylim_lower, ylim_upper = ax.get_ylim()
 
@@ -282,7 +277,8 @@ def _highlight_segments(
 
         midpoint = (start_sec + end_sec) / 2
         if window_start <= midpoint <= window_end:
-            label = f"{SEGMENT_LABELS.get(name, name)}\n{start_sec:.1f}-{end_sec:.1f}s"
+            label_name = segment_labels.get(name, name)
+            label = f"{label_name}\n{start_sec:.1f}-{end_sec:.1f}s"
             ax.text(
                 midpoint,
                 ylim_upper - (ylim_upper - ylim_lower) * 0.02,
@@ -307,12 +303,13 @@ def _highlight_concat_segments(
     window_start: float,
     window_end: float,
     segment_colors: dict[str, str],
+    segment_labels: dict[str, str],
 ) -> None:
     segments: list[tuple[str, float, float]] = []
     for name, window in (
         ("sinus_train", concat.segments_info.train),
-        ("pre_vf", concat.segments_info.pre_vf),
-        ("vf", concat.segments_info.vf),
+        ("pre_ar", concat.segments_info.pre_ar),
+        ("ar", concat.segments_info.ar),
         ("sinus_test", concat.segments_info.test),
     ):
         segments.append((name, window.start_sec, window.end_sec))
@@ -323,4 +320,5 @@ def _highlight_concat_segments(
         window_start=window_start,
         window_end=window_end,
         segment_colors=segment_colors,
+        segment_labels=segment_labels,
     )

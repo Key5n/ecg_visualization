@@ -10,7 +10,7 @@ from ecg_visualization.datasets.sddb import SDDB, SDDBEntity
 from ecg_visualization.datasets.vfdb import VFDBEntity
 from ecg_visualization.tasks.rhythm_event_sequences.config import (
     SegmentWindow,
-    build_fixed_vf_windows,
+    build_fixed_ar_windows,
 )
 
 VFDB_RHYTHM_LABEL_PRIORITIES = (
@@ -24,8 +24,8 @@ VFDB_RHYTHM_LABEL_PRIORITIES = (
 def resolve_event_windows(
     entity: ECGEntity,
     *,
-    pre_vf_duration_sec: float,
-    vf_duration_sec: float | None = None,
+    pre_ar_duration_sec: float,
+    ar_duration_sec: float | None = None,
 ) -> tuple[SegmentWindow, SegmentWindow]:
     raise ValueError(
         f"event window resolution is not configured for dataset "
@@ -37,17 +37,17 @@ def resolve_event_windows(
 def _resolve_sddb_event_windows(
     entity: SDDBEntity,
     *,
-    pre_vf_duration_sec: float,
-    vf_duration_sec: float | None = None,
+    pre_ar_duration_sec: float,
+    ar_duration_sec: float | None = None,
 ) -> tuple[SegmentWindow, SegmentWindow]:
-    if vf_duration_sec is None:
-        raise ValueError("vf_duration_sec is required for SDDB event windows")
+    if ar_duration_sec is None:
+        raise ValueError("ar_duration_sec is required for SDDB event windows")
 
-    return build_fixed_vf_windows(
+    return build_fixed_ar_windows(
         entity.entity_id,
-        pre_vf_duration_sec=pre_vf_duration_sec,
-        vf_duration_sec=vf_duration_sec,
-        vf_onset_seconds=SDDB.vf_onset_seconds,
+        pre_ar_duration_sec=pre_ar_duration_sec,
+        ar_duration_sec=ar_duration_sec,
+        ar_onset_seconds=SDDB.vf_onset_seconds,
     )
 
 
@@ -55,20 +55,20 @@ def _resolve_sddb_event_windows(
 def _resolve_ltafdb_event_windows(
     entity: LTAFDBEntity,
     *,
-    pre_vf_duration_sec: float,
-    vf_duration_sec: float | None = None,
+    pre_ar_duration_sec: float,
+    ar_duration_sec: float | None = None,
 ) -> tuple[SegmentWindow, SegmentWindow]:
-    if vf_duration_sec is None:
-        raise ValueError("vf_duration_sec is required for LTAFDB event windows")
+    if ar_duration_sec is None:
+        raise ValueError("ar_duration_sec is required for LTAFDB event windows")
 
     event_window = _find_first_rhythm_event_window(
         entity,
         target_labels={"AF", "AFIB"},
-        vf_duration_sec=vf_duration_sec,
+        ar_duration_sec=ar_duration_sec,
     )
     return _build_pre_event_windows(
         event_window,
-        pre_vf_duration_sec=pre_vf_duration_sec,
+        pre_ar_duration_sec=pre_ar_duration_sec,
     )
 
 
@@ -76,8 +76,8 @@ def _resolve_ltafdb_event_windows(
 def _resolve_vfdb_event_windows(
     entity: VFDBEntity,
     *,
-    pre_vf_duration_sec: float,
-    vf_duration_sec: float | None = None,
+    pre_ar_duration_sec: float,
+    ar_duration_sec: float | None = None,
 ) -> tuple[SegmentWindow, SegmentWindow]:
     event_window = _find_first_rhythm_event_window_by_priority(
         entity,
@@ -86,18 +86,18 @@ def _resolve_vfdb_event_windows(
     )
     return _build_pre_event_windows(
         event_window,
-        pre_vf_duration_sec=pre_vf_duration_sec,
+        pre_ar_duration_sec=pre_ar_duration_sec,
     )
 
 
 def _build_pre_event_windows(
     event_window: SegmentWindow,
     *,
-    pre_vf_duration_sec: float,
+    pre_ar_duration_sec: float,
 ) -> tuple[SegmentWindow, SegmentWindow]:
     return (
         SegmentWindow(
-            start_sec=event_window.start_sec - pre_vf_duration_sec,
+            start_sec=event_window.start_sec - pre_ar_duration_sec,
             end_sec=event_window.start_sec,
         ),
         event_window,
@@ -135,7 +135,7 @@ def _find_first_rhythm_event_window(
     entity: ECGEntity,
     *,
     target_labels: set[str],
-    vf_duration_sec: float,
+    ar_duration_sec: float,
 ) -> SegmentWindow:
     rhythm_events = _iter_rhythm_events(entity)
     total_duration_sec = float(entity.signals.size) / float(
@@ -145,14 +145,14 @@ def _find_first_rhythm_event_window(
         rhythm_events,
         target_labels=target_labels,
         total_duration_sec=total_duration_sec,
-        vf_duration_sec=vf_duration_sec,
+        ar_duration_sec=ar_duration_sec,
     )
     if event_window is not None:
         return event_window
 
     labels = ", ".join(sorted(target_labels))
     raise ValueError(
-        f"no {labels} rhythm episode of at least {vf_duration_sec:.1f}s found"
+        f"no {labels} rhythm episode of at least {ar_duration_sec:.1f}s found"
     )
 
 
@@ -161,7 +161,7 @@ def _find_first_rhythm_event_window_in_events(
     *,
     target_labels: set[str] | frozenset[str],
     total_duration_sec: float,
-    vf_duration_sec: float | None = None,
+    ar_duration_sec: float | None = None,
     bridge_noise: bool = False,
 ) -> SegmentWindow | None:
     for idx, (start_sec, label) in enumerate(rhythm_events):
@@ -175,10 +175,10 @@ def _find_first_rhythm_event_window_in_events(
             bridge_noise=bridge_noise,
         )
 
-        if vf_duration_sec is not None and end_sec - start_sec < vf_duration_sec:
+        if ar_duration_sec is not None and end_sec - start_sec < ar_duration_sec:
             continue
 
-        if vf_duration_sec is None:
+        if ar_duration_sec is None:
             return SegmentWindow(
                 start_sec=start_sec,
                 end_sec=end_sec,
@@ -186,7 +186,7 @@ def _find_first_rhythm_event_window_in_events(
 
         return SegmentWindow(
             start_sec=start_sec,
-            end_sec=start_sec + vf_duration_sec,
+            end_sec=start_sec + ar_duration_sec,
         )
 
     return None
