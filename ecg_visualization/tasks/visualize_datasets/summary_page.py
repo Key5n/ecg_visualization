@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,7 +19,6 @@ def render_entity_summary_page(
     ax.axis("off")
 
     rows = _entity_summary_rows(entity, normal_segment_config)
-    property_rows = _entity_property_rows(entity)
     title = f"{entity.dataset.name}: {entity.entity_id}"
     ax.text(
         0.05,
@@ -56,38 +54,6 @@ def render_entity_summary_page(
         )
         y -= 0.045
 
-    ax.text(
-        0.05,
-        y - 0.02,
-        "ECGEntity properties",
-        transform=ax.transAxes,
-        fontsize=12,
-        fontweight="bold",
-        verticalalignment="top",
-    )
-
-    y -= 0.065
-    for label, value in property_rows:
-        ax.text(
-            label_x,
-            y,
-            label,
-            transform=ax.transAxes,
-            fontsize=8,
-            fontweight="bold",
-            verticalalignment="top",
-        )
-        ax.text(
-            value_x,
-            y,
-            value,
-            transform=ax.transAxes,
-            fontsize=8,
-            verticalalignment="top",
-            wrap=True,
-        )
-        y -= 0.032
-
     exporter.add_page(fig, pad_inches=0)
     plt.close(fig)
 
@@ -122,44 +88,6 @@ def _entity_summary_rows(
             _format_normal_segment_summary(entity, normal_segment_config),
         ),
     ]
-
-
-def _entity_property_rows(entity: ECGEntity) -> list[tuple[str, str]]:
-    return [
-        ("entity_id", entity.entity_id),
-        ("dataset_name", entity.dataset.name),
-        ("dataset_id", entity.dataset.dataset_id),
-        ("sampling_rate_hz", f"{entity.dataset.sampling_rate_hz}"),
-        ("signals", _format_property_value(entity.signals)),
-        ("annotation", _format_property_value(entity.annotation)),
-        ("beats", _format_property_value(entity.beats)),
-        ("aux_notes", _format_property_value(entity.aux_notes)),
-        ("rr_intervals", _format_property_value(entity.rr_intervals)),
-    ]
-
-
-def _format_property_value(value: Any) -> str:
-    if isinstance(value, np.ndarray):
-        if value.size == 0:
-            return f"ndarray shape={value.shape}, dtype={value.dtype}, empty"
-        return (
-            f"ndarray shape={value.shape}, dtype={value.dtype}, "
-            f"min={float(np.min(value)):.3f}, max={float(np.max(value)):.3f}"
-        )
-
-    sample = getattr(value, "sample", None)
-    symbol = getattr(value, "symbol", None)
-    if sample is not None and symbol is not None:
-        return (
-            f"{type(value).__name__}: "
-            f"{len(sample):,} samples, {len(set(symbol)):,} symbol types"
-        )
-
-    if isinstance(value, tuple):
-        non_empty = sum(1 for item in value if str(item).strip())
-        return f"tuple len={len(value):,}, non-empty={non_empty:,}"
-
-    return str(value)
 
 
 def _format_rr_statistics(entity: ECGEntity) -> str:

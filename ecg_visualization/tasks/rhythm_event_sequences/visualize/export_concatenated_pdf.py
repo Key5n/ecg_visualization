@@ -109,14 +109,6 @@ def _render_rr_interval_histogram_page(
             ax.set_ylabel("Count")
         ax.set_xlim(config.rr_histogram.xmin_sec, config.rr_histogram.xmax_sec)
         median_rr_interval = float(np.median(rr_intervals_sec))
-        sinus_lower = median_rr_interval - config.sinus_rr_median_threshold_sec
-        sinus_upper = median_rr_interval + config.sinus_rr_median_threshold_sec
-        ax.axvspan(
-            sinus_lower,
-            sinus_upper,
-            color="tab:green",
-            alpha=0.15,
-        )
         ax.axvline(
             median_rr_interval,
             color="tab:red",
