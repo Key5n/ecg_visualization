@@ -9,7 +9,11 @@ import numpy as np
 import numpy.typing as npt
 import wfdb
 
-from ecg_visualization.core.annotations import read_annotation, read_normal_beats
+from ecg_visualization.core.annotations import (
+    AnnotationExtention,
+    read_annotation,
+    read_normal_beats,
+)
 from ecg_visualization.core.entity import ECGEntity
 
 
@@ -22,8 +26,10 @@ class ECGDataset:
         dir_path (str): Path to the dataset directory
         name (str): Name of the dataset
         dataset_id (str): Identifier for the dataset
-        annotation_extention (str): Annotation file extension
-        beat_extention (str): Beat annotation file extension
+        annotation_extention (str | tuple[str, ...]): Annotation file extension(s)
+            in priority order
+        beat_extention (str | tuple[str, ...]): Beat annotation file extension(s)
+            in priority order
         get_entities: Generate entities in the dataset
     """
 
@@ -31,8 +37,8 @@ class ECGDataset:
     name: ClassVar[str]
     dataset_id: ClassVar[str]
     sampling_rate_hz: ClassVar[int]
-    annotation_extention: ClassVar[str] = "atr"
-    beat_extention: ClassVar[str] = "atr"
+    annotation_extention: ClassVar[AnnotationExtention] = "atr"
+    beat_extention: ClassVar[AnnotationExtention] = "atr"
     entity_cls: ClassVar[type[ECGEntity]]
     entity_ids: ClassVar[tuple[str, ...]] = ()
 

@@ -7,32 +7,59 @@ import numpy.typing as npt
 import wfdb
 from wfdb.io import Annotation
 
-
-def read_annotation(annotation_extention: str, data_path: str) -> Annotation:
-    annotation_file = f"{data_path}.{annotation_extention}"
-    if os.path.isfile(annotation_file):
-        annotation = wfdb.rdann(data_path, annotation_extention)
-        return annotation
-
-    raise FileNotFoundError(f"No annotation file found for {data_path}")
+AnnotationExtention = str | tuple[str, ...]
 
 
-def read_normal_beats(beat_extention: str, data_path: str) -> npt.NDArray[np.int_]:
-    annotation_file = f"{data_path}.{beat_extention}"
-    if os.path.isfile(annotation_file):
-        annotation = wfdb.rdann(data_path, beat_extention)
-        if beat_extention == "atr":
-            beats = np.array(
-                [
-                    sample
-                    for sample, symbol in zip(annotation.sample, annotation.symbol)
-                    if symbol == "N"
-                ],
-                dtype=np.int_,
-            )
+def _iter_annotation_extentions(
+    annotation_extention: AnnotationExtention,
+) -> tuple[str, ...]:
+    if isinstance(annotation_extention, str):
+        return (annotation_extention,)
 
-            return beats
+    return annotation_extention
 
-        return np.asarray(annotation.sample, dtype=np.int_)
 
-    raise FileNotFoundError(f"No annotation file found for {data_path}")
+def read_annotation(
+    annotation_extention: AnnotationExtention,
+    data_path: str,
+) -> Annotation:
+    attempted_files = []
+    for extention in _iter_annotation_extentions(annotation_extention):
+        annotation_file = f"{data_path}.{extention}"
+        attempted_files.append(annotation_file)
+        if os.path.isfile(annotation_file):
+            annotation = wfdb.rdann(data_path, extention)
+            return annotation
+
+    raise FileNotFoundError(
+        f"No annotation file found for {data_path}; tried {attempted_files}"
+    )
+
+
+def read_normal_beats(
+    beat_extention: AnnotationExtention,
+    data_path: str,
+) -> npt.NDArray[np.int_]:
+    attempted_files = []
+    for extention in _iter_annotation_extentions(beat_extention):
+        annotation_file = f"{data_path}.{extention}"
+        attempted_files.append(annotation_file)
+        if os.path.isfile(annotation_file):
+            annotation = wfdb.rdann(data_path, extention)
+            if extention == "atr":
+                beats = np.array(
+                    [
+                        sample
+                        for sample, symbol in zip(annotation.sample, annotation.symbol)
+                        if symbol == "N"
+                    ],
+                    dtype=np.int_,
+                )
+
+                return beats
+
+            return np.asarray(annotation.sample, dtype=np.int_)
+
+    raise FileNotFoundError(
+        f"No annotation file found for {data_path}; tried {attempted_files}"
+    )

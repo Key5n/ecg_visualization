@@ -16,6 +16,8 @@ class SDDB(ECGDataset):
     name: ClassVar[str] = "Sudden Cardiac Death Holter Database"
     dataset_id: ClassVar[str] = "sddb"
     sampling_rate_hz: ClassVar[int] = 250
+    annotation_extention: ClassVar[tuple[str, ...]] = ("atr", "ari")
+    beat_extention: ClassVar[tuple[str, ...]] = ("atr", "ari")
     entity_ids: ClassVar[tuple[str, ...]] = SDDB_ENTITY_IDS
     vf_onset_seconds: ClassVar[dict[str, int]] = {
         "30": 28473,
