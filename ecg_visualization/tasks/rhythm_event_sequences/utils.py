@@ -233,32 +233,8 @@ def _build_concatenated_sequence(
 ) -> ConcatenatedSequence:
     signal = entity.signals
     sampling_rate_hz = float(entity.dataset.sampling_rate_hz)
-    total_duration_sec = signal.size / sampling_rate_hz
 
-    _validate_segment_window(
-        entity,
-        segments_info.train,
-        label="sinus train",
-        total_duration_sec=total_duration_sec,
-    )
-    _validate_segment_window(
-        entity,
-        segments_info.test,
-        label="sinus test",
-        total_duration_sec=total_duration_sec,
-    )
-    _validate_segment_window(
-        entity,
-        segments_info.pre_ar,
-        label="pre-AR",
-        total_duration_sec=total_duration_sec,
-    )
-    _validate_segment_window(
-        entity,
-        segments_info.ar,
-        label="AR",
-        total_duration_sec=total_duration_sec,
-    )
+    _validate_segments_info(entity, segments_info)
 
     concatenated_samples: list[np.ndarray] = []
     concatenated_beats: list[npt.NDArray[np.int_]] = []
@@ -322,18 +298,27 @@ def _build_concatenated_sequence(
     )
 
 
-def _validate_segment_window(
+def _validate_segments_info(
     entity: ECGEntity,
-    window: SegmentWindow,
-    *,
-    label: str,
-    total_duration_sec: float,
+    segments_info: SegmentsInfo,
 ) -> None:
-    if window.end_sec <= window.start_sec:
-        raise ValueError(f"{label} window has invalid bounds for {entity.entity_id}")
-
-    if window.start_sec < 0 or window.end_sec > total_duration_sec:
+    if segments_info.entity_id != entity.entity_id:
         raise ValueError(
-            f"{label} window exceeds record length for {entity.entity_id} "
-            f"({total_duration_sec:.1f}s)"
+            f"segments info entity_id '{segments_info.entity_id}' does not match "
+            f"entity '{entity.entity_id}'"
         )
+
+    total_duration_sec = entity.signals.size / float(entity.dataset.sampling_rate_hz)
+    labels = {
+        "sinus_train": "sinus train",
+        "sinus_test": "sinus test",
+        "pre_ar": "pre-AR",
+        "ar": "AR",
+    }
+    for name, window in _segment_windows(segments_info):
+        if window.end_sec > total_duration_sec:
+            label = labels.get(name, name)
+            raise ValueError(
+                f"{label} window exceeds record length for {entity.entity_id} "
+                f"({total_duration_sec:.1f}s)"
+            )

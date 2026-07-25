@@ -11,7 +11,7 @@ from ecg_visualization.tasks.rhythm_event_sequences.utils import (
     iter_concatenated_sequences,
 )
 from ecg_visualization.tasks.rhythm_event_sequences.visualize.export_concatenated_pdf import (
-    _export_concatenated_pdf,
+    export_concatenated_pdf,
 )
 from ecg_visualization.visualization.styles import apply_default_style
 
@@ -28,12 +28,14 @@ def rhythm_event_sequence_visualize(config: RhythmEventSequencesConfig) -> None:
     processed = 0
     for entity, concat in iter_concatenated_sequences(config):
         output_path = config.visualize_output_dir / f"{entity.entity_id}.pdf"
-        _export_concatenated_pdf(
+        export_concatenated_pdf(
             entity,
             concat,
             output_path=output_path,
             pagination_config=pagination_config,
-            config=config,
+            rr_histogram_config=config.rr_histogram,
+            segment_colors=config.segment_colors,
+            segment_labels=config.segment_labels,
         )
         LOGGER.info("Saved concatenated signal PDF to %s", output_path)
         processed += 1

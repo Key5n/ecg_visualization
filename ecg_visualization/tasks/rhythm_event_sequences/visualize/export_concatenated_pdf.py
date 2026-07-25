@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.tasks.rhythm_event_sequences.config import (
-    RhythmEventSequencesConfig,
+    RRHistogramConfig,
 )
 from ecg_visualization.tasks.rhythm_event_sequences.utils import ConcatenatedSequence
 from ecg_visualization.visualization.export import PdfExporter, pdf_exporter
@@ -29,13 +29,15 @@ from ecg_visualization.visualization.plotters import (
 )
 
 
-def _export_concatenated_pdf(
+def export_concatenated_pdf(
     entity: ECGEntity,
     concat: ConcatenatedSequence,
     *,
     output_path: Path,
     pagination_config: PaginationConfig,
-    config: RhythmEventSequencesConfig,
+    rr_histogram_config: RRHistogramConfig,
+    segment_colors: dict[str, str],
+    segment_labels: dict[str, str],
 ) -> None:
     ts_paged = paginate_signals(
         entity.signals.size,
@@ -49,7 +51,12 @@ def _export_concatenated_pdf(
     )
 
     with pdf_exporter(str(output_path)) as exporter:
-        _render_rr_interval_histogram_page(entity, concat, exporter, config=config)
+        _render_rr_interval_histogram_page(
+            entity,
+            concat,
+            exporter,
+            rr_histogram_config=rr_histogram_config,
+        )
         for page_idx, ts_row in enumerate(ts_paged):
             fig, axs = create_page_layout(pagination_config.rows_per_page)
             for ts, ax in zip(ts_row, np.atleast_1d(axs), strict=True):
@@ -59,7 +66,8 @@ def _export_concatenated_pdf(
                     entity=entity,
                     concat=concat,
                     signal_ylim=signal_ylim,
-                    config=config,
+                    segment_colors=segment_colors,
+                    segment_labels=segment_labels,
                 )
             _decorate_page(fig=fig, entity=entity, page_idx=page_idx)
             exporter.add_page(fig, pad_inches=0)
@@ -71,21 +79,21 @@ def _render_rr_interval_histogram_page(
     concat: ConcatenatedSequence,
     exporter: PdfExporter,
     *,
-    config: RhythmEventSequencesConfig,
+    rr_histogram_config: RRHistogramConfig,
 ) -> None:
     rr_intervals = np.diff(np.asarray(entity.beats, dtype=np.float64))
     rr_intervals_sec = rr_intervals / float(entity.dataset.sampling_rate_hz)
     histogram_bins = np.arange(
-        config.rr_histogram.xmin_sec,
-        config.rr_histogram.xmax_sec + config.rr_histogram.bin_width_sec,
-        config.rr_histogram.bin_width_sec,
+        rr_histogram_config.xmin_sec,
+        rr_histogram_config.xmax_sec + rr_histogram_config.bin_width_sec,
+        rr_histogram_config.bin_width_sec,
     )
 
     fig, ax = plt.subplots(figsize=(8, 4))
     if rr_intervals_sec.size > 0:
         rr_intervals_in_range = rr_intervals_sec[
-            (rr_intervals_sec >= config.rr_histogram.xmin_sec)
-            & (rr_intervals_sec <= config.rr_histogram.xmax_sec)
+            (rr_intervals_sec >= rr_histogram_config.xmin_sec)
+            & (rr_intervals_sec <= rr_histogram_config.xmax_sec)
         ]
         if rr_intervals_in_range.size > 0:
             plot_histogram(
@@ -100,7 +108,7 @@ def _render_rr_interval_histogram_page(
             ax.set_title(f"{entity.dataset.name} / {entity.entity_id} RR intervals")
             ax.set_xlabel("R-peak interval (sec)")
             ax.set_ylabel("Count")
-        ax.set_xlim(config.rr_histogram.xmin_sec, config.rr_histogram.xmax_sec)
+        ax.set_xlim(rr_histogram_config.xmin_sec, rr_histogram_config.xmax_sec)
         median_rr_interval = float(np.median(rr_intervals_sec))
         ax.axvline(
             median_rr_interval,
@@ -145,7 +153,8 @@ def _render_signal_row(
     entity: ECGEntity,
     concat: ConcatenatedSequence,
     signal_ylim: tuple[float, float],
-    config: RhythmEventSequencesConfig,
+    segment_colors: dict[str, str],
+    segment_labels: dict[str, str],
 ) -> None:
     window_start, window_end = float(ts[0]), float(ts[-1])
     sampling_rate_hz = float(entity.dataset.sampling_rate_hz)
@@ -211,8 +220,8 @@ def _render_signal_row(
         concat,
         window_start=window_start,
         window_end=window_end,
-        segment_colors=config.segment_colors,
-        segment_labels=config.segment_labels,
+        segment_colors=segment_colors,
+        segment_labels=segment_labels,
     )
 
 

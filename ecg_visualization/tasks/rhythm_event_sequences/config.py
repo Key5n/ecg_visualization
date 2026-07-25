@@ -20,6 +20,13 @@ class SegmentWindow:
     start_sec: float
     end_sec: float
 
+    def __post_init__(self) -> None:
+        if self.end_sec <= self.start_sec:
+            raise ValueError("segment window end_sec must be greater than start_sec")
+
+        if self.start_sec < 0:
+            raise ValueError("segment window start_sec must be non-negative")
+
 
 @dataclass(slots=True)
 class SegmentsInfo:
