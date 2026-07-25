@@ -22,8 +22,7 @@ def resolve_event_windows(
     entity: ECGEntity,
     *,
     pre_ar_duration_sec: float,
-    ar_duration_sec: float | None = None,
-) -> tuple[SegmentWindow, SegmentWindow]:
+) -> tuple[SegmentWindow, SegmentWindow | None]:
     raise ValueError(
         f"event window resolution is not configured for dataset "
         f"'{entity.dataset.dataset_id}'"
@@ -35,16 +34,13 @@ def _resolve_sddb_event_windows(
     entity: SDDBEntity,
     *,
     pre_ar_duration_sec: float,
-    ar_duration_sec: float | None = None,
-) -> tuple[SegmentWindow, SegmentWindow]:
-    if ar_duration_sec is None:
-        raise ValueError("ar_duration_sec is required for SDDB event windows")
-
-    return build_fixed_ar_windows(
-        entity.entity_id,
-        pre_ar_duration_sec=pre_ar_duration_sec,
-        ar_duration_sec=ar_duration_sec,
-        ar_onset_seconds=SDDB.vf_onset_seconds,
+) -> tuple[SegmentWindow, None]:
+    ar_onset_sec = SDDB.vf_onset_seconds.get(entity.entity_id)
+    if ar_onset_sec is None:
+        raise ValueError(f"AR onset is not configured for entity '{entity.entity_id}'.")
+    return (
+        SegmentWindow(ar_onset_sec - pre_ar_duration_sec, ar_onset_sec),
+        None,
     )
 
 
@@ -53,15 +49,10 @@ def _resolve_ltafdb_event_windows(
     entity: LTAFDBEntity,
     *,
     pre_ar_duration_sec: float,
-    ar_duration_sec: float | None = None,
 ) -> tuple[SegmentWindow, SegmentWindow]:
-    if ar_duration_sec is None:
-        raise ValueError("ar_duration_sec is required for LTAFDB event windows")
-
     event_window = _find_first_rhythm_event_window(
         entity,
         target_labels={"AF", "AFIB"},
-        ar_duration_sec=ar_duration_sec,
     )
     return _build_pre_event_windows(
         event_window,
@@ -74,7 +65,6 @@ def _resolve_vfdb_event_windows(
     entity: VFDBEntity,
     *,
     pre_ar_duration_sec: float,
-    ar_duration_sec: float | None = None,
 ) -> tuple[SegmentWindow, SegmentWindow]:
     event_window = _find_first_rhythm_event_window_by_priority(
         entity,
@@ -84,29 +74,6 @@ def _resolve_vfdb_event_windows(
     return _build_pre_event_windows(
         event_window,
         pre_ar_duration_sec=pre_ar_duration_sec,
-    )
-
-
-def build_fixed_ar_windows(
-    entity_id: str,
-    *,
-    pre_ar_duration_sec: float,
-    ar_duration_sec: float,
-    ar_onset_seconds: dict[str, float],
-) -> tuple[SegmentWindow, SegmentWindow]:
-    ar_onset_sec = ar_onset_seconds.get(entity_id)
-    if ar_onset_sec is None:
-        raise ValueError(f"AR onset is not configured for entity '{entity_id}'.")
-
-    return (
-        SegmentWindow(
-            ar_onset_sec - pre_ar_duration_sec,
-            ar_onset_sec,
-        ),
-        SegmentWindow(
-            ar_onset_sec,
-            ar_onset_sec + ar_duration_sec,
-        ),
     )
 
 
@@ -155,7 +122,6 @@ def _find_first_rhythm_event_window(
     entity: ECGEntity,
     *,
     target_labels: set[str],
-    ar_duration_sec: float,
 ) -> SegmentWindow:
     rhythm_events = _iter_rhythm_events(entity)
     total_duration_sec = float(entity.signals.size) / float(
@@ -165,15 +131,12 @@ def _find_first_rhythm_event_window(
         rhythm_events,
         target_labels=target_labels,
         total_duration_sec=total_duration_sec,
-        ar_duration_sec=ar_duration_sec,
     )
     if event_window is not None:
         return event_window
 
     labels = ", ".join(sorted(target_labels))
-    raise ValueError(
-        f"no {labels} rhythm episode of at least {ar_duration_sec:.1f}s found"
-    )
+    raise ValueError(f"no {labels} rhythm episode found")
 
 
 def _find_first_rhythm_event_window_in_events(

@@ -34,7 +34,7 @@ class SegmentsInfo:
     train: SegmentWindow
     test: SegmentWindow
     pre_ar: SegmentWindow
-    ar: SegmentWindow
+    ar: SegmentWindow | None
 
 
 @dataclass(slots=True)
@@ -51,8 +51,7 @@ class RhythmEventSequencesConfig:
     run_id: str = field(default_factory=_generate_run_id)
     max_workers: int | None = None
     window_size: int = 10
-    pre_ar_duration_sec: float = 10 * 60
-    ar_duration_sec: float = 10 * 60
+    pre_ar_duration_sec: float = 60
     max_reasonable_rr_interval_sec: float = 3.0
     sinus_rr_median_threshold_sec: float = 0.1
     segment_colors: dict[str, str] = field(
@@ -99,8 +98,6 @@ class RhythmEventSequencesConfig:
 def ltafdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     return RhythmEventSequencesConfig(
         dataset_id="ltafdb",
-        pre_ar_duration_sec=60,
-        ar_duration_sec=60,
         segment_labels={
             "sinus_train": "sinus_train",
             "pre_ar": "pre_af",
@@ -113,8 +110,6 @@ def ltafdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
 def sddb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     return RhythmEventSequencesConfig(
         dataset_id="sddb",
-        pre_ar_duration_sec=60,
-        ar_duration_sec=30,
         segment_labels={
             "sinus_train": "sinus_train",
             "pre_ar": "pre_vf",
@@ -127,8 +122,6 @@ def sddb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
 def vfdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     return RhythmEventSequencesConfig(
         dataset_id="vfdb",
-        pre_ar_duration_sec=60,
-        ar_duration_sec=10,
         segment_labels={
             "sinus_train": "sinus_train",
             "pre_ar": "pre_vf",

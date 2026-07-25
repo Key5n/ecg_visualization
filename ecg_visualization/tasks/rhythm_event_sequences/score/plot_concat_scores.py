@@ -121,6 +121,8 @@ def _highlight_concat_segments(
         ("ar", concat.segments_info.ar),
         ("sinus_test", concat.segments_info.test),
     ):
+        if window is None:
+            continue
         segment_samples = int(
             np.round((window.end_sec - window.start_sec) * concat.sampling_rate_hz)
         )

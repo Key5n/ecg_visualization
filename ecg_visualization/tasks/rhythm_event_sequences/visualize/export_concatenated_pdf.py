@@ -321,6 +321,8 @@ def _highlight_concat_segments(
         ("ar", concat.segments_info.ar),
         ("sinus_test", concat.segments_info.test),
     ):
+        if window is None:
+            continue
         segments.append((name, window.start_sec, window.end_sec))
 
     _highlight_segments(

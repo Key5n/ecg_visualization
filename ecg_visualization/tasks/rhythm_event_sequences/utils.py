@@ -67,7 +67,6 @@ def iter_sequence_selection_results(
             segments_info = _select_sinus_segments(
                 entity,
                 pre_ar_duration_sec=config.pre_ar_duration_sec,
-                ar_duration_sec=config.ar_duration_sec,
                 sinus_rr_median_threshold_sec=config.sinus_rr_median_threshold_sec,
             )
             concat = _build_concatenated_sequence(
@@ -98,19 +97,20 @@ def iter_concatenated_sequences(
 
 
 def _segment_windows(segments_info: SegmentsInfo) -> list[tuple[str, SegmentWindow]]:
-    return [
+    windows = [
         ("sinus_train", segments_info.train),
         ("pre_ar", segments_info.pre_ar),
-        ("ar", segments_info.ar),
         ("sinus_test", segments_info.test),
     ]
+    if segments_info.ar is not None:
+        windows.insert(2, ("ar", segments_info.ar))
+    return windows
 
 
 def _select_sinus_segments(
     entity: ECGEntity,
     *,
     pre_ar_duration_sec: float,
-    ar_duration_sec: float,
     sinus_rr_median_threshold_sec: float,
 ) -> SegmentsInfo:
     rr_intervals = entity.rr_intervals
@@ -128,7 +128,6 @@ def _select_sinus_segments(
     pre_ar_window, ar_window = resolve_event_windows(
         entity,
         pre_ar_duration_sec=pre_ar_duration_sec,
-        ar_duration_sec=ar_duration_sec,
     )
     available_rr_mask = _build_available_rr_mask(
         beat_times_sec,
@@ -146,9 +145,11 @@ def _select_sinus_segments(
     if not before_pre_ar_runs:
         raise ValueError(f"{entity} has no train sinus before pre-AR")
 
-    test_after_ar_runs = [
-        run for run in candidate_runs if beat_times_sec[run[0]] >= ar_window.end_sec
-    ]
+    test_after_ar_runs = (
+        [run for run in candidate_runs if beat_times_sec[run[0]] >= ar_window.end_sec]
+        if ar_window is not None
+        else []
+    )
     test_after_ar_runs.sort(key=_sinus_run_sort_key)
     train_run = before_pre_ar_runs[0]
     if not test_after_ar_runs:
@@ -183,15 +184,18 @@ def _build_available_rr_mask(
     beat_times_sec: npt.NDArray[np.float64],
     *,
     pre_ar_window: SegmentWindow,
-    ar_window: SegmentWindow,
+    ar_window: SegmentWindow | None,
 ) -> npt.NDArray[np.bool_]:
     rr_start_times_sec = beat_times_sec[:-1]
     rr_end_times_sec = beat_times_sec[1:]
     overlaps_pre_ar = (rr_start_times_sec < pre_ar_window.end_sec) & (
         rr_end_times_sec > pre_ar_window.start_sec
     )
-    overlaps_ar = (rr_start_times_sec < ar_window.end_sec) & (
-        rr_end_times_sec > ar_window.start_sec
+    overlaps_ar = (
+        (rr_start_times_sec < ar_window.end_sec)
+        & (rr_end_times_sec > ar_window.start_sec)
+        if ar_window is not None
+        else np.zeros_like(overlaps_pre_ar)
     )
     return ~(overlaps_pre_ar | overlaps_ar)
 

@@ -215,6 +215,8 @@ def _create_segment_timeline_figure(
             ("ar", segments_info.ar),
             ("sinus_test", segments_info.test),
         ):
+            if window is None:
+                continue
             ax.barh(
                 y_position,
                 _duration_sec(window),
@@ -382,7 +384,9 @@ def _duration_sec(window: SegmentWindow) -> float:
     return window.end_sec - window.start_sec
 
 
-def _format_window(window: SegmentWindow) -> str:
+def _format_window(window: SegmentWindow | None) -> str:
+    if window is None:
+        return ""
     duration_sec = _duration_sec(window)
     return f"{window.start_sec:.1f}-{window.end_sec:.1f} ({duration_sec:.1f})"
 
