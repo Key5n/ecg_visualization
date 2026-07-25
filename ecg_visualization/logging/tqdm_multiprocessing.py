@@ -9,18 +9,13 @@ import logging
 import logging.handlers
 import multiprocessing as mp
 from collections.abc import Iterator
+from concurrent.futures import ProcessPoolExecutor
 
 from tqdm import tqdm
 
 from ecg_visualization.logging.config import get_log_level
 
 DEFAULT_FORMAT = "%(asctime)s - %(message)s"
-
-__all__ = [
-    "TqdmLoggingHandler",
-    "queue_logging_context",
-    "worker_logging_initializer",
-]
 
 
 class TqdmLoggingHandler(logging.Handler):
@@ -75,6 +70,23 @@ def worker_logging_initializer(
     root = logging.getLogger()
     resolved_level = get_log_level() if level is None else level
     _install_queue_handler(root, log_queue, resolved_level)
+
+
+@contextlib.contextmanager
+def process_pool_logging_context(
+    max_workers: int | None,
+) -> Iterator[ProcessPoolExecutor]:
+    """Create a process pool whose workers send logs through a shared queue."""
+
+    with (
+        queue_logging_context() as log_queue,
+        ProcessPoolExecutor(
+            max_workers=max_workers,
+            initializer=worker_logging_initializer,
+            initargs=(log_queue,),
+        ) as executor,
+    ):
+        yield executor
 
 
 def _create_tqdm_handler(level: int, fmt: str) -> logging.Handler:

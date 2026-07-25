@@ -49,6 +49,7 @@ class RhythmEventSequencesConfig:
     dataset_id: str
     root_dir: Path = Path("result") / "rhythm_event_sequences"
     run_id: str = field(default_factory=_generate_run_id)
+    max_workers: int | None = None
     window_size: int = 10
     pre_ar_duration_sec: float = 10 * 60
     ar_duration_sec: float = 10 * 60

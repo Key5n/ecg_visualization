@@ -1,15 +1,12 @@
 import logging
-import os
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import as_completed
 
 import optuna
 from tqdm import tqdm
 
-from ecg_visualization.config.settings import ECG_VISUALIZE_WORKERS
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.logging.tqdm_multiprocessing import (
-    queue_logging_context,
-    worker_logging_initializer,
+    process_pool_logging_context,
 )
 from ecg_visualization.tasks.visualize_studies.config import VisualizeConfig
 from ecg_visualization.utils.optuna_record import (
@@ -31,31 +28,25 @@ def visualize_all_studies(config: VisualizeConfig):
     if not studies:
         return
 
-    worker_count = _determine_worker_count(config.max_workers)
-    if worker_count == 1:
+    if config.max_workers == 1:
         for study in tqdm(studies, desc="visualizations"):
             visualize_study(study, config)
         return
 
-    with queue_logging_context() as log_queue:
-        with ProcessPoolExecutor(
-            max_workers=worker_count,
-            initializer=worker_logging_initializer,
-            initargs=(log_queue,),
-        ) as executor:
-            futures = [
-                executor.submit(_run_visualization, study, config) for study in studies
-            ]
-            for future in tqdm(
-                as_completed(futures),
-                total=len(futures),
-                desc="visualizations",
-            ):
-                dataset_id, entity_id, error = future.result()
-                if error:
-                    LOGGER.error(
-                        f"Visualization failed for {dataset_id}/{entity_id}: {error}"
-                    )
+    with process_pool_logging_context(config.max_workers) as executor:
+        futures = [
+            executor.submit(_run_visualization, study, config) for study in studies
+        ]
+        for future in tqdm(
+            as_completed(futures),
+            total=len(futures),
+            desc="visualizations",
+        ):
+            dataset_id, entity_id, error = future.result()
+            if error:
+                LOGGER.error(
+                    f"Visualization failed for {dataset_id}/{entity_id}: {error}"
+                )
 
 
 def visualize_study(study: optuna.Study, config: VisualizeConfig):
@@ -73,16 +64,6 @@ def visualize_study(study: optuna.Study, config: VisualizeConfig):
     output_path = visualizer.visualize()
     if output_path:
         LOGGER.info(f"Saved visualization to {output_path}")
-
-
-def _determine_worker_count(max_workers: int | None) -> int:
-    if max_workers is not None:
-        return max(1, max_workers)
-
-    if ECG_VISUALIZE_WORKERS > 0:
-        return ECG_VISUALIZE_WORKERS
-
-    return max(1, os.cpu_count() or 1)
 
 
 def _run_visualization(

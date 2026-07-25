@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import logging
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from pathlib import Path
 
+from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.tasks.config import save_config_text
 from ecg_visualization.tasks.rhythm_event_sequences.config import (
     RhythmEventSequencesConfig,
+    RRHistogramConfig,
 )
 from ecg_visualization.tasks.rhythm_event_sequences.utils import (
+    ConcatenatedSequence,
     SequenceSelectionSuccess,
     iter_sequence_selection_results,
 )
@@ -17,6 +22,7 @@ from ecg_visualization.tasks.rhythm_event_sequences.visualize.export_concatenate
 from ecg_visualization.tasks.rhythm_event_sequences.visualize.plot_selection_summary import (
     plot_selection_summary,
 )
+from ecg_visualization.visualization.layouts import PaginationConfig
 from ecg_visualization.visualization.styles import apply_default_style
 
 LOGGER = logging.getLogger(__name__)
@@ -31,24 +37,32 @@ def rhythm_event_sequence_visualize(config: RhythmEventSequencesConfig) -> None:
 
     processed = 0
     results = list(iter_sequence_selection_results(config))
-    for result in results:
-        if not isinstance(result, SequenceSelectionSuccess):
-            continue
+    successes = [
+        result for result in results if isinstance(result, SequenceSelectionSuccess)
+    ]
 
-        entity = result.entity
-        concat = result.concat
-        output_path = config.visualize_output_dir / f"{entity.entity_id}.pdf"
-        export_concatenated_pdf(
-            entity,
-            concat,
-            output_path=output_path,
-            pagination_config=pagination_config,
-            rr_histogram_config=config.rr_histogram,
-            segment_colors=config.segment_colors,
-            segment_labels=config.segment_labels,
-        )
-        LOGGER.info("Saved concatenated signal PDF to %s", output_path)
-        processed += 1
+    with ProcessPoolExecutor(max_workers=config.max_workers) as executor:
+        futures = [
+            executor.submit(
+                _export_pdf,
+                result.entity,
+                result.concat,
+                output_dir=config.visualize_output_dir,
+                pagination_config=pagination_config,
+                rr_histogram_config=config.rr_histogram,
+                segment_colors=config.segment_colors,
+                segment_labels=config.segment_labels,
+            )
+            for result in successes
+        ]
+        for future in as_completed(futures):
+            try:
+                output_path = future.result()
+            except Exception:
+                LOGGER.exception("Failed to export concatenated signal PDF")
+                continue
+            LOGGER.info("Saved concatenated signal PDF to %s", output_path)
+            processed += 1
 
     plot_selection_summary(results, output_path=config.summary_path)
     LOGGER.info("Saved sequence selection summary figure to %s", config.summary_path)
@@ -59,3 +73,27 @@ def rhythm_event_sequence_visualize(config: RhythmEventSequencesConfig) -> None:
         len(results) - processed,
         config.visualize_output_dir,
     )
+
+
+def _export_pdf(
+    entity: ECGEntity,
+    concat: ConcatenatedSequence,
+    *,
+    output_dir: Path,
+    pagination_config: PaginationConfig,
+    rr_histogram_config: RRHistogramConfig,
+    segment_colors: dict[str, str],
+    segment_labels: dict[str, str],
+) -> Path:
+    apply_default_style()
+    output_path = output_dir / f"{entity.entity_id}.pdf"
+    export_concatenated_pdf(
+        entity,
+        concat,
+        output_path=output_path,
+        pagination_config=pagination_config,
+        rr_histogram_config=rr_histogram_config,
+        segment_colors=segment_colors,
+        segment_labels=segment_labels,
+    )
+    return output_path
