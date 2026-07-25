@@ -1,7 +1,7 @@
 from ecg_visualization.tasks.cudb_anomaly_scores.config import (
     load_cudb_anomaly_scores_config,
 )
-from ecg_visualization.tasks.cudb_anomaly_scores.cudb_anomaly_scores import (
+from ecg_visualization.tasks.cudb_anomaly_scores.run import (
     cudb_anomaly_scores,
 )
 
