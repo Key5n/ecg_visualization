@@ -40,9 +40,28 @@ class ConcatenatedSequence:
     )
 
 
-def iter_concatenated_sequences(
+@dataclass(frozen=True, slots=True)
+class SequenceSelectionSuccess:
+    entity: ECGEntity
+    concat: ConcatenatedSequence
+
+    @property
+    def segments_info(self) -> SegmentsInfo:
+        return self.concat.segments_info
+
+
+@dataclass(frozen=True, slots=True)
+class SequenceSelectionFailure:
+    entity: ECGEntity
+    failure_reason: str
+
+
+SequenceSelectionResult = SequenceSelectionSuccess | SequenceSelectionFailure
+
+
+def iter_sequence_selection_results(
     config: RhythmEventSequencesConfig,
-) -> Iterable[tuple[ECGEntity, ConcatenatedSequence]]:
+) -> Iterable[SequenceSelectionResult]:
     dataset = load_data_sources((config.dataset_id,))[0]
     for entity in dataset.get_entities():
         try:
@@ -60,8 +79,24 @@ def iter_concatenated_sequences(
             )
         except ValueError as exc:
             LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
+            yield SequenceSelectionFailure(
+                entity=entity,
+                failure_reason=str(exc),
+            )
             continue
-        yield entity, concat
+
+        yield SequenceSelectionSuccess(
+            entity=entity,
+            concat=concat,
+        )
+
+
+def iter_concatenated_sequences(
+    config: RhythmEventSequencesConfig,
+) -> Iterable[tuple[ECGEntity, ConcatenatedSequence]]:
+    for result in iter_sequence_selection_results(config):
+        if isinstance(result, SequenceSelectionSuccess):
+            yield result.entity, result.concat
 
 
 def _segment_windows(segments_info: SegmentsInfo) -> list[tuple[str, SegmentWindow]]:

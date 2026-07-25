@@ -87,6 +87,10 @@ class RhythmEventSequencesConfig:
         return self.output_dir / "visualize"
 
     @property
+    def summary_path(self) -> Path:
+        return self.visualize_output_dir / "summary.pdf"
+
+    @property
     def config_path(self) -> Path:
         return self.output_dir / "config.yaml"
 

@@ -8,10 +8,14 @@ from ecg_visualization.tasks.rhythm_event_sequences.config import (
     RhythmEventSequencesConfig,
 )
 from ecg_visualization.tasks.rhythm_event_sequences.utils import (
-    iter_concatenated_sequences,
+    SequenceSelectionSuccess,
+    iter_sequence_selection_results,
 )
 from ecg_visualization.tasks.rhythm_event_sequences.visualize.export_concatenated_pdf import (
     export_concatenated_pdf,
+)
+from ecg_visualization.tasks.rhythm_event_sequences.visualize.plot_selection_summary import (
+    plot_selection_summary,
 )
 from ecg_visualization.visualization.styles import apply_default_style
 
@@ -26,7 +30,13 @@ def rhythm_event_sequence_visualize(config: RhythmEventSequencesConfig) -> None:
     pagination_config = config.pagination
 
     processed = 0
-    for entity, concat in iter_concatenated_sequences(config):
+    results = list(iter_sequence_selection_results(config))
+    for result in results:
+        if not isinstance(result, SequenceSelectionSuccess):
+            continue
+
+        entity = result.entity
+        concat = result.concat
         output_path = config.visualize_output_dir / f"{entity.entity_id}.pdf"
         export_concatenated_pdf(
             entity,
@@ -40,8 +50,12 @@ def rhythm_event_sequence_visualize(config: RhythmEventSequencesConfig) -> None:
         LOGGER.info("Saved concatenated signal PDF to %s", output_path)
         processed += 1
 
+    plot_selection_summary(results, output_path=config.summary_path)
+    LOGGER.info("Saved sequence selection summary figure to %s", config.summary_path)
+
     LOGGER.info(
-        "Finished ecg_visualization.visualization. processed=%d output_dir=%s",
+        "Finished ecg_visualization.visualization. processed=%d failed=%d output_dir=%s",
         processed,
+        len(results) - processed,
         config.visualize_output_dir,
     )
