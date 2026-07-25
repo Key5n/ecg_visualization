@@ -20,8 +20,8 @@ hooks:
 
 datasets: $(DATASET_STAMP)
 
-$(DATASET_STAMP): dataset.sh .env
-	bash dataset.sh
+$(DATASET_STAMP): data/raw-datasets/dataset.sh .env
+	bash data/raw-datasets/dataset.sh
 	touch "$@"
 
 format:

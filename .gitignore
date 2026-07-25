@@ -4,6 +4,7 @@ result/
 data/**
 !data/**/
 !data/**/.gitkeep
+!data/raw-datasets/dataset.sh
 !data/object-storage/garage.toml
 !data/object-storage/setup.md
 
