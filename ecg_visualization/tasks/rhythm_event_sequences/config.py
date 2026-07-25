@@ -39,7 +39,7 @@ class RRHistogramConfig:
 
 @dataclass(slots=True)
 class RhythmEventSequencesConfig:
-    dataset_id: str = "sddb"
+    dataset_id: str
     root_dir: Path = Path("result") / "rhythm_event_sequences"
     run_id: str = field(default_factory=_generate_run_id)
     window_size: int = 10
@@ -68,20 +68,20 @@ class RhythmEventSequencesConfig:
     rr_histogram: RRHistogramConfig = field(default_factory=RRHistogramConfig)
 
     @property
-    def run_output_dir(self) -> Path:
+    def output_dir(self) -> Path:
         return self.root_dir / self.dataset_id / "outputs" / Path(self.run_id)
 
     @property
     def score_output_dir(self) -> Path:
-        return self.run_output_dir / "mdrs_scores"
+        return self.output_dir / "mdrs_scores"
 
     @property
     def visualize_output_dir(self) -> Path:
-        return self.run_output_dir / "visualize"
+        return self.output_dir / "visualize"
 
     @property
     def config_path(self) -> Path:
-        return self.run_output_dir / "config.txt"
+        return self.output_dir / "config.yaml"
 
 
 def ltafdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
@@ -131,29 +131,6 @@ RHYTHM_EVENT_SEQUENCES_CONFIGS: dict[str, Callable[[], RhythmEventSequencesConfi
     "sddb": sddb_rhythm_event_sequences_config,
     "vfdb": vfdb_rhythm_event_sequences_config,
 }
-
-
-def build_fixed_ar_windows(
-    entity_id: str,
-    *,
-    pre_ar_duration_sec: float,
-    ar_duration_sec: float,
-    ar_onset_seconds: dict[str, float],
-) -> tuple[SegmentWindow, SegmentWindow]:
-    ar_onset_sec = ar_onset_seconds.get(entity_id)
-    if ar_onset_sec is None:
-        raise ValueError(f"AR onset is not configured for entity '{entity_id}'.")
-
-    return (
-        SegmentWindow(
-            ar_onset_sec - pre_ar_duration_sec,
-            ar_onset_sec,
-        ),
-        SegmentWindow(
-            ar_onset_sec,
-            ar_onset_sec + ar_duration_sec,
-        ),
-    )
 
 
 def load_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:

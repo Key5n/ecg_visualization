@@ -73,28 +73,6 @@ def _segment_windows(segments_info: SegmentsInfo) -> list[tuple[str, SegmentWind
     ]
 
 
-def _build_sinus_segments(
-    dataset: ECGDataset,
-    entities: Iterable[ECGEntity],
-    *,
-    pre_ar_duration_sec: float,
-    ar_duration_sec: float,
-    sinus_rr_median_threshold_sec: float,
-) -> tuple[SegmentsInfo, ...]:
-    segments: list[SegmentsInfo] = []
-    for entity in entities:
-        segments_info = _select_sinus_segments(
-            dataset,
-            entity,
-            pre_ar_duration_sec=pre_ar_duration_sec,
-            ar_duration_sec=ar_duration_sec,
-            sinus_rr_median_threshold_sec=sinus_rr_median_threshold_sec,
-        )
-        segments.append(segments_info)
-
-    return tuple(segments)
-
-
 def _select_sinus_segments(
     dataset: ECGDataset,
     entity: ECGEntity,

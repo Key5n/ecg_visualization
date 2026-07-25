@@ -8,10 +8,7 @@ from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.ltafdb import LTAFDBEntity
 from ecg_visualization.datasets.sddb import SDDB, SDDBEntity
 from ecg_visualization.datasets.vfdb import VFDBEntity
-from ecg_visualization.tasks.rhythm_event_sequences.config import (
-    SegmentWindow,
-    build_fixed_ar_windows,
-)
+from ecg_visualization.tasks.rhythm_event_sequences.config import SegmentWindow
 
 VFDB_RHYTHM_LABEL_PRIORITIES = (
     frozenset({"VF", "VFIB"}),
@@ -87,6 +84,29 @@ def _resolve_vfdb_event_windows(
     return _build_pre_event_windows(
         event_window,
         pre_ar_duration_sec=pre_ar_duration_sec,
+    )
+
+
+def build_fixed_ar_windows(
+    entity_id: str,
+    *,
+    pre_ar_duration_sec: float,
+    ar_duration_sec: float,
+    ar_onset_seconds: dict[str, float],
+) -> tuple[SegmentWindow, SegmentWindow]:
+    ar_onset_sec = ar_onset_seconds.get(entity_id)
+    if ar_onset_sec is None:
+        raise ValueError(f"AR onset is not configured for entity '{entity_id}'.")
+
+    return (
+        SegmentWindow(
+            ar_onset_sec - pre_ar_duration_sec,
+            ar_onset_sec,
+        ),
+        SegmentWindow(
+            ar_onset_sec,
+            ar_onset_sec + ar_duration_sec,
+        ),
     )
 
 
