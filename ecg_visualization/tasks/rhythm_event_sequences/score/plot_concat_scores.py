@@ -13,7 +13,7 @@ from ecg_visualization.tasks.rhythm_event_sequences.config import (
 from ecg_visualization.tasks.rhythm_event_sequences.utils import ConcatenatedSequence
 
 if TYPE_CHECKING:
-    from ecg_visualization.tasks.rhythm_event_sequences.score.score import ScoreResult
+    from ecg_visualization.tasks.rhythm_event_sequences.score.helpers import ScoreResult
 
 
 def _plot_concat_scores(
