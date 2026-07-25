@@ -7,7 +7,6 @@ from typing import ClassVar, Iterable
 import numpy as np
 import numpy.typing as npt
 
-from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import load_data_sources
 from ecg_visualization.tasks.rhythm_event_sequences.config import (
@@ -66,7 +65,6 @@ def iter_sequence_selection_results(
     for entity in dataset.get_entities():
         try:
             segments_info = _select_sinus_segments(
-                dataset,
                 entity,
                 pre_ar_duration_sec=config.pre_ar_duration_sec,
                 ar_duration_sec=config.ar_duration_sec,
@@ -109,7 +107,6 @@ def _segment_windows(segments_info: SegmentsInfo) -> list[tuple[str, SegmentWind
 
 
 def _select_sinus_segments(
-    dataset: ECGDataset,
     entity: ECGEntity,
     *,
     pre_ar_duration_sec: float,
@@ -147,7 +144,7 @@ def _select_sinus_segments(
     ]
     before_pre_ar_runs.sort(key=_sinus_run_sort_key)
     if not before_pre_ar_runs:
-        raise ValueError(f"{entity.entity_id} has no train sinus before pre-AR")
+        raise ValueError(f"{entity} has no train sinus before pre-AR")
 
     test_after_ar_runs = [
         run for run in candidate_runs if beat_times_sec[run[0]] >= ar_window.end_sec
@@ -155,21 +152,20 @@ def _select_sinus_segments(
     test_after_ar_runs.sort(key=_sinus_run_sort_key)
     train_run = before_pre_ar_runs[0]
     if not test_after_ar_runs:
-        LOGGER.warning(
+        LOGGER.info(
             "%s has no test sinus after AR; falling back to pre-AR candidate runs",
-            entity.entity_id,
+            entity,
         )
         test_runs = before_pre_ar_runs[1:]
     else:
         test_runs = test_after_ar_runs
     if not test_runs:
-        raise ValueError(
-            f"{entity.entity_id} has no non-overlapping test sinus before pre-AR"
-        )
+        raise ValueError(f"{entity} has no non-overlapping test sinus before pre-AR")
     test_run = test_runs[0]
 
     train_window = _rr_run_to_segment_window(beat_times_sec, train_run)
     test_window = _rr_run_to_segment_window(beat_times_sec, test_run)
+
     return SegmentsInfo(
         entity_id=entity.entity_id,
         train=train_window,
@@ -239,7 +235,7 @@ def _resolve_segment_beats(
 
     detected_beats = detect_rpeaks(segment_samples, entity.dataset.sampling_rate_hz)
     if detected_beats.size >= max(2, segment_beats.size):
-        LOGGER.info(
+        LOGGER.debug(
             "Using detected R-peaks for %s:%s (annotated=%d detected=%d min_required=%d).",
             entity.entity_id,
             name,
