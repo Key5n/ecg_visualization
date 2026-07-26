@@ -172,6 +172,7 @@ def _create_overview_figure(stats: SelectionSummaryStats) -> Figure:
 def _create_segment_timeline_figure(
     results: list[SequenceSelectionResult],
 ) -> Figure:
+    minimum_display_width_pct = 0.5
     succeeded_results = [
         result for result in results if isinstance(result, SequenceSelectionSuccess)
     ]
@@ -179,7 +180,7 @@ def _create_segment_timeline_figure(
     fig_height = max(5.5, min(18.0, 1.5 + row_count * 0.28))
     fig, ax = plt.subplots(figsize=(14, fig_height))
     ax.set_title("Selected Segment Timeline")
-    ax.set_xlabel("Time from record start (sec)")
+    ax.set_xlabel("Position within record (%)")
     ax.set_ylabel("Entity")
 
     if not succeeded_results:
@@ -209,6 +210,9 @@ def _create_segment_timeline_figure(
     y_positions = np.arange(len(succeeded_results))
     for y_position, result in zip(y_positions, succeeded_results, strict=True):
         segments_info = result.segments_info
+        total_duration_sec = (
+            result.entity.signals.size / result.entity.dataset.sampling_rate_hz
+        )
         for name, window in (
             ("sinus_train", segments_info.train),
             ("pre_ar", segments_info.pre_ar),
@@ -217,10 +221,12 @@ def _create_segment_timeline_figure(
         ):
             if window is None:
                 continue
+            start_pct = 100 * window.start_sec / total_duration_sec
+            end_pct = 100 * window.end_sec / total_duration_sec
             ax.barh(
                 y_position,
-                _duration_sec(window),
-                left=window.start_sec,
+                max(end_pct - start_pct, minimum_display_width_pct),
+                left=start_pct,
                 height=0.65,
                 color=segment_colors[name],
                 label=segment_labels[name],
@@ -238,6 +244,7 @@ def _create_segment_timeline_figure(
     )
     ax.set_yticks(y_positions)
     ax.set_yticklabels([result.entity.entity_id for result in succeeded_results])
+    ax.set_xlim(0, 100)
     ax.invert_yaxis()
     ax.grid(axis="x", color="#d9dee3", linewidth=0.6)
     fig.tight_layout()

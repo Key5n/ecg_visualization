@@ -53,6 +53,7 @@ def _resolve_ltafdb_event_windows(
     event_window = _find_first_rhythm_event_window(
         entity,
         target_labels={"AF", "AFIB"},
+        min_start_sec=pre_ar_duration_sec,
     )
     return _build_pre_event_windows(
         event_window,
@@ -70,6 +71,7 @@ def _resolve_vfdb_event_windows(
         entity,
         target_label_priorities=VFDB_RHYTHM_LABEL_PRIORITIES,
         bridge_noise=True,
+        min_start_sec=pre_ar_duration_sec,
     )
     return _build_pre_event_windows(
         event_window,
@@ -96,6 +98,7 @@ def _find_first_rhythm_event_window_by_priority(
     *,
     target_label_priorities: tuple[frozenset[str], ...],
     bridge_noise: bool = False,
+    min_start_sec: float = 0.0,
 ) -> SegmentWindow:
     rhythm_events = _iter_rhythm_events(entity)
     total_duration_sec = float(entity.signals.size) / float(
@@ -107,6 +110,7 @@ def _find_first_rhythm_event_window_by_priority(
             target_labels=target_labels,
             total_duration_sec=total_duration_sec,
             bridge_noise=bridge_noise,
+            min_start_sec=min_start_sec,
         )
         if event_window is not None:
             return event_window
@@ -122,6 +126,7 @@ def _find_first_rhythm_event_window(
     entity: ECGEntity,
     *,
     target_labels: set[str],
+    min_start_sec: float = 0.0,
 ) -> SegmentWindow:
     rhythm_events = _iter_rhythm_events(entity)
     total_duration_sec = float(entity.signals.size) / float(
@@ -131,6 +136,7 @@ def _find_first_rhythm_event_window(
         rhythm_events,
         target_labels=target_labels,
         total_duration_sec=total_duration_sec,
+        min_start_sec=min_start_sec,
     )
     if event_window is not None:
         return event_window
@@ -146,9 +152,10 @@ def _find_first_rhythm_event_window_in_events(
     total_duration_sec: float,
     ar_duration_sec: float | None = None,
     bridge_noise: bool = False,
+    min_start_sec: float = 0.0,
 ) -> SegmentWindow | None:
     for idx, (start_sec, label) in enumerate(rhythm_events):
-        if label not in target_labels:
+        if label not in target_labels or start_sec < min_start_sec:
             continue
 
         end_sec = _find_episode_end_sec(
