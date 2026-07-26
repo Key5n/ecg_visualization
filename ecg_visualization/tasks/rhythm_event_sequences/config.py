@@ -98,6 +98,7 @@ class RhythmEventSequencesConfig:
 def ltafdb_rhythm_event_sequences_config() -> RhythmEventSequencesConfig:
     return RhythmEventSequencesConfig(
         dataset_id="ltafdb",
+        pre_ar_duration_sec=60 * 10,
         segment_labels={
             "sinus_train": "sinus_train",
             "pre_ar": "pre_af",
