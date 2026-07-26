@@ -38,10 +38,11 @@ def _resolve_sddb_event_windows(
     ar_onset_sec = SDDB.vf_onset_seconds.get(entity.entity_id)
     if ar_onset_sec is None:
         raise ValueError(f"AR onset is not configured for entity '{entity.entity_id}'.")
-    return (
-        SegmentWindow(ar_onset_sec - pre_ar_duration_sec, ar_onset_sec),
-        None,
+    pre_ar_window = SegmentWindow(
+        ar_onset_sec - pre_ar_duration_sec,
+        ar_onset_sec,
     )
+    return (_adjust_window_to_rpeaks(entity, pre_ar_window), None)
 
 
 @resolve_event_windows.register
@@ -55,9 +56,13 @@ def _resolve_ltafdb_event_windows(
         target_labels={"AF", "AFIB"},
         min_start_sec=pre_ar_duration_sec,
     )
-    return _build_pre_event_windows(
+    pre_ar_window, ar_window = _build_pre_event_windows(
         event_window,
         pre_ar_duration_sec=pre_ar_duration_sec,
+    )
+    return (
+        _adjust_window_to_rpeaks(entity, pre_ar_window),
+        _adjust_window_to_rpeaks(entity, ar_window),
     )
 
 
@@ -73,9 +78,39 @@ def _resolve_vfdb_event_windows(
         bridge_noise=True,
         min_start_sec=pre_ar_duration_sec,
     )
-    return _build_pre_event_windows(
+    pre_ar_window, ar_window = _build_pre_event_windows(
         event_window,
         pre_ar_duration_sec=pre_ar_duration_sec,
+    )
+    return (
+        _adjust_window_to_rpeaks(entity, pre_ar_window),
+        _adjust_window_to_rpeaks(entity, ar_window),
+    )
+
+
+def _adjust_window_to_rpeaks(
+    entity: ECGEntity,
+    window: SegmentWindow,
+) -> SegmentWindow:
+    """Move a sample-based window to equivalent half-open R-peak boundaries."""
+    beat_times_sec = np.asarray(entity.beats, dtype=np.float64) / float(
+        entity.dataset.sampling_rate_hz
+    )
+    start_idx = int(np.searchsorted(beat_times_sec, window.start_sec, side="left"))
+    end_idx = int(np.searchsorted(beat_times_sec, window.end_sec, side="left"))
+
+    # A rhythm episode can extend to the end of a record, after its final R-peak.
+    # In that case the final R-peak is the only possible exclusive boundary.
+    end_idx = min(end_idx, beat_times_sec.size - 1)
+    if start_idx >= end_idx:
+        raise ValueError(
+            f"window {window.start_sec:g}s-{window.end_sec:g}s for {entity} "
+            "does not contain a complete RR interval"
+        )
+
+    return SegmentWindow(
+        start_sec=float(beat_times_sec[start_idx]),
+        end_sec=float(beat_times_sec[end_idx]),
     )
 
 
