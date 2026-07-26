@@ -9,6 +9,53 @@ from ecg_visualization.core.analysis import NormalSegmentConfig, extract_normal_
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.visualization.export import PdfExporter
 
+# WFDB beat annotation codes:
+# https://physionet.org/physiotools/wpg/wpg_36.htm
+BEAT_ANNOTATION_DESCRIPTIONS = {
+    "N": "Normal beat",
+    "L": "Left bundle branch block beat",
+    "R": "Right bundle branch block beat",
+    "B": "Unspecified bundle branch block beat",
+    "A": "Atrial premature beat",
+    "a": "Aberrated atrial premature beat",
+    "J": "Junctional premature beat",
+    "S": "Supraventricular premature or ectopic beat",
+    "V": "Premature ventricular contraction",
+    "r": "R-on-T premature ventricular contraction",
+    "F": "Fusion of ventricular and normal beat",
+    "e": "Atrial escape beat",
+    "j": "Junctional escape beat",
+    "n": "Supraventricular escape beat",
+    "E": "Ventricular escape beat",
+    "/": "Paced beat",
+    "f": "Fusion of paced and normal beat",
+    "Q": "Unclassifiable beat",
+    "?": "Beat not classified during learning",
+}
+
+NON_BEAT_ANNOTATION_DESCRIPTIONS = {
+    "[": "Start of ventricular flutter or fibrillation",
+    "!": "Ventricular flutter wave",
+    "]": "End of ventricular flutter or fibrillation",
+    "x": "Non-conducted P-wave",
+    "(": "Waveform onset",
+    ")": "Waveform end",
+    "p": "P-wave peak",
+    "t": "T-wave peak",
+    "u": "U-wave peak",
+    "^": "Non-captured pacemaker artifact",
+    "|": "Isolated QRS-like artifact",
+    "~": "Change in signal quality",
+    "+": "Rhythm change",
+    "s": "ST-segment change",
+    "T": "T-wave change",
+    "*": "Systole",
+    "D": "Diastole",
+    "=": "Measurement annotation",
+    '"': "Comment annotation",
+    "@": "Link to external data",
+}
+
 
 def render_entity_summary_page(
     entity: ECGEntity,
@@ -32,7 +79,7 @@ def render_entity_summary_page(
 
     y = 0.90
     label_x = 0.05
-    value_x = 0.32
+    value_x = 0.40
     for label, value in rows:
         ax.text(
             label_x,
@@ -52,7 +99,7 @@ def render_entity_summary_page(
             verticalalignment="top",
             wrap=True,
         )
-        y -= 0.045
+        y -= 0.045 * max(1, value.count("\n") + 1)
 
     exporter.add_page(fig, pad_inches=0)
     plt.close(fig)
@@ -81,6 +128,14 @@ def _entity_summary_rows(
         ("Beats", f"{entity.beats.size:,}"),
         ("Annotations", f"{len(entity.annotation.sample):,} symbols"),
         ("Annotation types", annotation_symbols),
+        (
+            "Beat annotation codes",
+            _format_annotation_codes(entity, BEAT_ANNOTATION_DESCRIPTIONS),
+        ),
+        (
+            "Non-beat annotation codes",
+            _format_annotation_codes(entity, NON_BEAT_ANNOTATION_DESCRIPTIONS),
+        ),
         ("Aux notes", _format_aux_note_summary(entity)),
         ("RR intervals", _format_rr_statistics(entity)),
         (
@@ -88,6 +143,17 @@ def _entity_summary_rows(
             _format_normal_segment_summary(entity, normal_segment_config),
         ),
     ]
+
+
+def _format_annotation_codes(
+    entity: ECGEntity,
+    descriptions: dict[str, str],
+) -> str:
+    symbols = sorted(set(entity.annotation.symbol) & descriptions.keys())
+    if not symbols:
+        return "None recorded"
+
+    return "\n".join(f"{symbol}: {descriptions[symbol]}" for symbol in symbols)
 
 
 def _format_rr_statistics(entity: ECGEntity) -> str:
