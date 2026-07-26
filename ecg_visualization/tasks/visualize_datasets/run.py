@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import logging
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from tqdm import tqdm
 
 from ecg_visualization.core.analysis import NormalSegmentConfig
 from ecg_visualization.core.entity import ECGEntity
@@ -44,21 +44,24 @@ def visualize_datasets(config: VisualizeDatasetsConfig) -> None:
     datasets = load_data_sources(config.dataset_ids)
     pagination_config = config.pagination
 
+    total_entities = sum(len(dataset.entity_ids) for dataset in datasets)
     total_processed = 0
     for dataset in datasets:
-        dataset_output_dir = config.output_dir / dataset.dataset_id
-        dataset_output_dir.mkdir(parents=True, exist_ok=True)
-
+        (config.output_dir / dataset.dataset_id).mkdir(parents=True, exist_ok=True)
         LOGGER.info(
             "Visualizing dataset %s (%d entities)",
             dataset.dataset_id,
             len(dataset.entity_ids),
         )
-        for entity in tqdm(dataset.get_entities(), desc=dataset.dataset_id):
-            output_path = dataset_output_dir / f"{entity.entity_id}.pdf"
-            _export_entity_pdf(
+
+    with ProcessPoolExecutor(max_workers=config.max_workers) as executor:
+        futures = [
+            executor.submit(
+                _export_entity_pdf,
                 entity,
-                output_path=output_path,
+                output_path=(
+                    config.output_dir / dataset.dataset_id / f"{entity.entity_id}.pdf"
+                ),
                 pagination_config=pagination_config,
                 normal_segment_config=config.normal_segment,
                 signal_ylim_bounds=(
@@ -66,11 +69,23 @@ def visualize_datasets(config: VisualizeDatasetsConfig) -> None:
                     config.signal_ylim_upper,
                 ),
             )
+            for dataset in datasets
+            for entity in dataset.get_entities()
+        ]
+
+        for future in as_completed(futures):
+            try:
+                output_path = future.result()
+            except Exception:
+                LOGGER.exception("Failed to export entity PDF")
+                continue
+            LOGGER.info("Saved entity PDF to %s", output_path)
             total_processed += 1
 
     LOGGER.info(
-        "Finished dataset visualization. processed=%d output_dir=%s",
+        "Finished dataset visualization. processed=%d failed=%d output_dir=%s",
         total_processed,
+        total_entities - total_processed,
         config.output_dir,
     )
 
@@ -82,7 +97,9 @@ def _export_entity_pdf(
     pagination_config: PaginationConfig,
     normal_segment_config: NormalSegmentConfig,
     signal_ylim_bounds: tuple[float, float],
-) -> None:
+) -> Path:
+    LOGGER.info("Starting PDF export of entity=%s", entity)
+    apply_default_style()
     ts_paged = paginate_signals(
         entity.signals.size,
         int(entity.dataset.sampling_rate_hz),
@@ -109,3 +126,4 @@ def _export_entity_pdf(
             decorate_signal_page(fig=fig, entity=entity, page_idx=page_idx)
             exporter.add_page(fig, pad_inches=0)
             plt.close(fig)
+    return output_path

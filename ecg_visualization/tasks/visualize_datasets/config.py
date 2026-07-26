@@ -12,6 +12,7 @@ from ecg_visualization.visualization.layouts import PaginationConfig
 class VisualizeDatasetsConfig:
     dataset_ids: tuple[str, ...] = ()
     output_dir: Path = Path("result/visualize-datasets")
+    max_workers: int | None = None
     pagination: PaginationConfig = field(default_factory=PaginationConfig)
     normal_segment: NormalSegmentConfig = field(default_factory=NormalSegmentConfig)
     signal_ylim_lower: float = -5.0
