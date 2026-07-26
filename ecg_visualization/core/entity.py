@@ -19,7 +19,9 @@ class ECGEntity:
         dataset (type[ECGDataset]): Dataset class the record belongs to
         signals (npt.NDArray[np.float64]): ECG signal data
         annotation (Annotation): Annotation object containing metadata about the ECG record
-        beats (npt.NDArray[np.int_]): Array of beat sample indices, each element divided by its sampling rate representing the times of beats in seconds
+        beats (npt.NDArray[np.int_]): Detected R-peak sample indices
+        annotated_normal_beats (npt.NDArray[np.int_]): Normal beat sample indices
+            read from the dataset's beat annotation file
         aux_notes (tuple[str, ...]): Annotation auxiliary notes aligned with annotation.sample for rhythm labels
     """
 
@@ -29,6 +31,7 @@ class ECGEntity:
     signals: npt.NDArray[np.float64]
     annotation: Annotation
     beats: npt.NDArray[np.int_]
+    annotated_normal_beats: npt.NDArray[np.int_]
     aux_notes: tuple[str, ...]
 
     def __post_init__(self) -> None:
@@ -36,6 +39,7 @@ class ECGEntity:
             raise ValueError(f"{self} does not contain enough beats to analyze")
         self.signals.setflags(write=False)
         self.beats.setflags(write=False)
+        self.annotated_normal_beats.setflags(write=False)
 
     def __str__(self) -> str:
         return f"{self.dataset.dataset_id}/{self.entity_id}"

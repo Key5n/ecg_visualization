@@ -11,6 +11,7 @@ import wfdb
 
 from ecg_visualization.core.annotations import (
     AnnotationExtention,
+    read_annotated_normal_beats,
     read_annotation,
     read_normal_beats,
 )
@@ -60,12 +61,17 @@ class ECGDataset:
             )
         annotation = read_annotation(cls.annotation_extention, data_path)
         beats = cls._read_beats(data_path, squeezed)
+        annotated_normal_beats = read_annotated_normal_beats(
+            cls.beat_extention,
+            data_path,
+        )
 
         return cls.entity_cls(
             entity_id=entity_id,
             signals=squeezed,
             annotation=annotation,
             beats=beats,
+            annotated_normal_beats=annotated_normal_beats,
             aux_notes=tuple(annotation.aux_note),
         )
 
@@ -75,7 +81,7 @@ class ECGDataset:
         data_path: str,
         signals: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.int_]:
-        return read_normal_beats(cls.beat_extention, data_path)
+        return read_normal_beats(signals, cls.sampling_rate_hz)
 
     @classmethod
     def get_entities(cls) -> Iterator[ECGEntity]:
