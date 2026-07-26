@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import logging
 
-import matplotlib.pyplot as plt
-
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.tasks.config import save_config_text
 from ecg_visualization.tasks.rhythm_event_sequences.config import (
@@ -13,7 +11,7 @@ from ecg_visualization.tasks.rhythm_event_sequences.score.helpers import (
     score_concatenated_sequence,
 )
 from ecg_visualization.tasks.rhythm_event_sequences.score.plot_concat_scores import (
-    _plot_concat_scores,
+    export_concat_scores_pdf,
 )
 from ecg_visualization.tasks.rhythm_event_sequences.utils import (
     iter_concatenated_sequences,
@@ -41,10 +39,14 @@ def rhythm_event_sequence_scores(config: RhythmEventSequencesConfig) -> None:
             LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
             continue
 
-        fig = _plot_concat_scores(entity, concat, score_result, config=config)
-        output_path = config.score_output_dir / f"{entity.entity_id}.png"
-        fig.savefig(output_path, dpi=150)
-        plt.close(fig)
+        output_path = config.score_output_dir / f"{entity.entity_id}.pdf"
+        export_concat_scores_pdf(
+            entity,
+            concat,
+            score_result,
+            output_path=str(output_path),
+            config=config,
+        )
         LOGGER.info("Saved MD-RS scores to %s", output_path)
         processed += 1
 

@@ -5,12 +5,15 @@ from typing import TYPE_CHECKING
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.tasks.rhythm_event_sequences.config import (
     RhythmEventSequencesConfig,
 )
 from ecg_visualization.tasks.rhythm_event_sequences.utils import ConcatenatedSequence
+from ecg_visualization.visualization.export import pdf_exporter
+from ecg_visualization.visualization.layouts import paginate_signals
 
 if TYPE_CHECKING:
     from ecg_visualization.tasks.rhythm_event_sequences.score.helpers import ScoreResult
@@ -73,6 +76,115 @@ def _plot_concat_scores(
     return fig
 
 
+def export_concat_scores_pdf(
+    entity: ECGEntity,
+    concat: ConcatenatedSequence,
+    score_result: ScoreResult,
+    *,
+    output_path: str,
+    config: RhythmEventSequencesConfig,
+) -> None:
+    """Export the score overview and paginated concatenated-sequence details."""
+    with pdf_exporter(output_path) as exporter:
+        overview = _plot_concat_scores(entity, concat, score_result, config=config)
+        exporter.add_page(overview)
+        plt.close(overview)
+
+        ts_paged = paginate_signals(
+            len(concat.samples),
+            int(concat.sampling_rate_hz),
+            config.pagination,
+        )
+        for page_idx, ts_rows in enumerate(ts_paged):
+            fig = _plot_concat_score_page(
+                entity,
+                concat,
+                score_result,
+                ts_rows=ts_rows,
+                page_idx=page_idx,
+                config=config,
+            )
+            exporter.add_page(fig, pad_inches=0)
+            plt.close(fig)
+
+
+def _plot_concat_score_page(
+    entity: ECGEntity,
+    concat: ConcatenatedSequence,
+    score_result: ScoreResult,
+    *,
+    ts_rows: np.ndarray,
+    page_idx: int,
+    config: RhythmEventSequencesConfig,
+) -> Figure:
+    samples = np.asarray(concat.samples, dtype=float)
+    sampling_rate_hz = float(concat.sampling_rate_hz)
+    scores = np.asarray(score_result.scores, dtype=float)
+
+    signal_min = float(np.nanmin(samples))
+    signal_max = float(np.nanmax(samples))
+    signal_margin = (signal_max - signal_min) * 0.05 or 1.0
+
+    fig, axes = plt.subplots(
+        nrows=len(ts_rows) * 2,
+        figsize=(8.27, 11.69),
+        squeeze=False,
+    )
+    flat_axes = axes[:, 0]
+
+    for row_idx, ts in enumerate(ts_rows):
+        signal_ax = flat_axes[row_idx * 2]
+        score_ax = flat_axes[row_idx * 2 + 1]
+        window_start = float(ts[0])
+        window_end = float(ts[-1])
+        start_idx = int(np.floor(window_start * sampling_rate_hz))
+        end_idx = min(
+            int(np.floor(window_end * sampling_rate_hz)) + 1,
+            samples.size,
+        )
+        row_samples = samples[start_idx:end_idx]
+        row_ts = ts[: row_samples.size]
+
+        signal_ax.plot(row_ts, row_samples, "-", linewidth=0.7)
+        signal_ax.set_ylabel("mV")
+        signal_ax.set_ylim(
+            signal_min - signal_margin,
+            signal_max + signal_margin,
+        )
+
+        score_mask = (score_result.times_sec >= window_start) & (
+            score_result.times_sec <= window_end
+        )
+        score_ax.plot(
+            score_result.times_sec[score_mask],
+            scores[score_mask],
+            color="black",
+            linewidth=0.9,
+        )
+        score_ax.set_ylabel("Score")
+        score_ax.set_yscale("log")
+        score_ax.set_xlim(window_start, window_end)
+        score_ax.set_xlabel("Time (sec)")
+
+        for ax in (signal_ax, score_ax):
+            ax.set_xlim(window_start, window_end)
+            _highlight_concat_segments(
+                ax,
+                concat,
+                segment_colors=config.segment_colors,
+                segment_labels=config.segment_labels,
+                window_start=window_start,
+                window_end=window_end,
+            )
+
+    fig.suptitle(
+        f"{entity.dataset.name}: {entity.entity_id} — concatenated sequence scores "
+        f"(detail page {page_idx + 1})"
+    )
+    fig.subplots_adjust(left=0.1, right=0.97, bottom=0.05, top=0.95, hspace=0.45)
+    return fig
+
+
 def _highlight_segments(
     ax: Axes,
     segments: list[tuple[str, float, float]],
@@ -112,6 +224,8 @@ def _highlight_concat_segments(
     *,
     segment_colors: dict[str, str],
     segment_labels: dict[str, str],
+    window_start: float | None = None,
+    window_end: float | None = None,
 ) -> None:
     segments: list[tuple[str, float, float]] = []
     running_start = 0
@@ -134,8 +248,8 @@ def _highlight_concat_segments(
     _highlight_segments(
         ax,
         segments,
-        window_start=segments[0][1],
-        window_end=segments[-1][2],
+        window_start=segments[0][1] if window_start is None else window_start,
+        window_end=segments[-1][2] if window_end is None else window_end,
         segment_colors=segment_colors,
         segment_labels=segment_labels,
     )
