@@ -17,7 +17,6 @@ from ecg_visualization.tasks.rhythm_event_sequences.config import (
 from ecg_visualization.tasks.rhythm_event_sequences.event_windows import (
     resolve_event_windows,
 )
-from ecg_visualization.utils.signal_processing.rpeak_detection import detect_rpeaks
 from ecg_visualization.utils.utils import find_true_runs
 
 LOGGER = logging.getLogger(__name__)
@@ -69,11 +68,7 @@ def iter_sequence_selection_results(
                 pre_ar_duration_sec=config.pre_ar_duration_sec,
                 sinus_rr_median_threshold_sec=config.sinus_rr_median_threshold_sec,
             )
-            concat = _build_concatenated_sequence(
-                entity,
-                segments_info,
-                max_reasonable_rr_interval_sec=config.max_reasonable_rr_interval_sec,
-            )
+            concat = _build_concatenated_sequence(entity, segments_info)
         except ValueError as exc:
             LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
             yield SequenceSelectionFailure(
@@ -211,60 +206,9 @@ def _rr_run_to_segment_window(
     )
 
 
-def _minimum_required_beats(
-    segment_duration_sec: float,
-    *,
-    max_reasonable_rr_interval_sec: float,
-) -> int:
-    return max(2, int(np.ceil(segment_duration_sec / max_reasonable_rr_interval_sec)))
-
-
-def _resolve_segment_beats(
-    entity: ECGEntity,
-    name: str,
-    segment_samples: npt.NDArray[np.float64],
-    segment_beats: npt.NDArray[np.int_],
-    *,
-    max_reasonable_rr_interval_sec: float,
-) -> npt.NDArray[np.int_]:
-    segment_duration_sec = float(segment_samples.size) / float(
-        entity.dataset.sampling_rate_hz
-    )
-    minimum_required_beats = _minimum_required_beats(
-        segment_duration_sec,
-        max_reasonable_rr_interval_sec=max_reasonable_rr_interval_sec,
-    )
-    if segment_beats.size >= minimum_required_beats:
-        return np.asarray(segment_beats, dtype=np.int_)
-
-    detected_beats = detect_rpeaks(segment_samples, entity.dataset.sampling_rate_hz)
-    if detected_beats.size >= max(2, segment_beats.size):
-        LOGGER.debug(
-            "Using detected R-peaks for %s:%s (annotated=%d detected=%d min_required=%d).",
-            entity.entity_id,
-            name,
-            segment_beats.size,
-            detected_beats.size,
-            minimum_required_beats,
-        )
-        return detected_beats
-
-    LOGGER.warning(
-        "R-peak fallback for %s:%s was insufficient (annotated=%d detected=%d min_required=%d).",
-        entity.entity_id,
-        name,
-        segment_beats.size,
-        detected_beats.size,
-        minimum_required_beats,
-    )
-    return np.asarray(segment_beats, dtype=np.int_)
-
-
 def _build_concatenated_sequence(
     entity: ECGEntity,
     segments_info: SegmentsInfo,
-    *,
-    max_reasonable_rr_interval_sec: float,
 ) -> ConcatenatedSequence:
     signal = entity.signals
     sampling_rate_hz = float(entity.dataset.sampling_rate_hz)
@@ -285,16 +229,9 @@ def _build_concatenated_sequence(
             )
 
         concatenated_samples.append(signal[start_sample:end_sample])
-        annotated_segment_beats = entity.beats[
-            (entity.beats >= start_sample) & (entity.beats < end_sample)
-        ]
-        segment_samples = np.asarray(signal[start_sample:end_sample], dtype=np.float64)
-        segment_beats = _resolve_segment_beats(
-            entity,
-            name,
-            segment_samples,
-            np.asarray(annotated_segment_beats - start_sample, dtype=np.int_),
-            max_reasonable_rr_interval_sec=max_reasonable_rr_interval_sec,
+        segment_beats = (
+            entity.beats[(entity.beats >= start_sample) & (entity.beats < end_sample)]
+            - start_sample
         )
         segment_length = end_sample - start_sample
         concatenated_beats.append(

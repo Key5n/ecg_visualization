@@ -52,7 +52,6 @@ class RhythmEventSequencesConfig:
     max_workers: int | None = None
     window_size: int = 10
     pre_ar_duration_sec: float = 60
-    max_reasonable_rr_interval_sec: float = 3.0
     sinus_rr_median_threshold_sec: float = 0.1
     segment_colors: dict[str, str] = field(
         default_factory=lambda: {
