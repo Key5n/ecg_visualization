@@ -7,9 +7,9 @@ from .styles import ABNORMAL_INTERVAL_COLOR
 
 
 def _clean_text(value: object) -> str:
-    text = str(value)
-    text = text.replace("\x00", "")
-    return text.strip()
+    return "".join(
+        character for character in str(value) if character.isprintable()
+    ).strip()
 
 
 def plot_normal_beats(
