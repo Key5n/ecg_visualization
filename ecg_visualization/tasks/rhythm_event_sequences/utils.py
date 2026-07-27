@@ -13,6 +13,7 @@ from ecg_visualization.tasks.rhythm_event_sequences.config import (
     RhythmEventSequencesConfig,
     SegmentsInfo,
     SegmentWindow,
+    SinusExtractionConfig,
 )
 from ecg_visualization.tasks.rhythm_event_sequences.event_windows import (
     resolve_event_windows,
@@ -66,7 +67,7 @@ def iter_sequence_selection_results(
             segments_info = _select_sinus_segments(
                 entity,
                 pre_ar_duration_sec=config.pre_ar_duration_sec,
-                sinus_rr_median_threshold_sec=config.sinus_rr_median_threshold_sec,
+                sinus_extraction_config=config.sinus_extraction,
             )
             concat = _build_concatenated_sequence(entity, segments_info)
         except ValueError as exc:
@@ -106,7 +107,7 @@ def _select_sinus_segments(
     entity: ECGEntity,
     *,
     pre_ar_duration_sec: float,
-    sinus_rr_median_threshold_sec: float,
+    sinus_extraction_config: SinusExtractionConfig,
 ) -> SegmentsInfo:
     rr_intervals = entity.rr_intervals
 
@@ -116,9 +117,9 @@ def _select_sinus_segments(
     beat_times_sec = np.asarray(entity.beats, dtype=np.float64) / float(
         entity.dataset.sampling_rate_hz
     )
-    median_rr_interval_sec = float(np.median(rr_intervals))
-    near_median_mask = (
-        np.abs(rr_intervals - median_rr_interval_sec) <= sinus_rr_median_threshold_sec
+    sinus_rr_mask = _build_sinus_rr_mask(
+        rr_intervals,
+        sinus_extraction_config,
     )
     pre_ar_window, ar_window = resolve_event_windows(
         entity,
@@ -130,7 +131,7 @@ def _select_sinus_segments(
         ar_window=ar_window,
     )
 
-    candidate_runs = find_true_runs(near_median_mask & available_rr_mask)
+    candidate_runs = find_true_runs(sinus_rr_mask & available_rr_mask)
     before_pre_ar_runs = [
         run
         for run in candidate_runs
@@ -168,6 +169,37 @@ def _select_sinus_segments(
         test=test_window,
         pre_ar=pre_ar_window,
         ar=ar_window,
+    )
+
+
+def _build_sinus_rr_mask(
+    rr_intervals: npt.NDArray[np.float64],
+    sinus_extraction_config: SinusExtractionConfig,
+) -> npt.NDArray[np.bool_]:
+    if sinus_extraction_config.method == "median_threshold":
+        median_rr_interval_sec = float(np.median(rr_intervals))
+        return np.asarray(
+            np.abs(rr_intervals - median_rr_interval_sec)
+            <= sinus_extraction_config.median_threshold.threshold_sec,
+            dtype=np.bool_,
+        )
+
+    if sinus_extraction_config.method == "percentile_range":
+        lower_rr_interval_sec, upper_rr_interval_sec = np.percentile(
+            rr_intervals,
+            (
+                sinus_extraction_config.percentile_range.lower_percentile,
+                sinus_extraction_config.percentile_range.upper_percentile,
+            ),
+        )
+        return np.asarray(
+            (rr_intervals >= lower_rr_interval_sec)
+            & (rr_intervals <= upper_rr_interval_sec),
+            dtype=np.bool_,
+        )
+
+    raise ValueError(
+        f"Unknown sinus extraction method '{sinus_extraction_config.method}'"
     )
 
 

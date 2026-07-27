@@ -3,12 +3,18 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, cast
+from typing import TYPE_CHECKING, Callable, Literal, cast
 
 from omegaconf import OmegaConf
 
 from ecg_visualization.models.md_rs.md_rs import MDRSConfig
 from ecg_visualization.visualization.layouts import PaginationConfig
+
+if TYPE_CHECKING:
+    SinusDefinitionMethod = Literal["median_threshold", "percentile_range"]
+else:
+    # OmegaConf 2.3 does not support Literal annotations in structured configs.
+    SinusDefinitionMethod = str
 
 
 def _generate_run_id() -> str:
@@ -45,6 +51,44 @@ class RRHistogramConfig:
 
 
 @dataclass(slots=True)
+class MedianThresholdSinusExtractionConfig:
+    threshold_sec: float = 0.1
+
+
+@dataclass(slots=True)
+class PercentileRangeSinusExtractionConfig:
+    lower_percentile: float = 25.0
+    upper_percentile: float = 75.0
+
+    def __post_init__(self) -> None:
+        if not (0 <= self.lower_percentile < self.upper_percentile <= 100):
+            raise ValueError(
+                "sinus RR percentiles must satisfy "
+                "0 <= lower_percentile < upper_percentile <= 100"
+            )
+
+
+@dataclass(slots=True)
+class SinusExtractionConfig:
+    method: SinusDefinitionMethod = "median_threshold"
+    median_threshold: MedianThresholdSinusExtractionConfig = field(
+        default_factory=MedianThresholdSinusExtractionConfig
+    )
+    percentile_range: PercentileRangeSinusExtractionConfig = field(
+        default_factory=PercentileRangeSinusExtractionConfig
+    )
+
+    def __post_init__(self) -> None:
+        valid_methods = {"median_threshold", "percentile_range"}
+        if self.method not in valid_methods:
+            available_methods = ", ".join(sorted(valid_methods))
+            raise ValueError(
+                f"Unknown sinus extraction method '{self.method}'. "
+                f"Available options: {available_methods}."
+            )
+
+
+@dataclass(slots=True)
 class RhythmEventSequencesConfig:
     dataset_id: str
     root_dir: Path = Path("result") / "rhythm_event_sequences"
@@ -52,7 +96,9 @@ class RhythmEventSequencesConfig:
     max_workers: int | None = None
     window_size: int = 10
     pre_ar_duration_sec: float = 60
-    sinus_rr_median_threshold_sec: float = 0.1
+    sinus_extraction: SinusExtractionConfig = field(
+        default_factory=SinusExtractionConfig
+    )
     segment_colors: dict[str, str] = field(
         default_factory=lambda: {
             "sinus_train": "#2a9d8f",
