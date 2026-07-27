@@ -94,10 +94,10 @@ def plot_selection_summary(
     output_path: Path,
 ) -> None:
     results = list(results)
-    rows, stats, train_durations_sec = prepare_selection_summary(results)
+    rows, _, train_durations_sec = prepare_selection_summary(results)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with pdf_exporter(str(output_path)) as exporter:
-        for fig in _create_summary_figures(rows, stats, train_durations_sec, results):
+        for fig in _create_summary_figures(rows, train_durations_sec, results):
             exporter.add_page(fig, pad_inches=0.2)
             plt.close(fig)
 
@@ -138,39 +138,26 @@ def _compute_stats(
 
 def _create_summary_figures(
     rows: list[SelectionSummaryRow],
-    stats: SelectionSummaryStats,
     train_durations_sec: list[float],
     results: list[SequenceSelectionResult],
 ) -> list[Figure]:
+    dataset_name = _get_dataset_name(results)
     figures = [
-        _create_overview_figure(stats),
-        _create_segment_timeline_figure(results),
-        _create_train_histogram_figure(train_durations_sec),
+        _create_train_histogram_figure(train_durations_sec, dataset_name),
+        _create_segment_timeline_figure(results, dataset_name),
+        *_create_entity_table_figures(rows, dataset_name),
     ]
-    figures.extend(_create_entity_table_figures(rows))
     return figures
 
 
-def _create_overview_figure(stats: SelectionSummaryStats) -> Figure:
-    fig = plt.figure(figsize=(11, 8.5))
-    grid = fig.add_gridspec(
-        nrows=1,
-        ncols=2,
-        wspace=0.3,
-    )
-
-    ax_text = fig.add_subplot(grid[0, 0])
-    ax_bar = fig.add_subplot(grid[0, 1])
-
-    _plot_stats_text(ax_text, stats)
-    _plot_status_bar(ax_bar, stats)
-
-    fig.suptitle("Rhythm Event Sequence Selection Summary", fontsize=16, y=0.96)
-    return fig
+def _get_dataset_name(results: list[SequenceSelectionResult]) -> str:
+    dataset_names = sorted({result.entity.dataset.name for result in results})
+    return ", ".join(dataset_names) if dataset_names else "Unknown dataset"
 
 
 def _create_segment_timeline_figure(
     results: list[SequenceSelectionResult],
+    dataset_name: str,
 ) -> Figure:
     minimum_display_width_pct = 0.5
     succeeded_results = [
@@ -179,7 +166,7 @@ def _create_segment_timeline_figure(
     row_count = max(1, len(succeeded_results))
     fig_height = max(5.5, min(18.0, 1.5 + row_count * 0.28))
     fig, ax = plt.subplots(figsize=(14, fig_height))
-    ax.set_title("Selected Segment Timeline")
+    ax.set_title(f"{dataset_name}: Selected Segment Timeline")
     ax.set_xlabel("Position within record (%)")
     ax.set_ylabel("Entity")
 
@@ -251,14 +238,24 @@ def _create_segment_timeline_figure(
     return fig
 
 
-def _create_train_histogram_figure(train_durations_sec: list[float]) -> Figure:
+def _create_train_histogram_figure(
+    train_durations_sec: list[float],
+    dataset_name: str,
+) -> Figure:
     fig, ax = plt.subplots(figsize=(11, 8.5))
     _plot_train_histogram(ax, train_durations_sec)
-    fig.suptitle("Train Sinus Duration Distribution", fontsize=16, y=0.96)
+    fig.suptitle(
+        f"{dataset_name}: Train Sinus Duration Distribution",
+        fontsize=16,
+        y=0.96,
+    )
     return fig
 
 
-def _create_entity_table_figures(rows: list[SelectionSummaryRow]) -> list[Figure]:
+def _create_entity_table_figures(
+    rows: list[SelectionSummaryRow],
+    dataset_name: str,
+) -> list[Figure]:
     rows_per_page = 28
     if not rows:
         row_pages = [[]]
@@ -273,51 +270,12 @@ def _create_entity_table_figures(rows: list[SelectionSummaryRow]) -> list[Figure
         fig, ax = plt.subplots(figsize=(16, 10))
         _plot_entity_table(ax, page_rows)
         fig.suptitle(
-            f"Entity Selection Details ({page_idx}/{len(row_pages)})",
+            f"{dataset_name}: Entity Selection Details ({page_idx}/{len(row_pages)})",
             fontsize=16,
             y=0.96,
         )
         figures.append(fig)
     return figures
-
-
-def _plot_stats_text(ax, stats: SelectionSummaryStats) -> None:
-    ax.axis("off")
-    lines = [
-        f"Total entities: {stats.total}",
-        f"Succeeded: {stats.succeeded}",
-        f"Failed: {stats.failed}",
-        "",
-        "Train sinus length",
-        f"count: {stats.train_count}",
-        f"min: {_format_optional_sec(stats.train_min_sec)}",
-        f"median: {_format_optional_sec(stats.train_median_sec)}",
-        f"mean: {_format_optional_sec(stats.train_mean_sec)}",
-        f"max: {_format_optional_sec(stats.train_max_sec)}",
-        f"std: {_format_optional_sec(stats.train_std_sec)}",
-    ]
-    ax.text(
-        0.0,
-        1.0,
-        "\n".join(lines),
-        transform=ax.transAxes,
-        va="top",
-        ha="left",
-        fontsize=11,
-    )
-
-
-def _plot_status_bar(ax, stats: SelectionSummaryStats) -> None:
-    labels = ["succeeded", "failed"]
-    values = [stats.succeeded, stats.failed]
-    colors = ["#2a9d8f", "#e63946"]
-    ax.bar(labels, values, color=colors)
-    ax.set_ylabel("Entities")
-    ax.set_title("Selection status")
-    upper = max(values) if values else 0
-    ax.set_ylim(0, max(1, upper) * 1.2)
-    for label, value in zip(labels, values, strict=True):
-        ax.text(label, value, str(value), ha="center", va="bottom", fontsize=10)
 
 
 def _plot_train_histogram(ax, train_durations_sec: list[float]) -> None:
@@ -396,9 +354,3 @@ def _format_window(window: SegmentWindow | None) -> str:
         return ""
     duration_sec = _duration_sec(window)
     return f"{window.start_sec:.1f}-{window.end_sec:.1f} ({duration_sec:.1f})"
-
-
-def _format_optional_sec(value: float | None) -> str:
-    if value is None:
-        return "n/a"
-    return f"{value:.1f}s"
