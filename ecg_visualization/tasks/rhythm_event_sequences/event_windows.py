@@ -154,7 +154,9 @@ def _find_first_rhythm_event_window_by_priority(
         "/".join(sorted(target_labels)) for target_labels in target_label_priorities
     ]
     labels = _format_label_groups(label_groups)
-    raise ValueError(f"no {labels} rhythm episode found")
+    raise ValueError(
+        f"no {labels} rhythm episode found at or after {min_start_sec:g} seconds"
+    )
 
 
 def _find_first_rhythm_event_window(
@@ -177,7 +179,9 @@ def _find_first_rhythm_event_window(
         return event_window
 
     labels = ", ".join(sorted(target_labels))
-    raise ValueError(f"no {labels} rhythm episode found")
+    raise ValueError(
+        f"no {labels} rhythm episode found at or after {min_start_sec:g} seconds"
+    )
 
 
 def _find_first_rhythm_event_window_in_events(
@@ -185,7 +189,6 @@ def _find_first_rhythm_event_window_in_events(
     *,
     target_labels: set[str] | frozenset[str],
     total_duration_sec: float,
-    ar_duration_sec: float | None = None,
     bridge_noise: bool = False,
     min_start_sec: float = 0.0,
 ) -> SegmentWindow | None:
@@ -200,18 +203,9 @@ def _find_first_rhythm_event_window_in_events(
             bridge_noise=bridge_noise,
         )
 
-        if ar_duration_sec is not None and end_sec - start_sec < ar_duration_sec:
-            continue
-
-        if ar_duration_sec is None:
-            return SegmentWindow(
-                start_sec=start_sec,
-                end_sec=end_sec,
-            )
-
         return SegmentWindow(
             start_sec=start_sec,
-            end_sec=start_sec + ar_duration_sec,
+            end_sec=end_sec,
         )
 
     return None
