@@ -27,6 +27,8 @@ class AFPDB(ECGDataset):
     name: ClassVar[str] = "PAF Prediction Challenge Database"
     dataset_id: ClassVar[str] = "afpdb"
     sampling_rate_hz: ClassVar[int] = 128
+    annotation_extention: ClassVar[str] = "qrs"
+    beat_extention: ClassVar[str] = "qrs"
     entity_ids: ClassVar[tuple[str, ...]] = AFPDB_ENTITY_IDS
 
 
