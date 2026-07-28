@@ -70,7 +70,7 @@ class PercentileRangeSinusExtractionConfig:
 
 @dataclass(slots=True)
 class SinusExtractionConfig:
-    method: SinusDefinitionMethod = "median_threshold"
+    method: SinusDefinitionMethod = "percentile_range"
     median_threshold: MedianThresholdSinusExtractionConfig = field(
         default_factory=MedianThresholdSinusExtractionConfig
     )
