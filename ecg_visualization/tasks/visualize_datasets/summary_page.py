@@ -3,9 +3,7 @@ from __future__ import annotations
 from collections import Counter
 
 import matplotlib.pyplot as plt
-import numpy as np
 
-from ecg_visualization.core.analysis import NormalSegmentConfig, extract_normal_segment
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.visualization.export import PdfExporter
 from ecg_visualization.visualization.text import sanitize_annotation_text
@@ -61,12 +59,11 @@ NON_BEAT_ANNOTATION_DESCRIPTIONS = {
 def render_entity_summary_page(
     entity: ECGEntity,
     exporter: PdfExporter,
-    normal_segment_config: NormalSegmentConfig,
 ) -> None:
     fig, ax = plt.subplots(figsize=(8.27, 11.69))
     ax.axis("off")
 
-    rows = _entity_summary_rows(entity, normal_segment_config)
+    rows = _entity_summary_rows(entity)
     title = f"{entity.dataset.name}: {entity.entity_id}"
     ax.text(
         0.05,
@@ -108,7 +105,6 @@ def render_entity_summary_page(
 
 def _entity_summary_rows(
     entity: ECGEntity,
-    normal_segment_config: NormalSegmentConfig,
 ) -> list[tuple[str, str]]:
     signal_samples = int(entity.signals.size)
     duration_sec = (
@@ -138,11 +134,6 @@ def _entity_summary_rows(
             _format_annotation_codes(entity, NON_BEAT_ANNOTATION_DESCRIPTIONS),
         ),
         ("Aux notes", _format_aux_note_summary(entity)),
-        ("RR intervals", _format_rr_statistics(entity)),
-        (
-            "Normal segment",
-            _format_normal_segment_summary(entity, normal_segment_config),
-        ),
     ]
 
 
@@ -155,38 +146,6 @@ def _format_annotation_codes(
         return "None recorded"
 
     return "\n".join(f"{symbol}: {descriptions[symbol]}" for symbol in symbols)
-
-
-def _format_rr_statistics(entity: ECGEntity) -> str:
-    rr_intervals = entity.rr_intervals
-    if rr_intervals.size == 0:
-        return "Unavailable"
-
-    rr_min = float(np.min(rr_intervals))
-    rr_max = float(np.max(rr_intervals))
-    rr_mean = float(np.mean(rr_intervals))
-    rr_median = float(np.median(rr_intervals))
-    return (
-        f"{rr_intervals.size:,} intervals | mean={rr_mean:.3f}s "
-        f"median={rr_median:.3f}s [{rr_min:.3f}s, {rr_max:.3f}s]"
-    )
-
-
-def _format_normal_segment_summary(
-    entity: ECGEntity,
-    normal_segment_config: NormalSegmentConfig,
-) -> str:
-    try:
-        normal_segment = extract_normal_segment(entity, normal_segment_config)
-    except ValueError as exc:
-        return f"Unavailable ({exc})"
-
-    duration_min = normal_segment.duration / 60
-    return (
-        f"{normal_segment.length:,} beats spanning {duration_min:.2f} min "
-        f"(start={normal_segment.start_time:.1f}s, "
-        f"end={normal_segment.end_time:.1f}s)"
-    )
 
 
 def _format_aux_note_summary(entity: ECGEntity) -> str:

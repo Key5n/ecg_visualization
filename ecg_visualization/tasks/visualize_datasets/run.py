@@ -7,7 +7,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ecg_visualization.core.analysis import NormalSegmentConfig
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import load_data_sources
 from ecg_visualization.logging.config import configure_root_logging
@@ -63,7 +62,6 @@ def visualize_datasets(config: VisualizeDatasetsConfig) -> None:
                     config.output_dir / dataset.dataset_id / f"{entity.entity_id}.pdf"
                 ),
                 pagination_config=pagination_config,
-                normal_segment_config=config.normal_segment,
                 signal_ylim_bounds=(
                     config.signal_ylim_lower,
                     config.signal_ylim_upper,
@@ -95,7 +93,6 @@ def _export_entity_pdf(
     *,
     output_path: Path,
     pagination_config: PaginationConfig,
-    normal_segment_config: NormalSegmentConfig,
     signal_ylim_bounds: tuple[float, float],
 ) -> Path:
     LOGGER.info("Starting PDF export of entity=%s", entity)
@@ -112,7 +109,7 @@ def _export_entity_pdf(
     )
 
     with pdf_exporter(str(output_path)) as exporter:
-        render_entity_summary_page(entity, exporter, normal_segment_config)
+        render_entity_summary_page(entity, exporter)
         render_rr_interval_histogram_page(entity, exporter)
         for page_idx, ts_row in enumerate(ts_paged):
             fig, axs = create_page_layout(pagination_config.rows_per_page)
