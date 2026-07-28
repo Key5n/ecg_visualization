@@ -45,6 +45,7 @@ from ecg_visualization.visualization.styles import (
     EXTREME_INTERVAL_COLOR,
     TRAINING_INTERVAL_COLOR,
 )
+from ecg_visualization.visualization.text import sanitize_annotation_text
 
 LOGGER = logging.getLogger(__name__)
 
@@ -231,9 +232,7 @@ class StudyVisualizer:
 
     @staticmethod
     def _sanitize_text(value: object) -> str:
-        text = str(value)
-        text = text.replace("\x00", "")
-        return text.strip()
+        return sanitize_annotation_text(value)
 
     def _collect_symbols(
         self, annotation_sequence: TimedSequence[np.str_]

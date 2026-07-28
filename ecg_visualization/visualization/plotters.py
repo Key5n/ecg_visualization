@@ -4,12 +4,7 @@ import numpy as np
 from matplotlib.axes import Axes
 
 from .styles import ABNORMAL_INTERVAL_COLOR
-
-
-def _clean_text(value: object) -> str:
-    return "".join(
-        character for character in str(value) if character.isprintable()
-    ).strip()
+from .text import sanitize_annotation_text
 
 
 def plot_normal_beats(
@@ -86,7 +81,7 @@ def plot_symbols(
 ) -> None:
     """Mark abnormal rhythm symbols within the current axis window."""
     for sample_time, symbol in symbol_events:
-        symbol_text = _clean_text(symbol)
+        symbol_text = sanitize_annotation_text(symbol)
         if not symbol_text or symbol_text == "N":
             continue
         ax.axvline(sample_time, color="red", alpha=0.5)
@@ -112,7 +107,7 @@ def plot_aux_notes(
     y_offset = (ylim_upper - ylim[0]) * 0.02
     y_pos = ylim_upper + y_offset
     for sample_time, note in aux_note_events:
-        text = _clean_text(note)
+        text = sanitize_annotation_text(note)
         if not text:
             continue
         ax.axvline(sample_time, color="tab:blue", alpha=0.3, linestyle=":")

@@ -8,6 +8,7 @@ import numpy as np
 from ecg_visualization.core.analysis import NormalSegmentConfig, extract_normal_segment
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.visualization.export import PdfExporter
+from ecg_visualization.visualization.text import sanitize_annotation_text
 
 # WFDB beat annotation codes:
 # https://physionet.org/physiotools/wpg/wpg_36.htm
@@ -189,7 +190,11 @@ def _format_normal_segment_summary(
 
 
 def _format_aux_note_summary(entity: ECGEntity) -> str:
-    notes = [note.strip() for note in entity.aux_notes if note.strip()]
+    notes = [
+        cleaned_note
+        for note in entity.aux_notes
+        if (cleaned_note := sanitize_annotation_text(note))
+    ]
     if not notes:
         return "None recorded"
 
