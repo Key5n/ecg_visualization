@@ -3,13 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ecg_visualization.datasets.physionet import DATASET_CLASSES
 from ecg_visualization.tasks.config import load_task_config
 from ecg_visualization.visualization.layouts import PaginationConfig
 
 
 @dataclass(slots=True)
 class VisualizeDatasetsConfig:
-    dataset_ids: tuple[str, ...] = ()
+    dataset_ids: tuple[str, ...] = tuple(cls.dataset_id for cls in DATASET_CLASSES)
     output_dir: Path = Path("result/visualize-datasets")
     max_workers: int | None = None
     pagination: PaginationConfig = field(default_factory=PaginationConfig)
