@@ -14,6 +14,7 @@ from ecg_visualization.tasks.rhythm_event_sequences.config import (
 from ecg_visualization.tasks.rhythm_event_sequences.utils import ConcatenatedSequence
 from ecg_visualization.visualization.export import pdf_exporter
 from ecg_visualization.visualization.layouts import paginate_signals
+from ecg_visualization.visualization.plotters import plot_normal_beats, plot_symbols
 
 if TYPE_CHECKING:
     from ecg_visualization.tasks.rhythm_event_sequences.score.helpers import ScoreResult
@@ -120,6 +121,8 @@ def _plot_concat_score_page(
     samples = np.asarray(concat.samples, dtype=float)
     sampling_rate_hz = float(concat.sampling_rate_hz)
     scores = np.asarray(score_result.scores, dtype=float)
+    beat_times_sec = np.asarray(concat.beats, dtype=float) / sampling_rate_hz
+    symbol_times_sec = np.asarray(concat.symbol_samples, dtype=float) / sampling_rate_hz
 
     signal_min = float(np.nanmin(samples))
     signal_max = float(np.nanmax(samples))
@@ -154,6 +157,28 @@ def _plot_concat_score_page(
         signal_ax.set_ylim(
             signal_min - signal_margin,
             signal_max + signal_margin,
+        )
+        beat_times_in_window = beat_times_sec[
+            (beat_times_sec >= window_start) & (beat_times_sec <= window_end)
+        ]
+        plot_normal_beats(
+            signal_ax,
+            beat_times_in_window.tolist(),
+            ylim_lower=signal_min - signal_margin,
+        )
+        symbol_events_in_window = [
+            (symbol_time, symbol)
+            for symbol_time, symbol in zip(
+                symbol_times_sec,
+                concat.symbol_values,
+                strict=True,
+            )
+            if window_start <= symbol_time <= window_end
+        ]
+        plot_symbols(
+            signal_ax,
+            symbol_events_in_window,
+            ylim_lower=signal_min - signal_margin,
         )
 
         score_mask = (score_result.times_sec >= window_start) & (
