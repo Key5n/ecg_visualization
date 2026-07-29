@@ -160,9 +160,10 @@ def _create_segment_timeline_figure(
     dataset_name: str,
 ) -> Figure:
     minimum_display_width_pct = 0.5
-    succeeded_results = [
-        result for result in results if isinstance(result, SequenceSelectionSuccess)
-    ]
+    succeeded_results = sorted(
+        (result for result in results if isinstance(result, SequenceSelectionSuccess)),
+        key=lambda result: result.entity.entity_id,
+    )
     row_count = max(1, len(succeeded_results))
     fig_height = max(5.5, min(18.0, 1.5 + row_count * 0.28))
     fig, ax = plt.subplots(figsize=(14, fig_height))
@@ -257,6 +258,7 @@ def _create_entity_table_figures(
     dataset_name: str,
 ) -> list[Figure]:
     rows_per_page = 28
+    rows = sorted(rows, key=lambda row: row.entity_id)
     if not rows:
         row_pages = [[]]
     else:
