@@ -71,7 +71,7 @@ def select_sequence_result(
         )
         concat = _build_concatenated_sequence(entity, segments_info)
     except ValueError as exc:
-        LOGGER.warning("entity_skipped", entity=entity, reason=str(exc))
+        LOGGER.warning("entity_skipped", entity_id=entity.entity_id, reason=str(exc))
         return SequenceSelectionFailure(
             entity=entity,
             failure_reason=str(exc),
@@ -159,7 +159,7 @@ def _select_sinus_segments(
     if not test_after_ar_runs:
         LOGGER.info(
             "test_sinus_fallback",
-            entity=entity,
+            entity_id=entity.entity_id,
             reason="no test sinus after AR",
         )
         test_runs = before_pre_ar_runs[1:]

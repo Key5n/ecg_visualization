@@ -85,7 +85,7 @@ def _export_pdf(
     if not isinstance(result, SequenceSelectionSuccess):
         return result
 
-    LOGGER.info("entity_pdf_export_started", entity=entity)
+    LOGGER.info("entity_pdf_export_started", entity_id=entity.entity_id)
     apply_default_style()
     output_path = config.visualize_output_dir / f"{entity.entity_id}.pdf"
     export_concatenated_pdf(

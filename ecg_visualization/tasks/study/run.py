@@ -80,7 +80,7 @@ class Objective:
         except ValueError:
             LOGGER.warning(
                 "entity_skipped",
-                entity=self.entity,
+                entity_id=self.entity.entity_id,
                 reason="no normal segment found",
             )
             return 0

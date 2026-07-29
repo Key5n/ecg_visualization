@@ -95,7 +95,7 @@ def _export_entity_pdf(
     pagination_config: PaginationConfig,
     signal_ylim_bounds: tuple[float, float],
 ) -> Path:
-    LOGGER.info("entity_pdf_export_started", entity=entity)
+    LOGGER.info("entity_pdf_export_started", entity_id=entity.entity_id)
     apply_default_style()
     ts_paged = paginate_signals(
         entity.signals.size,
