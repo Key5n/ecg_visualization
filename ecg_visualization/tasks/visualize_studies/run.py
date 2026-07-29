@@ -1,7 +1,7 @@
-import logging
 from concurrent.futures import as_completed
 
 import optuna
+import structlog
 from tqdm import tqdm
 
 from ecg_visualization.logging.config import configure_root_logging
@@ -18,7 +18,7 @@ from ecg_visualization.utils.optuna_record import (
 from ecg_visualization.visualization.study_visualizer import StudyVisualizer
 from ecg_visualization.visualization.styles import apply_default_style
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = structlog.get_logger(__name__)
 
 
 def visualize_all_studies(config: VisualizeConfig):
@@ -45,7 +45,10 @@ def visualize_all_studies(config: VisualizeConfig):
             dataset_id, entity_id, error = future.result()
             if error:
                 LOGGER.error(
-                    f"Visualization failed for {dataset_id}/{entity_id}: {error}"
+                    "study_visualization_failed",
+                    dataset_id=dataset_id,
+                    entity_id=entity_id,
+                    error=error,
                 )
 
 
@@ -63,7 +66,7 @@ def visualize_study(study: optuna.Study, config: VisualizeConfig):
     )
     output_path = visualizer.visualize()
     if output_path:
-        LOGGER.info(f"Saved visualization to {output_path}")
+        LOGGER.info("study_visualization_saved", output_path=str(output_path))
 
 
 def _run_visualization(

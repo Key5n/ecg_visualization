@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
 from typing import ClassVar, Iterable
 
 import numpy as np
 import numpy.typing as npt
+import structlog
 
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import load_data_sources
@@ -20,7 +20,7 @@ from ecg_visualization.tasks.rhythm_event_sequences.event_windows import (
 )
 from ecg_visualization.utils.utils import find_true_runs
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = structlog.get_logger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,7 +71,9 @@ def iter_sequence_selection_results(
             )
             concat = _build_concatenated_sequence(entity, segments_info)
         except ValueError as exc:
-            LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
+            LOGGER.warning(
+                "entity_skipped", entity_id=entity.entity_id, reason=str(exc)
+            )
             yield SequenceSelectionFailure(
                 entity=entity,
                 failure_reason=str(exc),
@@ -150,8 +152,9 @@ def _select_sinus_segments(
     train_run = before_pre_ar_runs[0]
     if not test_after_ar_runs:
         LOGGER.info(
-            "%s has no test sinus after AR; falling back to pre-AR candidate runs",
-            entity,
+            "test_sinus_fallback",
+            entity_id=entity.entity_id,
+            reason="no test sinus after AR",
         )
         test_runs = before_pre_ar_runs[1:]
     else:

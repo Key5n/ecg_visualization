@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import logging
+import structlog
 
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.tasks.config import save_config_text
@@ -18,7 +18,7 @@ from ecg_visualization.tasks.rhythm_event_sequences.utils import (
 )
 from ecg_visualization.visualization.styles import apply_default_style
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = structlog.get_logger(__name__)
 
 
 def rhythm_event_sequence_scores(config: RhythmEventSequencesConfig) -> None:
@@ -36,7 +36,9 @@ def rhythm_event_sequence_scores(config: RhythmEventSequencesConfig) -> None:
                 model_config=config.model,
             )
         except ValueError as exc:
-            LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
+            LOGGER.warning(
+                "entity_skipped", entity_id=entity.entity_id, reason=str(exc)
+            )
             continue
 
         output_path = config.score_output_dir / f"{entity.entity_id}.pdf"
@@ -47,11 +49,11 @@ def rhythm_event_sequence_scores(config: RhythmEventSequencesConfig) -> None:
             output_path=str(output_path),
             config=config,
         )
-        LOGGER.info("Saved MD-RS scores to %s", output_path)
+        LOGGER.info("mdrs_scores_saved", output_path=str(output_path))
         processed += 1
 
     LOGGER.info(
-        "Finished scoring. processed=%d output_dir=%s",
-        processed,
-        config.score_output_dir,
+        "scoring_finished",
+        processed=processed,
+        output_dir=str(config.score_output_dir),
     )

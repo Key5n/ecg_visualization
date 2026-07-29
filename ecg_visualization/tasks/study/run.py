@@ -1,10 +1,10 @@
-import logging
 import tempfile
 from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
 import optuna
+import structlog
 from optuna.artifacts import FileSystemArtifactStore, upload_artifact
 from tqdm import tqdm
 
@@ -23,7 +23,7 @@ from ecg_visualization.utils.optuna_record import (
 from ecg_visualization.utils.timed_sequence import TimedSequence
 from ecg_visualization.utils.utils import prepare_sequences, sliding_window_sequences
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = structlog.get_logger(__name__)
 
 
 def study_all_entities(config: StudyConfig):
@@ -79,7 +79,9 @@ class Objective:
             )
         except ValueError:
             LOGGER.warning(
-                f"Skipping {self.entity.entity_id}: no normal segment found."
+                "entity_skipped",
+                entity_id=self.entity.entity_id,
+                reason="no normal segment found",
             )
             return 0
 

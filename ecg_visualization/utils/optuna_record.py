@@ -1,4 +1,3 @@
-import logging
 import tempfile
 from dataclasses import dataclass
 from datetime import datetime
@@ -8,6 +7,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 import optuna
+import structlog
 from optuna.artifacts import FileSystemArtifactStore, download_artifact
 from optuna.exceptions import OptunaError
 from optuna.storages import RDBStorage
@@ -26,7 +26,7 @@ from ecg_visualization.utils.timed_sequence import TimedSequence
 if TYPE_CHECKING:
     from ecg_visualization.core.entity import ECGEntity
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = structlog.get_logger(__name__)
 
 
 def _load_sequence_from_artifact(
@@ -117,11 +117,20 @@ class StudyLoader:
                 storage=self._storage,
             )
         except OptunaError as exc:
-            LOGGER.warning(f"Skipping {study_name}: failed to load study ({exc})")
+            LOGGER.warning(
+                "study_skipped",
+                study_name=study_name,
+                reason="failed to load study",
+                error=str(exc),
+            )
             return None
 
         if not study.trials:
-            LOGGER.info(f"Skipping {study_name}: no trials available.")
+            LOGGER.info(
+                "study_skipped",
+                study_name=study_name,
+                reason="no trials available",
+            )
             return None
 
         return study

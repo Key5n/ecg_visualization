@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,6 +8,7 @@ from typing import Iterable
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
+import structlog
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from optuna.artifacts import FileSystemArtifactStore
@@ -47,7 +47,7 @@ from ecg_visualization.visualization.styles import (
 )
 from ecg_visualization.visualization.text import sanitize_annotation_text
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = structlog.get_logger(__name__)
 
 
 @dataclass(slots=True)
@@ -95,7 +95,11 @@ class StudyVisualizer:
         training_window = self._load_training_window(vis_record)
         ts_paged = self._paginate_signals()
         if ts_paged.size == 0:
-            LOGGER.warning(f"Skipping {self.study_name}: no samples available.")
+            LOGGER.warning(
+                "study_skipped",
+                study_name=self.study_name,
+                reason="no samples available",
+            )
             return None
 
         signal_ylim = compute_ylim(
@@ -143,7 +147,11 @@ class StudyVisualizer:
 
     def _select_trial(self, study: Study) -> FrozenTrial | None:
         if not study.trials:
-            LOGGER.warning(f"Skipping {self.study_name}: no trials available.")
+            LOGGER.warning(
+                "study_skipped",
+                study_name=self.study_name,
+                reason="no trials available",
+            )
             return None
         return study.best_trial
 
@@ -166,14 +174,16 @@ class StudyVisualizer:
                     times=np.asarray([], dtype=float),
                 )
                 LOGGER.warning(
-                    f"Missing score_sequence artifact for {self.study_name}; "
-                    "plotting without anomaly scores."
+                    "score_sequence_artifact_missing",
+                    study_name=self.study_name,
                 )
                 return VisualizationRecord(
                     record=record,
                     score_sequence=empty_scores,
                 )
-            LOGGER.warning(f"Skipping {self.study_name}: {exc}")
+            LOGGER.warning(
+                "study_skipped", study_name=self.study_name, reason=str(exc)
+            )
             return None
 
     def _build_sequences(self, vis_record: VisualizationRecord) -> SequenceBundle:

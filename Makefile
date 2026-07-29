@@ -18,7 +18,7 @@ sync:
 	$(UV) sync
 
 hooks:
-	git config core.hooksPath ./.git-hooks
+	$(UV) run pre-commit install
 
 datasets: $(DATASET_STAMP)
 

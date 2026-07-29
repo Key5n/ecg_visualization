@@ -1,24 +1,15 @@
 import logging
 
-from ecg_visualization.config.settings import DEFAULT_LOG_LEVEL, LOG_LEVEL
+import structlog
 
-DEFAULT_FORMAT = "%(levelname)s: %(message)s"
+from ecg_visualization.config.settings import LOG_LEVEL
 
-
-def get_log_level() -> int:
-    normalized = LOG_LEVEL.strip().upper()
-    level = logging.getLevelNamesMapping().get(normalized)
-    if isinstance(level, int):
-        return level
-
-    return DEFAULT_LOG_LEVEL
+DEFAULT_LOG_LEVEL = logging.WARNING
 
 
-def configure_root_logging(
-    *,
-    fmt: str = DEFAULT_FORMAT,
-    force: bool = False,
-) -> int:
-    level = get_log_level()
-    logging.basicConfig(level=level, format=fmt, force=force)
-    return level
+def configure_root_logging() -> None:
+    level = logging.getLevelName(LOG_LEVEL.upper())
+
+    structlog.configure(
+        wrapper_class=structlog.make_filtering_bound_logger(level),
+    )

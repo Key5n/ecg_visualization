@@ -1,4 +1,3 @@
-import logging
 import os
 from pathlib import Path
 
@@ -27,7 +26,6 @@ def get_float_env(name: str) -> float:
 
 DATASET_ROOT: Path = Path(get_env("DATASET_ROOT"))
 
-DEFAULT_LOG_LEVEL: int = logging.WARNING
 LOG_LEVEL: str = get_env("LOG_LEVEL")
 
 OPTUNA_DB_DRIVER: str = get_env("OPTUNA_DB_DRIVER")

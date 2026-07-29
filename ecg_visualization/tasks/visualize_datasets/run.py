@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import logging
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import structlog
 
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import load_data_sources
@@ -32,7 +32,7 @@ from ecg_visualization.visualization.layouts import (
 from ecg_visualization.visualization.limits import compute_ylim
 from ecg_visualization.visualization.styles import apply_default_style
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = structlog.get_logger(__name__)
 
 
 def visualize_datasets(config: VisualizeDatasetsConfig) -> None:
@@ -48,9 +48,9 @@ def visualize_datasets(config: VisualizeDatasetsConfig) -> None:
     for dataset in datasets:
         (config.output_dir / dataset.dataset_id).mkdir(parents=True, exist_ok=True)
         LOGGER.info(
-            "Visualizing dataset %s (%d entities)",
-            dataset.dataset_id,
-            len(dataset.entity_ids),
+            "dataset_visualization_started",
+            dataset_id=dataset.dataset_id,
+            entity_count=len(dataset.entity_ids),
         )
 
     with ProcessPoolExecutor(max_workers=config.max_workers) as executor:
@@ -77,14 +77,14 @@ def visualize_datasets(config: VisualizeDatasetsConfig) -> None:
             except Exception:
                 LOGGER.exception("Failed to export entity PDF")
                 continue
-            LOGGER.info("Saved entity PDF to %s", output_path)
+            LOGGER.info("entity_pdf_saved", output_path=str(output_path))
             total_processed += 1
 
     LOGGER.info(
-        "Finished dataset visualization. processed=%d failed=%d output_dir=%s",
-        total_processed,
-        total_entities - total_processed,
-        config.output_dir,
+        "dataset_visualization_finished",
+        processed=total_processed,
+        failed=total_entities - total_processed,
+        output_dir=str(config.output_dir),
     )
 
 
@@ -95,7 +95,7 @@ def _export_entity_pdf(
     pagination_config: PaginationConfig,
     signal_ylim_bounds: tuple[float, float],
 ) -> Path:
-    LOGGER.info("Starting PDF export of entity=%s", entity)
+    LOGGER.info("entity_pdf_export_started", entity_id=entity.entity_id)
     apply_default_style()
     ts_paged = paginate_signals(
         entity.signals.size,

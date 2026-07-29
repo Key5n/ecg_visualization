@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
 from typing import Iterable
 
 import matplotlib.pyplot as plt
 import numpy as np
+import structlog
 from tqdm import tqdm
 
 from ecg_visualization.core.entity import ECGEntity
@@ -33,7 +33,7 @@ from ecg_visualization.visualization.styles import (
     apply_default_style,
 )
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = structlog.get_logger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,7 +68,9 @@ def cudb_anomaly_scores(config: CudbAnomalyScoresConfig) -> None:
             sinus_windows = sinus_windows_by_entity.get(entity.entity_id)
             if not sinus_windows:
                 LOGGER.warning(
-                    "Skipping %s: no sinus windows provided.", entity.entity_id
+                    "entity_skipped",
+                    entity_id=entity.entity_id,
+                    reason="no sinus windows provided",
                 )
                 skipped += 1
                 continue
@@ -81,7 +83,9 @@ def cudb_anomaly_scores(config: CudbAnomalyScoresConfig) -> None:
                     model_config=model_config,
                 )
             except ValueError as exc:
-                LOGGER.warning("Skipping %s: %s", entity.entity_id, exc)
+                LOGGER.warning(
+                    "entity_skipped", entity_id=entity.entity_id, reason=str(exc)
+                )
                 skipped += 1
                 continue
 
@@ -95,10 +99,10 @@ def cudb_anomaly_scores(config: CudbAnomalyScoresConfig) -> None:
             processed += 1
 
     LOGGER.info(
-        "Finished scoring. processed=%d skipped=%d output_path=%s",
-        processed,
-        skipped,
-        output_path,
+        "scoring_finished",
+        processed=processed,
+        skipped=skipped,
+        output_path=str(output_path),
     )
 
 
