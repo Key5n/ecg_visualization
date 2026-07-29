@@ -43,14 +43,15 @@ def visualize_datasets(config: VisualizeDatasetsConfig) -> None:
     datasets = load_data_sources(config.dataset_ids)
     pagination_config = config.pagination
 
-    total_entities = sum(len(dataset.entity_ids) for dataset in datasets)
+    dataset_entity_ids = [(dataset, dataset.get_entity_ids()) for dataset in datasets]
+    total_entities = sum(len(entity_ids) for _, entity_ids in dataset_entity_ids)
     total_processed = 0
-    for dataset in datasets:
+    for dataset, entity_ids in dataset_entity_ids:
         (config.output_dir / dataset.dataset_id).mkdir(parents=True, exist_ok=True)
         LOGGER.info(
             "dataset_visualization_started",
             dataset_id=dataset.dataset_id,
-            entity_count=len(dataset.entity_ids),
+            entity_count=len(entity_ids),
         )
 
     with ProcessPoolExecutor(max_workers=config.max_workers) as executor:

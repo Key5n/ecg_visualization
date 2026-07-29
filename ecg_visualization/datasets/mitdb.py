@@ -6,57 +6,6 @@ from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.utils import physionet_root_dir
 
-MITDB_ENTITY_IDS: tuple[str, ...] = (
-    "100",
-    "101",
-    "102",
-    "103",
-    "104",
-    "105",
-    "106",
-    "107",
-    "108",
-    "109",
-    "111",
-    "112",
-    "113",
-    "114",
-    "115",
-    "116",
-    "117",
-    "118",
-    "119",
-    "121",
-    "122",
-    "123",
-    "124",
-    "200",
-    "201",
-    "202",
-    "203",
-    "205",
-    "207",
-    "208",
-    "209",
-    "210",
-    "212",
-    "213",
-    "214",
-    "215",
-    "217",
-    "219",
-    "220",
-    "221",
-    "222",
-    "223",
-    "228",
-    "230",
-    "231",
-    "232",
-    "233",
-    "234",
-)
-
 
 # https://physionet.org/content/mitdb/1.0.0/
 @dataclass(frozen=True, slots=True)
@@ -65,7 +14,6 @@ class MITDB(ECGDataset):
     name: ClassVar[str] = "MIT-BIH Arrhythmia Database"
     dataset_id: ClassVar[str] = "mitdb"
     sampling_rate_hz: ClassVar[int] = 360
-    entity_ids: ClassVar[tuple[str, ...]] = MITDB_ENTITY_IDS
 
 
 @dataclass(frozen=True, slots=True)

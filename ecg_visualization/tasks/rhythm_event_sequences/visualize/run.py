@@ -33,6 +33,7 @@ def rhythm_event_sequence_visualize(config: RhythmEventSequencesConfig) -> None:
     save_config_text(config, config.config_path)
     results: list[SequenceSelectionResult] = []
     dataset = load_data_sources((config.dataset_id,))[0]
+    entity_ids = dataset.get_entity_ids()
 
     with ProcessPoolExecutor(max_workers=config.max_workers) as executor:
         futures = [
@@ -41,7 +42,7 @@ def rhythm_event_sequence_visualize(config: RhythmEventSequencesConfig) -> None:
                 entity_id,
                 config,
             )
-            for entity_id in dataset.entity_ids
+            for entity_id in entity_ids
         ]
         for future in as_completed(futures):
             try:
@@ -65,7 +66,7 @@ def rhythm_event_sequence_visualize(config: RhythmEventSequencesConfig) -> None:
         processed=sum(
             isinstance(result, SequenceSelectionSuccess) for result in results
         ),
-        failed=len(dataset.entity_ids)
+        failed=len(entity_ids)
         - sum(isinstance(result, SequenceSelectionSuccess) for result in results),
         output_dir=str(config.visualize_output_dir),
     )

@@ -6,8 +6,6 @@ from ecg_visualization.core.dataset import ECGDataset
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.utils import physionet_root_dir
 
-SDDB_ENTITY_IDS: tuple[str, ...] = tuple(str(record_id) for record_id in range(30, 53))
-
 
 # https://physionet.org/content/sddb/1.0.0/
 @dataclass(frozen=True, slots=True)
@@ -18,7 +16,6 @@ class SDDB(ECGDataset):
     sampling_rate_hz: ClassVar[int] = 250
     annotation_extention: ClassVar[tuple[str, ...]] = ("atr", "ari")
     beat_extention: ClassVar[tuple[str, ...]] = ("atr", "ari")
-    entity_ids: ClassVar[tuple[str, ...]] = SDDB_ENTITY_IDS
     vf_onset_seconds: ClassVar[dict[str, int]] = {
         "30": 28473,
         "31": 49344,

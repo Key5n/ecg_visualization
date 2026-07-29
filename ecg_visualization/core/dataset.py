@@ -38,10 +38,18 @@ class ECGDataset:
     name: ClassVar[str]
     dataset_id: ClassVar[str]
     sampling_rate_hz: ClassVar[int]
+    records_file_name: ClassVar[str] = "RECORDS"
     annotation_extention: ClassVar[AnnotationExtention] = "atr"
     beat_extention: ClassVar[AnnotationExtention] = "atr"
     entity_cls: ClassVar[type[ECGEntity]]
-    entity_ids: ClassVar[tuple[str, ...]] = ()
+
+    @classmethod
+    def get_entity_ids(cls) -> tuple[str, ...]:
+        records_path = os.path.join(cls.dir_path, cls.records_file_name)
+        with open(records_path, encoding="utf-8") as records_file:
+            return tuple(
+                entity_id for line in records_file if (entity_id := line.strip())
+            )
 
     @classmethod
     def get_entity(cls, *, entity_id: str) -> ECGEntity:
@@ -85,7 +93,7 @@ class ECGDataset:
 
     @classmethod
     def get_entities(cls) -> Iterator[ECGEntity]:
-        for entity_id in cls.entity_ids:
+        for entity_id in cls.get_entity_ids():
             yield cls.get_entity(entity_id=entity_id)
 
     def __str__(self):
