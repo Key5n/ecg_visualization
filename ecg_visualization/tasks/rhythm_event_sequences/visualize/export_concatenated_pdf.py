@@ -11,6 +11,7 @@ from matplotlib.figure import Figure
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.tasks.rhythm_event_sequences.config import (
     RRHistogramConfig,
+    SinusExtractionConfig,
 )
 from ecg_visualization.tasks.rhythm_event_sequences.utils import ConcatenatedSequence
 from ecg_visualization.visualization.export import PdfExporter, pdf_exporter
@@ -36,6 +37,7 @@ def export_concatenated_pdf(
     output_path: Path,
     pagination_config: PaginationConfig,
     rr_histogram_config: RRHistogramConfig,
+    sinus_extraction_config: SinusExtractionConfig,
     segment_colors: dict[str, str],
     segment_labels: dict[str, str],
 ) -> None:
@@ -56,6 +58,7 @@ def export_concatenated_pdf(
             concat,
             exporter,
             rr_histogram_config=rr_histogram_config,
+            sinus_extraction_config=sinus_extraction_config,
         )
         for page_idx, ts_row in enumerate(ts_paged):
             fig, axs = create_page_layout(pagination_config.rows_per_page)
@@ -80,6 +83,7 @@ def _render_rr_interval_histogram_page(
     exporter: PdfExporter,
     *,
     rr_histogram_config: RRHistogramConfig,
+    sinus_extraction_config: SinusExtractionConfig,
 ) -> None:
     rr_intervals = np.diff(np.asarray(entity.beats, dtype=np.float64))
     rr_intervals_sec = rr_intervals / float(entity.dataset.sampling_rate_hz)
@@ -109,24 +113,10 @@ def _render_rr_interval_histogram_page(
             ax.set_xlabel("R-peak interval (sec)")
             ax.set_ylabel("Count")
         ax.set_xlim(rr_histogram_config.xmin_sec, rr_histogram_config.xmax_sec)
-        median_rr_interval = float(np.median(rr_intervals_sec))
-        ax.axvline(
-            median_rr_interval,
-            color="tab:red",
-            linestyle="--",
-            linewidth=1.5,
-            alpha=0.9,
-        )
-        ylim_upper = ax.get_ylim()[1]
-        ax.text(
-            median_rr_interval,
-            ylim_upper * 0.95,
-            f"Median: {median_rr_interval:.2f}s",
-            rotation=90,
-            fontsize=8,
-            color="tab:red",
-            horizontalalignment="right",
-            verticalalignment="top",
+        _plot_sinus_extraction_range(
+            ax,
+            rr_intervals_sec,
+            sinus_extraction_config,
         )
     else:
         ax.set_title(f"{entity.dataset.name} / {entity.entity_id} RR intervals")
@@ -144,6 +134,57 @@ def _render_rr_interval_histogram_page(
     fig.tight_layout()
     exporter.add_page(fig, pad_inches=0)
     plt.close(fig)
+
+
+def _plot_sinus_extraction_range(
+    ax: Axes,
+    rr_intervals_sec: npt.NDArray[np.float64],
+    config: SinusExtractionConfig,
+) -> None:
+    if config.method == "percentile_range":
+        lower_percentile = config.percentile_range.lower_percentile
+        upper_percentile = config.percentile_range.upper_percentile
+        lower_sec, upper_sec = np.percentile(
+            rr_intervals_sec,
+            (lower_percentile, upper_percentile),
+        )
+        boundaries = (
+            (float(lower_sec), f"P{lower_percentile:g}: {lower_sec:.2f}s"),
+            (float(upper_sec), f"P{upper_percentile:g}: {upper_sec:.2f}s"),
+        )
+    elif config.method == "median_threshold":
+        median_sec = float(np.median(rr_intervals_sec))
+        threshold_sec = config.median_threshold.threshold_sec
+        lower_sec = median_sec - threshold_sec
+        upper_sec = median_sec + threshold_sec
+        boundaries = (
+            (lower_sec, f"Median − {threshold_sec:g}s: {lower_sec:.2f}s"),
+            (median_sec, f"Median: {median_sec:.2f}s"),
+            (upper_sec, f"Median + {threshold_sec:g}s: {upper_sec:.2f}s"),
+        )
+    else:
+        raise ValueError(f"Unknown sinus extraction method '{config.method}'")
+
+    ax.axvspan(lower_sec, upper_sec, color="tab:green", alpha=0.12)
+    ylim_upper = ax.get_ylim()[1]
+    for boundary_sec, label in boundaries:
+        ax.axvline(
+            boundary_sec,
+            color="tab:red",
+            linestyle="--",
+            linewidth=1.5,
+            alpha=0.9,
+        )
+        ax.text(
+            boundary_sec,
+            ylim_upper * 0.95,
+            label,
+            rotation=90,
+            fontsize=8,
+            color="tab:red",
+            horizontalalignment="right",
+            verticalalignment="top",
+        )
 
 
 def _render_signal_row(

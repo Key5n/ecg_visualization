@@ -11,6 +11,7 @@ from ecg_visualization.tasks.config import save_config_text
 from ecg_visualization.tasks.rhythm_event_sequences.config import (
     RhythmEventSequencesConfig,
     RRHistogramConfig,
+    SinusExtractionConfig,
 )
 from ecg_visualization.tasks.rhythm_event_sequences.utils import (
     ConcatenatedSequence,
@@ -51,6 +52,7 @@ def rhythm_event_sequence_visualize(config: RhythmEventSequencesConfig) -> None:
                 output_dir=config.visualize_output_dir,
                 pagination_config=pagination_config,
                 rr_histogram_config=config.rr_histogram,
+                sinus_extraction_config=config.sinus_extraction,
                 segment_colors=config.segment_colors,
                 segment_labels=config.segment_labels,
             )
@@ -85,6 +87,7 @@ def _export_pdf(
     output_dir: Path,
     pagination_config: PaginationConfig,
     rr_histogram_config: RRHistogramConfig,
+    sinus_extraction_config: SinusExtractionConfig,
     segment_colors: dict[str, str],
     segment_labels: dict[str, str],
 ) -> Path:
@@ -97,6 +100,7 @@ def _export_pdf(
         output_path=output_path,
         pagination_config=pagination_config,
         rr_histogram_config=rr_histogram_config,
+        sinus_extraction_config=sinus_extraction_config,
         segment_colors=segment_colors,
         segment_labels=segment_labels,
     )
