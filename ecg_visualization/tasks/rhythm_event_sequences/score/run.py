@@ -28,7 +28,11 @@ def rhythm_event_sequence_scores(config: RhythmEventSequencesConfig) -> None:
     save_config_text(config, config.config_path)
 
     processed = 0
-    for entity, concat in iter_concatenated_sequences(config):
+    for entity, concat in iter_concatenated_sequences(
+        config.dataset_id,
+        pre_ar_duration_sec=config.pre_ar_duration_sec,
+        sinus_extraction_config=config.sinus_extraction,
+    ):
         try:
             score_result = score_concatenated_sequence(
                 concat,

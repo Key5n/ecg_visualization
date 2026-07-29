@@ -10,7 +10,6 @@ import structlog
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.datasets.physionet import load_data_sources
 from ecg_visualization.tasks.rhythm_event_sequences.config import (
-    RhythmEventSequencesConfig,
     SegmentsInfo,
     SegmentWindow,
     SinusExtractionConfig,
@@ -58,36 +57,45 @@ class SequenceSelectionFailure:
 SequenceSelectionResult = SequenceSelectionSuccess | SequenceSelectionFailure
 
 
-def iter_sequence_selection_results(
-    config: RhythmEventSequencesConfig,
-) -> Iterable[SequenceSelectionResult]:
-    dataset = load_data_sources((config.dataset_id,))[0]
-    for entity in dataset.get_entities():
-        try:
-            segments_info = _select_sinus_segments(
-                entity,
-                pre_ar_duration_sec=config.pre_ar_duration_sec,
-                sinus_extraction_config=config.sinus_extraction,
-            )
-            concat = _build_concatenated_sequence(entity, segments_info)
-        except ValueError as exc:
-            LOGGER.warning("entity_skipped", entity=entity, reason=str(exc))
-            yield SequenceSelectionFailure(
-                entity=entity,
-                failure_reason=str(exc),
-            )
-            continue
-
-        yield SequenceSelectionSuccess(
+def select_sequence_result(
+    entity: ECGEntity,
+    *,
+    pre_ar_duration_sec: float,
+    sinus_extraction_config: SinusExtractionConfig,
+) -> SequenceSelectionResult:
+    try:
+        segments_info = _select_sinus_segments(
             entity=entity,
-            concat=concat,
+            pre_ar_duration_sec=pre_ar_duration_sec,
+            sinus_extraction_config=sinus_extraction_config,
         )
+        concat = _build_concatenated_sequence(entity, segments_info)
+    except ValueError as exc:
+        LOGGER.warning("entity_skipped", entity=entity, reason=str(exc))
+        return SequenceSelectionFailure(
+            entity=entity,
+            failure_reason=str(exc),
+        )
+
+    return SequenceSelectionSuccess(
+        entity=entity,
+        concat=concat,
+    )
 
 
 def iter_concatenated_sequences(
-    config: RhythmEventSequencesConfig,
+    dataset_id: str,
+    *,
+    pre_ar_duration_sec: float,
+    sinus_extraction_config: SinusExtractionConfig,
 ) -> Iterable[tuple[ECGEntity, ConcatenatedSequence]]:
-    for result in iter_sequence_selection_results(config):
+    dataset = load_data_sources((dataset_id,))[0]
+    for entity in dataset.get_entities():
+        result = select_sequence_result(
+            entity,
+            pre_ar_duration_sec=pre_ar_duration_sec,
+            sinus_extraction_config=sinus_extraction_config,
+        )
         if isinstance(result, SequenceSelectionSuccess):
             yield result.entity, result.concat
 
