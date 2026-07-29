@@ -126,15 +126,19 @@ def _plot_concat_score_page(
     signal_margin = (signal_max - signal_min) * 0.05 or 1.0
 
     fig, axes = plt.subplots(
-        nrows=len(ts_rows) * 2,
+        nrows=len(ts_rows),
+        sharey=True,
         figsize=(8.27, 11.69),
         squeeze=False,
     )
-    flat_axes = axes[:, 0]
+    signal_axes = axes[:, 0]
+    score_axes = [signal_ax.twinx() for signal_ax in signal_axes]
+    for score_ax in score_axes[1:]:
+        score_ax.sharey(score_axes[0])
 
     for row_idx, ts in enumerate(ts_rows):
-        signal_ax = flat_axes[row_idx * 2]
-        score_ax = flat_axes[row_idx * 2 + 1]
+        signal_ax = signal_axes[row_idx]
+        score_ax = score_axes[row_idx]
         window_start = float(ts[0])
         window_end = float(ts[-1])
         start_idx = int(np.floor(window_start * sampling_rate_hz))
@@ -163,19 +167,17 @@ def _plot_concat_score_page(
         )
         score_ax.set_ylabel("Score")
         score_ax.set_yscale("log")
-        score_ax.set_xlim(window_start, window_end)
-        score_ax.set_xlabel("Time (sec)")
 
-        for ax in (signal_ax, score_ax):
-            ax.set_xlim(window_start, window_end)
-            _highlight_concat_segments(
-                ax,
-                concat,
-                segment_colors=config.segment_colors,
-                segment_labels=config.segment_labels,
-                window_start=window_start,
-                window_end=window_end,
-            )
+        signal_ax.set_xlim(window_start, window_end)
+        signal_ax.set_xlabel("Time (sec)")
+        _highlight_concat_segments(
+            signal_ax,
+            concat,
+            segment_colors=config.segment_colors,
+            segment_labels=config.segment_labels,
+            window_start=window_start,
+            window_end=window_end,
+        )
 
     fig.suptitle(
         f"{entity.dataset.name}: {entity.entity_id} — concatenated sequence scores "
