@@ -331,11 +331,11 @@ def _plot_entity_table(ax, rows: list[SelectionSummaryRow]) -> None:
         loc="upper left",
         cellLoc="left",
         colLoc="left",
-        colWidths=[0.11, 0.09, 0.24, 0.14, 0.14, 0.14, 0.14],
+        colWidths=[0.05, 0.09, 0.30, 0.14, 0.14, 0.14, 0.14],
         bbox=[0, 0, 1, 1],
     )
     table.auto_set_font_size(False)
-    table.set_fontsize(8)
+    table.set_fontsize(6)
     table.scale(1, 1.15)
 
     for (row_idx, _col_idx), cell in table.get_celld().items():
