@@ -32,7 +32,9 @@ def score_concatenated_sequence(
             * concat.sampling_rate_hz
         )
     )
-    train_beats = beat_samples[beat_samples < train_segment_samples]
+    # Include the beat at the train/pre-AR boundary so the final all-normal RR
+    # window ending at that beat is represented during training.
+    train_beats = beat_samples[beat_samples <= train_segment_samples]
     if train_beats.size < window_size + 1:
         raise ValueError("sinus_train segment does not contain enough beats")
 
