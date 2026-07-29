@@ -127,6 +127,14 @@ def _plot_concat_score_page(
     signal_min = float(np.nanmin(samples))
     signal_max = float(np.nanmax(samples))
     signal_margin = (signal_max - signal_min) * 0.05 or 1.0
+    positive_scores = scores[np.isfinite(scores) & (scores > 0)]
+    score_min = float(np.min(positive_scores))
+    score_max = float(np.max(positive_scores))
+    score_margin = (score_max - score_min) * 0.05 or score_min * 0.05
+    score_ylim = (
+        max(score_min - score_margin, score_min * 0.95),
+        score_max + score_margin,
+    )
 
     fig, axes = plt.subplots(
         nrows=len(ts_rows),
@@ -136,8 +144,6 @@ def _plot_concat_score_page(
     )
     signal_axes = axes[:, 0]
     score_axes = [signal_ax.twinx() for signal_ax in signal_axes]
-    for score_ax in score_axes[1:]:
-        score_ax.sharey(score_axes[0])
 
     for row_idx, ts in enumerate(ts_rows):
         signal_ax = signal_axes[row_idx]
@@ -192,6 +198,7 @@ def _plot_concat_score_page(
         )
         score_ax.set_ylabel("Score")
         score_ax.set_yscale("log")
+        score_ax.set_ylim(*score_ylim)
 
         signal_ax.set_xlim(window_start, window_end)
         signal_ax.set_xlabel("Time (sec)")
@@ -208,7 +215,7 @@ def _plot_concat_score_page(
         f"{entity.dataset.name}: {entity.entity_id} — concatenated sequence scores "
         f"(detail page {page_idx + 1})"
     )
-    fig.subplots_adjust(left=0.1, right=0.97, bottom=0.05, top=0.95, hspace=0.45)
+    fig.subplots_adjust(left=0.1, right=0.88, bottom=0.05, top=0.95, hspace=0.45)
     return fig
 
 
