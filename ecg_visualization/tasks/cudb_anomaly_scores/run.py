@@ -69,7 +69,7 @@ def cudb_anomaly_scores(config: CudbAnomalyScoresConfig) -> None:
             if not sinus_windows:
                 LOGGER.warning(
                     "entity_skipped",
-                    entity_id=entity.entity_id,
+                    entity=entity,
                     reason="no sinus windows provided",
                 )
                 skipped += 1
@@ -83,9 +83,7 @@ def cudb_anomaly_scores(config: CudbAnomalyScoresConfig) -> None:
                     model_config=model_config,
                 )
             except ValueError as exc:
-                LOGGER.warning(
-                    "entity_skipped", entity_id=entity.entity_id, reason=str(exc)
-                )
+                LOGGER.warning("entity_skipped", entity=entity, reason=str(exc))
                 skipped += 1
                 continue
 

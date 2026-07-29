@@ -47,7 +47,7 @@ def visualize_all_studies(config: VisualizeConfig):
                 LOGGER.error(
                     "study_visualization_failed",
                     dataset_id=dataset_id,
-                    entity_id=entity_id,
+                    entity=f"{dataset_id}/{entity_id}",
                     error=error,
                 )
 

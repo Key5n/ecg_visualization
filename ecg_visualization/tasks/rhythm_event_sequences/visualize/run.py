@@ -91,7 +91,7 @@ def _export_pdf(
     segment_colors: dict[str, str],
     segment_labels: dict[str, str],
 ) -> Path:
-    LOGGER.info("entity_pdf_export_started", entity_id=entity.entity_id)
+    LOGGER.info("entity_pdf_export_started", entity=entity)
     apply_default_style()
     output_path = output_dir / f"{entity.entity_id}.pdf"
     export_concatenated_pdf(

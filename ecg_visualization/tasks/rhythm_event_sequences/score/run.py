@@ -36,9 +36,7 @@ def rhythm_event_sequence_scores(config: RhythmEventSequencesConfig) -> None:
                 model_config=config.model,
             )
         except ValueError as exc:
-            LOGGER.warning(
-                "entity_skipped", entity_id=entity.entity_id, reason=str(exc)
-            )
+            LOGGER.warning("entity_skipped", entity=entity, reason=str(exc))
             continue
 
         output_path = config.score_output_dir / f"{entity.entity_id}.pdf"
