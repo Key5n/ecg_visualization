@@ -14,7 +14,7 @@ from ecg_visualization.tasks.rhythm_event_sequences.config import (
 from ecg_visualization.tasks.rhythm_event_sequences.utils import ConcatenatedSequence
 from ecg_visualization.visualization.export import pdf_exporter
 from ecg_visualization.visualization.layouts import paginate_signals
-from ecg_visualization.visualization.plotters import plot_normal_beats, plot_symbols
+from ecg_visualization.visualization.plotters import plot_beats, plot_symbols
 
 if TYPE_CHECKING:
     from ecg_visualization.tasks.rhythm_event_sequences.score.helpers import ScoreResult
@@ -167,7 +167,7 @@ def _plot_concat_score_page(
         beat_times_in_window = beat_times_sec[
             (beat_times_sec >= window_start) & (beat_times_sec <= window_end)
         ]
-        plot_normal_beats(
+        plot_beats(
             signal_ax,
             beat_times_in_window.tolist(),
             ylim_lower=signal_min - signal_margin,

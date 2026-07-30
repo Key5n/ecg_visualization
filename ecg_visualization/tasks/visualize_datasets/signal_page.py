@@ -8,7 +8,7 @@ from matplotlib.figure import Figure
 from ecg_visualization.core.entity import ECGEntity
 from ecg_visualization.visualization.plotters import (
     plot_aux_notes,
-    plot_normal_beats,
+    plot_beats,
     plot_signal,
     plot_symbols,
 )
@@ -41,7 +41,7 @@ def render_signal_row(
     beat_times_in_window = beat_times[
         (beat_times >= window_start) & (beat_times <= window_end)
     ]
-    plot_normal_beats(
+    plot_beats(
         ax,
         beat_times_in_window.tolist(),
         ylim_lower=signal_ylim[0],

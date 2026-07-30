@@ -7,15 +7,15 @@ from .styles import ABNORMAL_INTERVAL_COLOR
 from .text import sanitize_annotation_text
 
 
-def plot_normal_beats(
+def plot_beats(
     ax: Axes,
     beat_times: Sequence[float],
     *,
     ylim_lower: float,
-    label: str = "N",
+    label: str = "r",
     fontsize: float = 4,
 ) -> None:
-    """Annotate normal beats with textual markers along the lower axis bound."""
+    """Annotate detected R-peaks along the lower axis bound."""
     for beat_time in beat_times:
         ax.text(
             beat_time,

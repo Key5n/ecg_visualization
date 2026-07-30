@@ -36,8 +36,8 @@ from ecg_visualization.visualization.plotters import (
     highlight_windows,
     plot_anomaly_score,
     plot_aux_notes,
+    plot_beats,
     plot_histogram,
-    plot_normal_beats,
     plot_signal,
     plot_symbols,
 )
@@ -181,9 +181,7 @@ class StudyVisualizer:
                     record=record,
                     score_sequence=empty_scores,
                 )
-            LOGGER.warning(
-                "study_skipped", study_name=self.study_name, reason=str(exc)
-            )
+            LOGGER.warning("study_skipped", study_name=self.study_name, reason=str(exc))
             return None
 
     def _build_sequences(self, vis_record: VisualizationRecord) -> SequenceBundle:
@@ -398,7 +396,7 @@ class StudyVisualizer:
                 ylim_upper=score_ylim[1],
                 label="Anomaly Score",
             )
-        plot_normal_beats(
+        plot_beats(
             ax,
             beats_in_window.times.tolist(),
             ylim_lower=signal_ylim[0],
