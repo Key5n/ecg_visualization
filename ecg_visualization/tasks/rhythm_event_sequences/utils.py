@@ -162,11 +162,11 @@ def _select_sinus_segments(
             entity_id=entity.entity_id,
             reason="no test sinus after AR",
         )
-        test_runs = before_pre_ar_runs[1:]
+        test_runs = [run for run in before_pre_ar_runs if run[0] >= train_run[1]]
     else:
         test_runs = test_after_ar_runs
     if not test_runs:
-        raise ValueError(f"{entity} has no non-overlapping test sinus before pre-AR")
+        raise ValueError(f"{entity} has no test sinus after train and before pre-AR")
     test_run = test_runs[0]
 
     train_window = _rr_run_to_segment_window(beat_times_sec, train_run)
