@@ -10,7 +10,8 @@ ARGS ?=
 
 .PHONY: setup sync hooks datasets format lint optuna_dashboard tasks \
 	visualize-studies visualize-datasets cudb-anomaly-scores study \
-	rhythm-event-sequences rhythm-event-sequences-visualize rhythm-event-sequences-score
+	rhythm-event-sequences rhythm-event-sequences-visualize rhythm-event-sequences-score \
+	rr-interval-statistics anomaly-detection-example
 
 setup: sync hooks datasets
 
@@ -40,17 +41,22 @@ tasks:
 	@printf '%s\n' \
 		'visualize-studies' \
 		'visualize-datasets' \
+		'rr-interval-statistics' \
 		'cudb-anomaly-scores' \
 		'study' \
 		'rhythm-event-sequences' \
 		'rhythm-event-sequences-visualize' \
-		'rhythm-event-sequences-score'
+		'rhythm-event-sequences-score' \
+		'anomaly-detection-example'
 
 visualize-studies:
 	$(PYTHON) -m ecg_visualization.tasks.visualize_studies $(ARGS)
 
 visualize-datasets:
 	$(PYTHON) -m ecg_visualization.tasks.visualize_datasets $(ARGS)
+
+rr-interval-statistics:
+	$(PYTHON) -m ecg_visualization.tasks.rr_interval_statistics $(ARGS)
 
 cudb-anomaly-scores:
 	$(PYTHON) -m ecg_visualization.tasks.cudb_anomaly_scores $(ARGS)
@@ -66,3 +72,6 @@ rhythm-event-sequences-visualize:
 
 rhythm-event-sequences-score:
 	$(PYTHON) -m ecg_visualization.tasks.rhythm_event_sequences.score $(ARGS)
+
+anomaly-detection-example:
+	$(PYTHON) -m ecg_visualization.tasks.anomaly_detection_example $(ARGS)
