@@ -165,6 +165,7 @@ def plot_histogram(
     values: np.ndarray,
     *,
     bins: int | Sequence[float] | str = "auto",
+    weights: np.ndarray | None = None,
     title: str | None = None,
     xlabel: str | None = None,
     ylabel: str | None = None,
@@ -175,13 +176,16 @@ def plot_histogram(
     percentile_linestyle: str = "--",
 ) -> None:
     """Render a styled histogram of the provided values."""
-    cleaned_values = values[np.isfinite(values)]
+    finite_mask = np.isfinite(values)
+    cleaned_values = values[finite_mask]
+    cleaned_weights = weights[finite_mask] if weights is not None else None
     if cleaned_values.size == 0:
         return
 
     ax.hist(
         cleaned_values,
         bins=bins,
+        weights=cleaned_weights,
         color=color,
         alpha=alpha,
     )
