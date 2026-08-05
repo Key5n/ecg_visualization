@@ -11,7 +11,7 @@ ARGS ?=
 .PHONY: setup sync hooks datasets format lint optuna_dashboard tasks \
 	visualize-studies visualize-datasets cudb-anomaly-scores study \
 	rhythm-event-sequences rhythm-event-sequences-visualize rhythm-event-sequences-score \
-	rr-interval-statistics anomaly-detection-example
+	rr-interval-statistics anomaly-detection-example all-anomaly-detection-scores
 
 setup: sync hooks datasets
 
@@ -47,7 +47,8 @@ tasks:
 		'rhythm-event-sequences' \
 		'rhythm-event-sequences-visualize' \
 		'rhythm-event-sequences-score' \
-		'anomaly-detection-example'
+		'anomaly-detection-example' \
+		'all-anomaly-detection-scores'
 
 visualize-studies:
 	$(PYTHON) -m ecg_visualization.tasks.visualize_studies $(ARGS)
@@ -75,3 +76,6 @@ rhythm-event-sequences-score:
 
 anomaly-detection-example:
 	$(PYTHON) -m ecg_visualization.tasks.anomaly_detection_example $(ARGS)
+
+all-anomaly-detection-scores:
+	$(PYTHON) -m ecg_visualization.tasks.all_anomaly_detection_scores $(ARGS)
