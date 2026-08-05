@@ -11,6 +11,7 @@ from ecg_visualization.tasks.all_anomaly_detection_scores.config import (
     AllAnomalyDetectionScoresConfig,
 )
 from ecg_visualization.tasks.anomaly_detection_example.run import (
+    SCORE_METHOD_NAMES,
     build_example_data,
     plot_entity_scores,
 )
@@ -21,7 +22,7 @@ LOGGER = structlog.get_logger(__name__)
 
 
 def all_anomaly_detection_scores(config: AllAnomalyDetectionScoresConfig) -> None:
-    """Write one ECG/anomaly-score page for every usable entity."""
+    """Write one ECG plus seven anomaly-score rows for every usable entity."""
     configure_root_logging()
     apply_default_style()
     config.output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -60,5 +61,6 @@ def all_anomaly_detection_scores(config: AllAnomalyDetectionScoresConfig) -> Non
         "all_anomaly_detection_scores_saved",
         processed=processed,
         skipped=skipped,
+        score_methods=SCORE_METHOD_NAMES,
         output_path=str(config.output_path),
     )

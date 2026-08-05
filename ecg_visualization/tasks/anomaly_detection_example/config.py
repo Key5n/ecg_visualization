@@ -27,6 +27,11 @@ class AnomalyDetectionExampleConfig:
     output_path: Path = Path("result/figure6_anomaly_detection_example.pdf")
     window_size: int = 10
     threshold_scale: float = 10.0
+    ewma_alpha: float = 0.05
+    iocsvm_nu: float = 0.05
+    iocsvm_warmup_size: int = 8
+    ipca_n_components: int = 5
+    ipca_batch_size: int = 8
     records: tuple[ExampleRecordConfig, ...] = field(default_factory=_default_records)
     sinus_extraction: SinusExtractionConfig = field(
         default_factory=SinusExtractionConfig

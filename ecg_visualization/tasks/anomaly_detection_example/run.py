@@ -12,7 +12,11 @@ from sklearn.preprocessing import StandardScaler
 from ecg_visualization.datasets.physionet import load_data_sources
 from ecg_visualization.logging.config import configure_root_logging
 from ecg_visualization.models.md_rs.md_rs import MDRS
+from ecg_visualization.models.tsad.cv import tsad_cv
 from ecg_visualization.models.tsad.esn import tsad_esn
+from ecg_visualization.models.tsad.ewma import tsad_ewma
+from ecg_visualization.models.tsad.iocsvm import tsad_iocsvm
+from ecg_visualization.models.tsad.ipca import tsad_ipca
 from ecg_visualization.models.tsad.md import tsad_md
 from ecg_visualization.tasks.anomaly_detection_example.config import (
     AnomalyDetectionExampleConfig,
@@ -36,6 +40,8 @@ SEGMENT_COLOR_KEYS = {
     "AR": "ar",
     "RS": "sinus_test",
 }
+SCORE_METHOD_NAMES = ("CV", "EWMA", "IOCSVM", "IPCA", "MD", "ESN", "MD_RS")
+N_SCORE_METHODS = len(SCORE_METHOD_NAMES)
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,6 +49,7 @@ class ExampleData:
     dataset_id: str
     entity_id: str
     concat: ConcatenatedSequence
+    raw_rri_segments: dict[str, npt.NDArray[np.float64] | None]
     rri_segments: dict[str, npt.NDArray[np.float64] | None]
     score_times: dict[str, npt.NDArray[np.float64] | None]
     segment_ranges: dict[str, tuple[float, float]]
@@ -105,7 +112,12 @@ def build_example_data(
     train = raw_segments["TS"]
     if train is None:
         raise ValueError(f"{entity} has no training segment")
-    minimum_train_windows = max(2, config.mdrs.trans_length + 1)
+    minimum_train_windows = max(
+        2,
+        config.mdrs.trans_length + 1,
+        config.iocsvm_warmup_size,
+        config.ipca_n_components,
+    )
     if len(train) < minimum_train_windows:
         raise ValueError(
             f"{entity} training segment contains {len(train)} RR windows; "
@@ -120,6 +132,7 @@ def build_example_data(
         dataset_id=entity.dataset.dataset_id,
         entity_id=entity.entity_id,
         concat=selection.concat,
+        raw_rri_segments=raw_segments,
         rri_segments=scaled_segments,
         score_times=score_times,
         segment_ranges=segment_ranges,
@@ -165,7 +178,13 @@ def _mdrs_scores(example: ExampleData, config: AnomalyDetectionExampleConfig):
 
 
 def _plot_examples(examples: list[ExampleData], config: AnomalyDetectionExampleConfig):
-    fig, axes = plt.subplots(4, 2, sharex="col", figsize=(15, 8), squeeze=False)
+    fig, axes = plt.subplots(
+        N_SCORE_METHODS + 1,
+        2,
+        sharex="col",
+        figsize=(12, 10),
+        squeeze=False,
+    )
     for row in range(1, axes.shape[0]):
         axes[row, 1].sharey(axes[row, 0])
     for column, example in enumerate(examples):
@@ -182,8 +201,42 @@ def _plot_examples(examples: list[ExampleData], config: AnomalyDetectionExampleC
 
 
 def score_example(example: ExampleData, config: AnomalyDetectionExampleConfig):
-    """Score one prepared entity with all three anomaly detectors."""
+    """Score one prepared entity with every configured anomaly detector."""
     return (
+        (
+            "CV",
+            tsad_cv(
+                example.raw_rri_segments,
+                threshold_scale=config.threshold_scale,
+            ),
+        ),
+        (
+            "EWMA",
+            tsad_ewma(
+                example.rri_segments,
+                alpha=config.ewma_alpha,
+                threshold_scale=config.threshold_scale,
+            ),
+        ),
+        (
+            "IOCSVM",
+            tsad_iocsvm(
+                example.rri_segments,
+                nu=config.iocsvm_nu,
+                warmup_size=config.iocsvm_warmup_size,
+                random_state=config.mdrs.seed,
+                threshold_scale=config.threshold_scale,
+            ),
+        ),
+        (
+            "IPCA",
+            tsad_ipca(
+                example.rri_segments,
+                n_components=config.ipca_n_components,
+                batch_size=config.ipca_batch_size,
+                threshold_scale=config.threshold_scale,
+            ),
+        ),
         (
             "MD",
             tsad_md(example.rri_segments, threshold_scale=config.threshold_scale),
@@ -208,8 +261,14 @@ def score_example(example: ExampleData, config: AnomalyDetectionExampleConfig):
 def plot_entity_scores(
     example: ExampleData, config: AnomalyDetectionExampleConfig
 ) -> plt.Figure:
-    """Plot one entity as an ECG row followed by the three score rows."""
-    fig, axes = plt.subplots(4, 1, sharex=True, figsize=(15, 8), squeeze=False)
+    """Plot one entity as an ECG row followed by all score rows."""
+    fig, axes = plt.subplots(
+        N_SCORE_METHODS + 1,
+        1,
+        sharex=True,
+        figsize=(8, 10),
+        squeeze=False,
+    )
     column = axes[:, 0]
     _plot_ecg(column[0], example, config)
     for row, (label, result) in enumerate(score_example(example, config), start=1):
@@ -243,6 +302,7 @@ def _plot_scores(
             ax.plot(times, scores, color="black", linewidth=0.75)
     ax.set_ylabel(f"{label}\nScore")
     ax.set_yscale("symlog", linthresh=1e-6)
+    ax.yaxis.get_major_locator().set_params(numticks=7)
     _shade_segments(ax, example, config.segment_colors)
 
 
